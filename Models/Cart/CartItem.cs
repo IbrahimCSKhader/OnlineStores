@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace onlineStore.Models.Cart
+namespace onlineStore.Models.CartModels
 {
     [Index(nameof(CartId))]
     [Index(nameof(ProductId))]

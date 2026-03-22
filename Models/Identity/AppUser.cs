@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using System.ComponentModel.DataAnnotations;
-
+using onlineStore.Models.Orders;
+using onlineStore.Models.Reviews;
+using onlineStore.Models.CartModels;
 namespace onlineStore.Models.Identity
 {
     // Models/Identity/AppUser.cs

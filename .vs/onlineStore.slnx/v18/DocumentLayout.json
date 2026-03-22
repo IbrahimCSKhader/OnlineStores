@@ -3,371 +3,151 @@
   "WorkspaceRootPath": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{03DE8698-CFF3-9959-3AAC-E51FD1970325}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{03DE8698-CFF3-9959-3AAC-E51FD1970325}|onlineStore.csproj|solutionrelative:controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{03DE8698-CFF3-9959-3AAC-E51FD1970325}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\services\\auth\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{03DE8698-CFF3-9959-3AAC-E51FD1970325}|onlineStore.csproj|solutionrelative:services\\auth\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\identity\\approle.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\identity\\approle.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{03DE8698-CFF3-9959-3AAC-E51FD1970325}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\services\\auth\\iauthservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{03DE8698-CFF3-9959-3AAC-E51FD1970325}|onlineStore.csproj|solutionrelative:services\\auth\\iauthservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\store\\store.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\store\\store.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{03DE8698-CFF3-9959-3AAC-E51FD1970325}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\dtos\\googleauthdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{03DE8698-CFF3-9959-3AAC-E51FD1970325}|onlineStore.csproj|solutionrelative:dtos\\googleauthdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\baseentity.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\baseentity.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{03DE8698-CFF3-9959-3AAC-E51FD1970325}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{03DE8698-CFF3-9959-3AAC-E51FD1970325}|onlineStore.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\store\\section.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\store\\section.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{03DE8698-CFF3-9959-3AAC-E51FD1970325}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{03DE8698-CFF3-9959-3AAC-E51FD1970325}|onlineStore.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\store\\productvariant.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\store\\productvariant.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\store\\productimage.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\store\\productimage.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\store\\productattributevalue.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\store\\productattributevalue.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\store\\productattribute.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\store\\productattribute.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\store\\product.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\store\\product.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\store\\category.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\store\\category.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\onlinestore.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:onlinestore.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\notifications\\notification.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\notifications\\notification.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\enums\\discounttype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\enums\\discounttype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\orders\\orderitem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\orders\\orderitem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\enums\\orderstatus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\enums\\orderstatus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\cart\\cartitem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\cart\\cartitem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\cart\\cart.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\cart\\cart.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\identity\\appuser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\identity\\appuser.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\models\\enums\\productstatus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{86452E96-945C-4078-B7E2-D35FAB377CB4}|onlineStore.csproj|solutionrelative:models\\enums\\productstatus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{03DE8698-CFF3-9959-3AAC-E51FD1970325}|onlineStore.csproj|c:\\users\\wesal\\onedrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\onlienstore\\onlinestore\\onlinestore.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{03DE8698-CFF3-9959-3AAC-E51FD1970325}|onlineStore.csproj|solutionrelative:onlinestore.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     }
   ],
   "DocumentGroupContainers": [
     {
-      "Orientation": 0,
+      "Orientation": 1,
       "VerticalTabListWidth": 256,
       "DocumentGroups": [
         {
-          "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "DockedHeight": 206,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Program.cs",
-              "RelativeDocumentMoniker": "Program.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Program.cs",
-              "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAABAAAAAAAAAAAAAAACIAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T08:36:16.388Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "AppDbContext.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Data\\AppDbContext.cs",
-              "RelativeDocumentMoniker": "Data\\AppDbContext.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Data\\AppDbContext.cs",
-              "RelativeToolTip": "Data\\AppDbContext.cs",
-              "ViewState": "AgIAAJ8AAAAAAAAAAAAAwKkAAAAAAAAAAAAAAA==",
+              "Title": "AuthService.cs",
+              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Services\\Auth\\AuthService.cs",
+              "RelativeDocumentMoniker": "Services\\Auth\\AuthService.cs",
+              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Services\\Auth\\AuthService.cs",
+              "RelativeToolTip": "Services\\Auth\\AuthService.cs",
+              "ViewState": "AgIAADsBAAAAAAAAAAAIwEoBAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T07:06:57.068Z",
+              "WhenOpened": "2026-03-22T09:34:24.292Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 2,
-              "Title": "AppRole.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Identity\\AppRole.cs",
-              "RelativeDocumentMoniker": "Models\\Identity\\AppRole.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Identity\\AppRole.cs",
-              "RelativeToolTip": "Models\\Identity\\AppRole.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAFAAAAAAAAAA==",
+              "Title": "IAuthService.cs",
+              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Services\\Auth\\IAuthService.cs",
+              "RelativeDocumentMoniker": "Services\\Auth\\IAuthService.cs",
+              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Services\\Auth\\IAuthService.cs",
+              "RelativeToolTip": "Services\\Auth\\IAuthService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAABCAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:55:04.437Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "ProductVariant.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\ProductVariant.cs",
-              "RelativeDocumentMoniker": "Models\\Store\\ProductVariant.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\ProductVariant.cs",
-              "RelativeToolTip": "Models\\Store\\ProductVariant.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAcAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:10:43.78Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "ProductImage.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\ProductImage.cs",
-              "RelativeDocumentMoniker": "Models\\Store\\ProductImage.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\ProductImage.cs",
-              "RelativeToolTip": "Models\\Store\\ProductImage.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAcAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:10:23.525Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "Section.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\Section.cs",
-              "RelativeDocumentMoniker": "Models\\Store\\Section.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\Section.cs",
-              "RelativeToolTip": "Models\\Store\\Section.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAcAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:09:59.182Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "BaseEntity.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\BaseEntity.cs",
-              "RelativeDocumentMoniker": "Models\\BaseEntity.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\BaseEntity.cs",
-              "RelativeToolTip": "Models\\BaseEntity.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:09:20.058Z",
+              "WhenOpened": "2026-03-22T09:34:20.875Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 3,
-              "Title": "Store.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\Store.cs",
-              "RelativeDocumentMoniker": "Models\\Store\\Store.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\Store.cs",
-              "RelativeToolTip": "Models\\Store\\Store.cs",
-              "ViewState": "AgIAAAgAAAAAAAAAAAAxwA8AAAAAAAAAAAAAAA==",
+              "Title": "GoogleAuthDto.cs",
+              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\DTOs\\GoogleAuthDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\GoogleAuthDto.cs",
+              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\DTOs\\GoogleAuthDto.cs",
+              "RelativeToolTip": "DTOs\\GoogleAuthDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:09:32.094Z",
+              "WhenOpened": "2026-03-22T09:33:40.679Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
-              "Title": "ProductAttributeValue.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\ProductAttributeValue.cs",
-              "RelativeDocumentMoniker": "Models\\Store\\ProductAttributeValue.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\ProductAttributeValue.cs",
-              "RelativeToolTip": "Models\\Store\\ProductAttributeValue.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAcAAAAAAAAAA==",
+              "DocumentIndex": 0,
+              "Title": "AuthController.cs",
+              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Controllers\\AuthController.cs",
+              "RelativeDocumentMoniker": "Controllers\\AuthController.cs",
+              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Controllers\\AuthController.cs",
+              "RelativeToolTip": "Controllers\\AuthController.cs",
+              "ViewState": "AgIAAEYAAAAAAAAAAAAuwE8AAAA1AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:11:07.94Z",
+              "WhenOpened": "2026-03-22T09:27:49.738Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
-              "Title": "ProductAttribute.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\ProductAttribute.cs",
-              "RelativeDocumentMoniker": "Models\\Store\\ProductAttribute.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\ProductAttribute.cs",
-              "RelativeToolTip": "Models\\Store\\ProductAttribute.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAcAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:10:54.89Z",
+              "DocumentIndex": 5,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\appsettings.json",
+              "RelativeDocumentMoniker": "appsettings.json",
+              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\appsettings.json",
+              "RelativeToolTip": "appsettings.json",
+              "ViewState": "AgIAAAUAAAAAAAAAAAAAAA8AAAApAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-03-22T09:26:56.79Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
-              "Title": "Product.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\Product.cs",
-              "RelativeDocumentMoniker": "Models\\Store\\Product.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\Product.cs",
-              "RelativeToolTip": "Models\\Store\\Product.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAcAAAAAAAAAA==",
+              "DocumentIndex": 4,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAJAAAAAAAAAAAAAIwJMAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:10:09.399Z",
+              "WhenOpened": "2026-03-22T09:14:39.189Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
-              "Title": "Category.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\Category.cs",
-              "RelativeDocumentMoniker": "Models\\Store\\Category.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Store\\Category.cs",
-              "RelativeToolTip": "Models\\Store\\Category.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAcAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:09:47.61Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 6,
               "Title": "onlineStore",
               "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\onlineStore.csproj",
               "RelativeDocumentMoniker": "onlineStore.csproj",
               "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\onlineStore.csproj",
               "RelativeToolTip": "onlineStore.csproj",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABkAAAAKAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-03-21T06:08:06.596Z",
+              "WhenOpened": "2026-03-22T09:14:10.302Z",
               "EditorCaption": ""
+            }
+          ]
+        },
+        {
+          "DockedHeight": 194,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
             },
             {
-              "$type": "Document",
-              "DocumentIndex": 13,
-              "Title": "Notification.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Notifications\\Notification.cs",
-              "RelativeDocumentMoniker": "Models\\Notifications\\Notification.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Notifications\\Notification.cs",
-              "RelativeToolTip": "Models\\Notifications\\Notification.cs",
-              "ViewState": "AgIAAA0AAAAAAAAAAAAgwAYAAAAIAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T07:03:25.454Z",
-              "EditorCaption": ""
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
             },
             {
-              "$type": "Document",
-              "DocumentIndex": 14,
-              "Title": "DiscountType.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Enums\\DiscountType.cs",
-              "RelativeDocumentMoniker": "Models\\Enums\\DiscountType.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Enums\\DiscountType.cs",
-              "RelativeToolTip": "Models\\Enums\\DiscountType.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAZAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:59:14.157Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 15,
-              "Title": "OrderItem.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Orders\\OrderItem.cs",
-              "RelativeDocumentMoniker": "Models\\Orders\\OrderItem.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Orders\\OrderItem.cs",
-              "RelativeToolTip": "Models\\Orders\\OrderItem.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAACAAAAAFAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:57:43.951Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 16,
-              "Title": "OrderStatus.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Enums\\OrderStatus.cs",
-              "RelativeDocumentMoniker": "Models\\Enums\\OrderStatus.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Enums\\OrderStatus.cs",
-              "RelativeToolTip": "Models\\Enums\\OrderStatus.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAjAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:56:38.564Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 17,
-              "Title": "CartItem.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Cart\\CartItem.cs",
-              "RelativeDocumentMoniker": "Models\\Cart\\CartItem.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Cart\\CartItem.cs",
-              "RelativeToolTip": "Models\\Cart\\CartItem.cs",
-              "ViewState": "AgIAAA4AAAAAAAAAAAA3wBYAAAAFAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:56:05.215Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 18,
-              "Title": "Cart.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Cart\\Cart.cs",
-              "RelativeDocumentMoniker": "Models\\Cart\\Cart.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Cart\\Cart.cs",
-              "RelativeToolTip": "Models\\Cart\\Cart.cs",
-              "ViewState": "AgIAAAgAAAAAAAAAAAAAwBEAAAAFAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:55:47.982Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 19,
-              "Title": "AppUser.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Identity\\AppUser.cs",
-              "RelativeDocumentMoniker": "Models\\Identity\\AppUser.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Identity\\AppUser.cs",
-              "RelativeToolTip": "Models\\Identity\\AppUser.cs",
-              "ViewState": "AgIAAA8AAAAAAAAAAAAkwBkAAAAFAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:54:45.145Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 20,
-              "Title": "ProductStatus.cs",
-              "DocumentMoniker": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Enums\\ProductStatus.cs",
-              "RelativeDocumentMoniker": "Models\\Enums\\ProductStatus.cs",
-              "ToolTip": "C:\\Users\\wesal\\OneDrive\\\u0633\u0637\u062D \u0627\u0644\u0645\u0643\u062A\u0628\\OnlienStore\\onlineStore\\Models\\Enums\\ProductStatus.cs",
-              "RelativeToolTip": "Models\\Enums\\ProductStatus.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-21T06:11:52.374Z",
-              "EditorCaption": ""
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
             }
           ]
         }
