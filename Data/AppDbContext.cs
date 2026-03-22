@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using onlineStore.Models;
-using onlineStore.Models.Cart;
+using onlineStore.Models.CartModels;
 using onlineStore.Models.Discounts;
 using onlineStore.Models.Identity;
 using onlineStore.Models.Notifications;
@@ -43,7 +43,115 @@ namespace onlineStore.Data
 
             base.OnModelCreating(builder);
 
+            // ════════════════════════════════════════════════════
+            // منع Cascade Delete على كل العلاقات الرئيسية
+            // السبب: SQL Server ما بيسمح بـ multiple cascade paths
+            // ════════════════════════════════════════════════════
 
+            // Order العلاقات
+            builder.Entity<Order>()
+                .HasOne(o => o.Store)
+                .WithMany()
+                .HasForeignKey(o => o.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Order>()
+                .HasOne(o => o.User)
+                .WithMany(u => u.Orders)
+                .HasForeignKey(o => o.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // OrderItem العلاقات
+            builder.Entity<OrderItem>()
+                .HasOne(oi => oi.Order)
+                .WithMany(o => o.Items)
+                .HasForeignKey(oi => oi.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Cart العلاقات
+            builder.Entity<Cart>()
+                .HasOne(c => c.Store)
+                .WithMany()
+                .HasForeignKey(c => c.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Cart>()
+                .HasOne(c => c.User)
+                .WithMany(u => u.Carts)
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // CartItem العلاقات
+            builder.Entity<CartItem>()
+                .HasOne(ci => ci.Cart)
+                .WithMany(c => c.Items)
+                .HasForeignKey(ci => ci.CartId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<CartItem>()
+                .HasOne(ci => ci.Product)
+                .WithMany()
+                .HasForeignKey(ci => ci.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Review العلاقات
+            builder.Entity<Review>()
+                .HasOne(r => r.Store)
+                .WithMany()
+                .HasForeignKey(r => r.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Review>()
+                .HasOne(r => r.User)
+                .WithMany(u => u.Reviews)
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Review>()
+                .HasOne(r => r.Product)
+                .WithMany()
+                .HasForeignKey(r => r.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Product العلاقات
+            builder.Entity<Product>()
+                .HasOne(p => p.Store)
+                .WithMany()
+                .HasForeignKey(p => p.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Product>()
+                .HasOne(p => p.Category)
+                .WithMany(c => c.Products)
+                .HasForeignKey(p => p.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Product>()
+                .HasOne(p => p.Section)
+                .WithMany(s => s.Products)
+                .HasForeignKey(p => p.SectionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Category العلاقات
+            builder.Entity<Category>()
+                .HasOne(c => c.Store)
+                .WithMany(s => s.Categories)
+                .HasForeignKey(c => c.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Section العلاقات
+            builder.Entity<Section>()
+                .HasOne(s => s.Store)
+                .WithMany(st => st.Sections)
+                .HasForeignKey(s => s.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Notification العلاقات
+            builder.Entity<Notification>()
+                .HasOne(n => n.User)
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<AppUser>().ToTable("Users");
             builder.Entity<AppRole>().ToTable("Roles");
