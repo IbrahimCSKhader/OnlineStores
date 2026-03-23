@@ -1,4 +1,4 @@
-﻿using onlineStore.DTOs;
+﻿using onlineStore.DTOs.Auth;
 
 namespace onlineStore.Services.AuthServices
 {

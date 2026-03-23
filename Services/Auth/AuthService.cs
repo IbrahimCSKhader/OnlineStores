@@ -1,5 +1,4 @@
-﻿using onlineStore.DTOs;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using onlineStore.Data;
@@ -7,6 +6,7 @@ using onlineStore.Models.Identity;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using onlineStore.DTOs.Auth;
 namespace onlineStore.Services.AuthServices
 {
 
