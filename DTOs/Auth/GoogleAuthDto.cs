@@ -1,4 +1,4 @@
-﻿namespace onlineStore.DTOs
+﻿namespace onlineStore.DTOs.Auth
 {
     public class GoogleAuthDto
     {

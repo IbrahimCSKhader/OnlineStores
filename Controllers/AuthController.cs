@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;// Controllers/AuthController.cs
 using Microsoft.AspNetCore.Mvc;
-using onlineStore.DTOs;
+using onlineStore.DTOs.Auth;
 using onlineStore.Services.AuthServices;
 using System.Security.Claims;
 
