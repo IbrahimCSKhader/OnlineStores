@@ -161,3 +161,7 @@ C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Debug\ne
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Debug\net10.0\ref\onlineStore.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\Scalar.AspNetCore.dll
+C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\BouncyCastle.Cryptography.dll
+C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\MailKit.dll
+C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.Google.dll
+C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\MimeKit.dll

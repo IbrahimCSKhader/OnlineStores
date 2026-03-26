@@ -5,6 +5,11 @@ using Microsoft.IdentityModel.Tokens;
 using onlineStore.Data;
 using onlineStore.Models.Identity;
 using onlineStore.Services.AuthServices;
+using onlineStore.Services.Cart;
+using onlineStore.Services.Coupon;
+using onlineStore.Services.Order;
+using onlineStore.Services.Product;
+using onlineStore.Services.Review;
 using System.Text;
 using Scalar.AspNetCore;
 
@@ -87,10 +92,15 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(key),
-        // منع التوكنات القديمة بعد انتهاءها فوراً
         ClockSkew = TimeSpan.Zero
     };
+})
+.AddGoogle(options =>
+{
+    options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
+    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
 });
+
 
 
 // ════════════════════════════════════════════════════
@@ -128,11 +138,11 @@ builder.Services.AddOpenApi();
 // 7️⃣ Services
 // ════════════════════════════════════════════════════
 builder.Services.AddScoped<IAuthService, AuthService>();
-// builder.Services.AddScoped<IProductService, ProductService>();
-// builder.Services.AddScoped<IOrderService, OrderService>();
-// builder.Services.AddScoped<ICartService, CartService>();
-// builder.Services.AddScoped<ICouponService, CouponService>();
-// builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+ builder.Services.AddScoped<IOrderService, OrderService>();
+ builder.Services.AddScoped<ICouponService, CouponService>();
+ builder.Services.AddScoped<IReviewService, ReviewService>();
 
 
 var app = builder.Build();
@@ -152,12 +162,12 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference(); 
 }
-builder.Services.AddAuthentication()
-    .AddGoogle(options =>
-    {
-        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
-        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
-    });
+//builder.Services.AddAuthentication()
+//    .AddGoogle(options =>
+//    {
+//        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
+//        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
+//    });
 app.UseHttpsRedirection();
 
 // CORS حسب البيئة

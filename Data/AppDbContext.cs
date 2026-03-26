@@ -26,7 +26,7 @@ namespace onlineStore.Data
         public DbSet<ProductAttribute> ProductAttributes => Set<ProductAttribute>();
         public DbSet<ProductAttributeValue> ProductAttributeValues => Set<ProductAttributeValue>();
 
-        public DbSet<Cart> Carts => Set<Cart>();
+        public DbSet<ShoppingCart> Carts => Set<ShoppingCart>();
         public DbSet<CartItem> CartItems => Set<CartItem>();
 
         public DbSet<Order> Orders => Set<Order>();
@@ -69,13 +69,13 @@ namespace onlineStore.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Cart العلاقات
-            builder.Entity<Cart>()
+            builder.Entity<ShoppingCart>()
                 .HasOne(c => c.Store)
                 .WithMany()
                 .HasForeignKey(c => c.StoreId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Entity<Cart>()
+            builder.Entity<ShoppingCart>()
                 .HasOne(c => c.User)
                 .WithMany(u => u.Carts)
                 .HasForeignKey(c => c.UserId)
