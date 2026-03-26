@@ -24,6 +24,6 @@ namespace onlineStore.Models.Identity
         // Navigation
         public ICollection<Order> Orders { get; set; }
         public ICollection<Review> Reviews { get; set; }
-        public ICollection<Cart> Carts { get; set; }
+        public ICollection<ShoppingCart> Carts { get; set; }
     }
 }

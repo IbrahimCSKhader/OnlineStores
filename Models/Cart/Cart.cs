@@ -5,7 +5,7 @@ namespace onlineStore.Models.CartModels
 {
     [Index(nameof(UserId))]
     [Index(nameof(StoreId))]
-    public class Cart : BaseEntity
+    public class ShoppingCart : BaseEntity
     {
         public Guid UserId { get; set; }
         public AppUser User { get; set; }

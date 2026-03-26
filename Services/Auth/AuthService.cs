@@ -258,77 +258,77 @@ namespace onlineStore.Services.AuthServices
         return Fail("حدث خطأ أثناء تسجيل الدخول بـ Google");
     }
 }
-        public async Task<AuthResponseDto> GoogleLoginAsync(GoogleAuthDto dto)
-        {
-            try
-            {
-                // ════════════════════════════════════════════════════
-                // 1️⃣ تحقق إذا اليوزر موجود
-                // ════════════════════════════════════════════════════
-                var user = await _userManager.FindByEmailAsync(dto.Email);
+        //public async Task<AuthResponseDto> GoogleLoginAsync(GoogleAuthDto dto)
+        //{
+        //    try
+        //    {
+        //        // ════════════════════════════════════════════════════
+        //        // 1️⃣ تحقق إذا اليوزر موجود
+        //        // ════════════════════════════════════════════════════
+        //        var user = await _userManager.FindByEmailAsync(dto.Email);
 
-                if (user == null)
-                {
-                    // ════════════════════════════════════════════════════
-                    // 2️⃣ لو مش موجود — اعمل حساب جديد تلقائياً
-                    // ════════════════════════════════════════════════════
-                    user = new AppUser
-                    {
-                        Email = dto.Email,
-                        UserName = dto.Email,
-                        FirstName = dto.FirstName,
-                        LastName = dto.LastName,
-                        IsActive = true,
-                        CreatedAt = DateTime.UtcNow
-                        // 🔐 بدون باسورد — لأنه بيسجل بـ Google
-                    };
+        //        if (user == null)
+        //        {
+        //            // ════════════════════════════════════════════════════
+        //            // 2️⃣ لو مش موجود — اعمل حساب جديد تلقائياً
+        //            // ════════════════════════════════════════════════════
+        //            user = new AppUser
+        //            {
+        //                Email = dto.Email,
+        //                UserName = dto.Email,
+        //                FirstName = dto.FirstName,
+        //                LastName = dto.LastName,
+        //                IsActive = true,
+        //                CreatedAt = DateTime.UtcNow
+        //                // 🔐 بدون باسورد — لأنه بيسجل بـ Google
+        //            };
 
-                    var createResult = await _userManager.CreateAsync(user);
+        //            var createResult = await _userManager.CreateAsync(user);
 
-                    if (!createResult.Succeeded)
-                    {
-                        var errors = string.Join(", ", createResult.Errors
-                            .Select(e => e.Description));
-                        return Fail(errors);
-                    }
+        //            if (!createResult.Succeeded)
+        //            {
+        //                var errors = string.Join(", ", createResult.Errors
+        //                    .Select(e => e.Description));
+        //                return Fail(errors);
+        //            }
 
-                    await _userManager.AddToRoleAsync(user, "Customer");
-                    _logger.LogInformation("New user registered via Google: {Email}", dto.Email);
-                }
-                else
-                {
-                    // ════════════════════════════════════════════════════
-                    // 3️⃣ لو موجود — تحقق إن الحساب مش موقوف
-                    // ════════════════════════════════════════════════════
-                    if (!user.IsActive)
-                        return Fail("الحساب موقوف، تواصل مع الدعم");
+        //            await _userManager.AddToRoleAsync(user, "Customer");
+        //            _logger.LogInformation("New user registered via Google: {Email}", dto.Email);
+        //        }
+        //        else
+        //        {
+        //            // ════════════════════════════════════════════════════
+        //            // 3️⃣ لو موجود — تحقق إن الحساب مش موقوف
+        //            // ════════════════════════════════════════════════════
+        //            if (!user.IsActive)
+        //                return Fail("الحساب موقوف، تواصل مع الدعم");
 
-                    _logger.LogInformation("User logged in via Google: {Email}", dto.Email);
-                }
+        //            _logger.LogInformation("User logged in via Google: {Email}", dto.Email);
+        //        }
 
-                // ════════════════════════════════════════════════════
-                // 4️⃣ اعمل JWT Token وارجعه
-                // ════════════════════════════════════════════════════
-                var token = await GenerateJwtToken(user);
-                var roles = await _userManager.GetRolesAsync(user);
+        //        // ════════════════════════════════════════════════════
+        //        // 4️⃣ اعمل JWT Token وارجعه
+        //        // ════════════════════════════════════════════════════
+        //        var token = await GenerateJwtToken(user);
+        //        var roles = await _userManager.GetRolesAsync(user);
 
-                return new AuthResponseDto
-                {
-                    Success = true,
-                    Token = token.Token,
-                    Email = user.Email,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Roles = roles,
-                    ExpiresAt = token.ExpiresAt
-                };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during Google login for {Email}", dto.Email);
-                return Fail("حدث خطأ أثناء تسجيل الدخول بـ Google");
-            }
-        }
+        //        return new AuthResponseDto
+        //        {
+        //            Success = true,
+        //            Token = token.Token,
+        //            Email = user.Email,
+        //            FirstName = user.FirstName,
+        //            LastName = user.LastName,
+        //            Roles = roles,
+        //            ExpiresAt = token.ExpiresAt
+        //        };
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error during Google login for {Email}", dto.Email);
+        //        return Fail("حدث خطأ أثناء تسجيل الدخول بـ Google");
+        //    }
+        //}
     }
 }
 
