@@ -29,6 +29,7 @@ namespace onlineStore.DTOs.Product
         public Guid SectionId { get; set; }
         public string? SectionName { get; set; }
         public DateTime CreatedAt { get; set; }
+        public int VisitCount { get; set; }
 
         // Relations
         public List<ProductImageDto>? Images { get; set; }

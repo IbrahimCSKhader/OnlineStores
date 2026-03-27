@@ -4,14 +4,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using onlineStore.Data;
 using onlineStore.Models.Identity;
+using onlineStore.Security;
 using onlineStore.Services.AuthServices;
 using onlineStore.Services.Cart;
 using onlineStore.Services.Coupon;
 using onlineStore.Services.Order;
 using onlineStore.Services.Product;
 using onlineStore.Services.Review;
-using System.Text;
 using Scalar.AspNetCore;
+using System.Text;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,7 +39,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         )
     )
 );
-
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IStoreOwnershipService, StoreOwnershipService>();
 
 // ════════════════════════════════════════════════════
 // 3️⃣ Identity

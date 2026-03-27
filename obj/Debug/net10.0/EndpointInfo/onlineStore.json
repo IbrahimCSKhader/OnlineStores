@@ -2075,7 +2075,8 @@
       "CreateStoreDto": {
         "required": [
           "name",
-          "slug"
+          "slug",
+          "ownerId"
         ],
         "type": "object",
         "properties": {
@@ -2124,6 +2125,10 @@
               "null",
               "string"
             ]
+          },
+          "ownerId": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },

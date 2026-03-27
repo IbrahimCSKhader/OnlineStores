@@ -387,6 +387,31 @@ namespace onlineStore.Services.Product
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
         }
+        public async Task<int?> IncrementProductVisitAsync(Guid productId)
+        {
+            var product = await _context.Products
+                .FirstOrDefaultAsync(p => p.Id == productId);
+
+            if (product == null)
+                return null;
+
+            product.VisitCount += 1;
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Product visit incremented: {ProductId}, Count: {VisitCount}",
+                productId, product.VisitCount);
+
+            return product.VisitCount;
+        }
+        public async Task<int?> GetProductVisitCountAsync(Guid productId)
+        {
+            return await _context.Products
+                .AsNoTracking()
+                .Where(p => p.Id == productId)
+                .Select(p => (int?)p.VisitCount)
+                .FirstOrDefaultAsync();
+        }
 
 
         // ════════════════════════════════════════════════════
@@ -412,6 +437,7 @@ namespace onlineStore.Services.Product
             CategoryName = p.Category?.Name,
             SectionId = p.SectionId,
             SectionName = p.Section?.Name,
+            VisitCount = p.VisitCount,
             CreatedAt = p.CreatedAt,
             Images = p.Images?.Select(i => new ProductImageDto
             {
