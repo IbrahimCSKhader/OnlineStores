@@ -55,6 +55,7 @@ namespace onlineStore.Data
                 .HasForeignKey(o => o.StoreId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+
             builder.Entity<Order>()
                 .HasOne(o => o.User)
                 .WithMany(u => u.Orders)
@@ -152,6 +153,11 @@ namespace onlineStore.Data
                 .WithMany()
                 .HasForeignKey(n => n.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<Store>()
+.HasOne(s => s.Owner)
+.WithMany()
+.HasForeignKey(s => s.OwnerId)
+.OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<AppUser>().ToTable("Users");
             builder.Entity<AppRole>().ToTable("Roles");

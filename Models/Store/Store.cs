@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using onlineStore.Models; 
+using onlineStore.Models.Identity;
 
 namespace onlineStore.Models
 {
     [Index(nameof(Slug), IsUnique = true)]
+    [Index(nameof(OwnerId))]
     public class Store : BaseEntity
     {
         [Required, MaxLength(100)]
@@ -25,7 +25,15 @@ namespace onlineStore.Models
 
         public bool IsActive { get; set; } = true;
 
-        public ICollection<Category> Categories { get; set; }
-        public ICollection<Section> Sections { get; set; }
+        public Guid OwnerId { get; set; }
+        public AppUser Owner { get; set; }
+        [MaxLength(30)]
+        public string? WhatsAppNumber { get; set; }
+
+        [MaxLength(50)]
+        public string? ThemeTemplate { get; set; } = "default";
+        public int VisitCount { get; set; } = 0;
+        public ICollection<Category> Categories { get; set; } = new List<Category>();
+        public ICollection<Section> Sections { get; set; } = new List<Section>();
     }
 }

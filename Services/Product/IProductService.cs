@@ -23,6 +23,8 @@ namespace onlineStore.Services.Product
         Task<bool> DeleteImageAsync(Guid imageId);
 
         // ── Variants ──
+        Task<int?> IncrementProductVisitAsync(Guid productId);
+        Task<int?> GetProductVisitCountAsync(Guid productId);
         Task<ProductVariantDto> AddVariantAsync(Guid productId, CreateProductVariantDto dto);
         Task<bool> DeleteVariantAsync(Guid variantId);
     }

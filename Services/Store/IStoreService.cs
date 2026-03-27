@@ -7,11 +7,11 @@ namespace onlineStore.Services.Store
         // SuperAdmin
         Task<List<StoreDto>> GetAllStoresAsync();
         Task<StoreDto?> GetStoreByIdAsync(Guid id);
-        Task<StoreDto> CreateStoreAsync(CreateStoreDto dto, string ownerId);
+        Task<StoreDto?> GetStoreBySlugAsync(string slug);
+        Task<StoreDto> CreateStoreAsync(CreateStoreDto dto);
         Task<StoreDto?> UpdateStoreAsync(Guid id, UpdateStoreDto dto);
         Task<bool> DeleteStoreAsync(Guid id);
-
-        // Public
-        Task<StoreDto?> GetStoreBySlugAsync(string slug);
+        Task<int?> IncrementStoreVisitAsync(Guid storeId);
+        Task<int?> GetStoreVisitCountAsync(Guid storeId);
     }
 }

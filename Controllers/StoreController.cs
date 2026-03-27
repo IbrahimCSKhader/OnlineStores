@@ -56,20 +56,17 @@ namespace onlineStore.Controllers
         }
 
 
-         [HttpPost]
+
+        [HttpPost]
         [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> Create([FromBody] CreateStoreDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var userId = User.FindFirst(
-                System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-            var store = await _storeService.CreateStoreAsync(dto, userId!);
+            var store = await _storeService.CreateStoreAsync(dto);
             return Ok(store);
         }
-
 
         // ════════════════════════════════════════════════════
         // PUT api/store/{id} — SuperAdmin و StoreOwner
@@ -102,6 +99,37 @@ namespace onlineStore.Controllers
                 return NotFound(new { message = "the store does not exist" });
 
             return Ok(new { message = "soft delete done " });
+        }
+        [HttpPost("{id}/visit")]
+        [AllowAnonymous]
+        public async Task<IActionResult> IncrementVisit(Guid id)
+        {
+            var visitCount = await _storeService.IncrementStoreVisitAsync(id);
+
+            if (visitCount == null)
+                return NotFound(new { message = "store does not exist" });
+
+            return Ok(new
+            {
+                message = "store visit was added succesfuly",
+                storeId = id,
+                visitCount = visitCount.Value
+            });
+        }
+        [HttpGet("{id}/visit-count")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetVisitCount(Guid id)
+        {
+            var visitCount = await _storeService.GetStoreVisitCountAsync(id);
+
+            if (visitCount == null)
+                return NotFound(new { message = "store does not exist" });
+
+            return Ok(new
+            {
+                storeId = id,
+                visitCount = visitCount.Value
+            });
         }
     }
 }

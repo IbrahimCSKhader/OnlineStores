@@ -156,5 +156,36 @@ namespace onlineStore.Controllers
                 return NotFound(new { message = "النسخة غير موجودة" });
             return Ok(new { message = "تم حذف النسخة بنجاح" });
         }
+        [HttpPost("{id}/visit")]
+        [AllowAnonymous]
+        public async Task<IActionResult> IncrementVisit(Guid id)
+        {
+            var visitCount = await _productService.IncrementProductVisitAsync(id);
+
+            if (visitCount == null)
+                return NotFound(new { message = "product dous not exist" });
+
+            return Ok(new
+            {
+                message = "visit incremanet was added succesfuly",
+                productId = id,
+                visitCount = visitCount.Value
+            });
+        }
+        [HttpGet("{id}/visit-count")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetVisitCount(Guid id)
+        {
+            var visitCount = await _productService.GetProductVisitCountAsync(id);
+
+            if (visitCount == null)
+                return NotFound(new { message = "product dous not exist" });
+
+            return Ok(new
+            {
+                productId = id,
+                visitCount = visitCount.Value
+            });
+        }
     }
 }

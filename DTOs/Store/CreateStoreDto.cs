@@ -17,9 +17,15 @@ namespace onlineStore.DTOs.Store
         public string? BusinessType { get; set; }
 
         public string? LogoUrl { get; set; }
+
         public string? CoverImageUrl { get; set; }
 
         public string? WhatsAppNumber { get; set; }
+
         public string? ThemeTemplate { get; set; } = "default";
+
+
+        [Required]
+        public Guid OwnerId { get; set; }
     }
 }

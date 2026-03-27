@@ -18,7 +18,8 @@ namespace onlineStore.Models
         public string Name { get; set; }
 
         [Required, MaxLength(200)]
-        public string Slug { get; set; } 
+        public string Slug { get; set; }
+        public int VisitCount { get; set; } = 0;
 
         [MaxLength(100)]
         public string? SKU { get; set; } 

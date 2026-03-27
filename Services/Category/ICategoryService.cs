@@ -4,10 +4,11 @@ namespace onlineStore.Services.Category
 {
     public interface ICategoryService
     {
-        Task<List<CategoryDto>> GetStoreCategoriesAsync(Guid storeId);
-        Task<CategoryDto?> GetCategoryByIdAsync(Guid id);
-        Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto);
-        Task<CategoryDto?> UpdateCategoryAsync(Guid id, UpdateCategoryDto dto);
-        Task<bool> DeleteCategoryAsync(Guid id);
+        Task<List<CategoryDto>> GetStoreCategoriesAsync(Guid storeId, CancellationToken cancellationToken = default);
+        Task<CategoryDto?> GetCategoryByIdAsync(Guid id, CancellationToken cancellationToken = default);
+
+        Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto, CancellationToken cancellationToken = default);
+        Task<CategoryDto?> UpdateCategoryAsync(Guid id, UpdateCategoryDto dto, CancellationToken cancellationToken = default);
+        Task<bool> DeleteCategoryAsync(Guid id, CancellationToken cancellationToken = default);
     }
 }
