@@ -1,10 +1,10 @@
-﻿// Services/Product/ProductService.cs
+// Services/Product/ProductService.cs
 using Microsoft.EntityFrameworkCore;
 using onlineStore.Data;
 using onlineStore.DTOs.Product;
 using onlineStore.Models;
 using onlineStore.Models.Enums;
-
+using Microsoft.AspNetCore.Http;
 namespace onlineStore.Services.Product
 {
     public class ProductService : IProductService
@@ -114,6 +114,11 @@ namespace onlineStore.Services.Product
         // ════════════════════════════════════════════════════
         public async Task<ProductDto?> GetProductBySlugAsync(string slug)
         {
+            if (string.IsNullOrWhiteSpace(slug))
+                return null;
+
+            var normalizedSlug = slug.Trim().ToLower();
+
             var product = await _context.Products
                 .AsNoTracking()
                 .Include(p => p.Category)
@@ -122,20 +127,20 @@ namespace onlineStore.Services.Product
                 .Include(p => p.Variants)
                 .Include(p => p.AttributeValues)
                     .ThenInclude(av => av.Attribute)
-                .FirstOrDefaultAsync(p => p.Slug == slug.ToLower());
+                .FirstOrDefaultAsync(p => p.Slug == normalizedSlug);
 
             return product == null ? null : ToDto(product);
         }
-
 
         // ════════════════════════════════════════════════════
         // Create Product
         // ════════════════════════════════════════════════════
         public async Task<ProductDto> CreateProductAsync(CreateProductDto dto)
         {
-            // 🔐 تحقق إن الـ Slug مش موجود
+            var normalizedSlug = dto.Slug.Trim().ToLower();
+
             var slugExists = await _context.Products
-                .AnyAsync(p => p.Slug == dto.Slug.ToLower()
+                .AnyAsync(p => p.Slug == normalizedSlug
                             && p.StoreId == dto.StoreId);
 
             if (slugExists)
@@ -144,28 +149,28 @@ namespace onlineStore.Services.Product
             var product = new Models.Product
             {
                 Name = dto.Name.Trim(),
-                Slug = dto.Slug.Trim().ToLower(),
-                SKU = dto.SKU,
-                Description = dto.Description,
-                ShortDescription = dto.ShortDescription,
+                Slug = normalizedSlug,
+                SKU = dto.SKU?.Trim(),
+                Description = dto.Description?.Trim(),
+                ShortDescription = dto.ShortDescription?.Trim(),
                 Price = dto.Price,
                 CompareAtPrice = dto.CompareAtPrice,
                 CostPrice = dto.CostPrice,
                 StockQuantity = dto.StockQuantity,
                 TrackInventory = dto.TrackInventory,
-                ThumbnailUrl = dto.ThumbnailUrl,
-                MetaTitle = dto.MetaTitle,
-                MetaDescription = dto.MetaDescription,
+                ThumbnailUrl = dto.ThumbnailUrl?.Trim(),
+                MetaTitle = dto.MetaTitle?.Trim(),
+                MetaDescription = dto.MetaDescription?.Trim(),
                 Status = ProductStatus.Draft,
                 StoreId = dto.StoreId,
                 CategoryId = dto.CategoryId,
                 SectionId = dto.SectionId,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                Images = new List<ProductImage>(),
+                Variants = new List<ProductVariant>(),
+                AttributeValues = new List<ProductAttributeValue>()
             };
 
-            _context.Products.Add(product);
-
-            // ── إضافة Variants ──
             if (dto.Variants != null && dto.Variants.Any())
             {
                 foreach (var v in dto.Variants)
@@ -173,17 +178,16 @@ namespace onlineStore.Services.Product
                     product.Variants.Add(new ProductVariant
                     {
                         Name = v.Name.Trim(),
-                        SKU = v.SKU,
+                        SKU = v.SKU?.Trim(),
                         PriceOverride = v.PriceOverride,
                         StockQuantity = v.StockQuantity,
-                        ImageUrl = v.ImageUrl,
+                        ImageUrl = v.ImageUrl?.Trim(),
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
                     });
                 }
             }
 
-            // ── إضافة Attributes ──
             if (dto.AttributeValues != null && dto.AttributeValues.Any())
             {
                 foreach (var av in dto.AttributeValues)
@@ -197,52 +201,131 @@ namespace onlineStore.Services.Product
                 }
             }
 
+            _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
-            // ── إنشاء مجلد المنتج ──
             CreateProductFolder(dto.StoreId, product.Id);
+
+            if (dto.Images != null && dto.Images.Any())
+            {
+                for (int i = 0; i < dto.Images.Count; i++)
+                {
+                    var file = dto.Images[i];
+                    var imageUrl = await SaveProductImageAsync(dto.StoreId, product.Id, file);
+
+                    var productImage = new ProductImage
+                    {
+                        ProductId = product.Id,
+                        Url = imageUrl,
+                        AltText = product.Name,
+                        DisplayOrder = i,
+                        IsPrimary = i == 0,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    _context.ProductImages.Add(productImage);
+
+                    if (i == 0)
+                        product.ThumbnailUrl = imageUrl;
+                }
+
+                await _context.SaveChangesAsync();
+            }
+
+            var createdProduct = await _context.Products
+                .AsNoTracking()
+                .Include(p => p.Category)
+                .Include(p => p.Section)
+                .Include(p => p.Images)
+                .Include(p => p.Variants)
+                .Include(p => p.AttributeValues)
+                    .ThenInclude(av => av.Attribute)
+                .FirstAsync(p => p.Id == product.Id);
 
             _logger.LogInformation(
                 "Product created: {ProductName}", product.Name);
 
-            return ToDto(product);
+            return ToDto(createdProduct);
         }
 
 
         // ════════════════════════════════════════════════════
         // Update Product
         // ════════════════════════════════════════════════════
-        public async Task<ProductDto?> UpdateProductAsync(
-            Guid id, UpdateProductDto dto)
+        public async Task<ProductDto?> UpdateProductAsync(Guid id, UpdateProductDto dto)
         {
             var product = await _context.Products
                 .Include(p => p.Images)
                 .Include(p => p.Variants)
+                .Include(p => p.Category)
+                .Include(p => p.Section)
+                .Include(p => p.AttributeValues)
+                    .ThenInclude(av => av.Attribute)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
-            if (product == null) return null;
+            if (product == null)
+                return null;
 
-            if (dto.Name != null) product.Name = dto.Name.Trim();
-            if (dto.Description != null) product.Description = dto.Description;
-            if (dto.ShortDescription != null) product.ShortDescription = dto.ShortDescription;
-            if (dto.Price != null) product.Price = dto.Price.Value;
-            if (dto.CompareAtPrice != null) product.CompareAtPrice = dto.CompareAtPrice;
-            if (dto.CostPrice != null) product.CostPrice = dto.CostPrice;
-            if (dto.StockQuantity != null) product.StockQuantity = dto.StockQuantity.Value;
-            if (dto.TrackInventory != null) product.TrackInventory = dto.TrackInventory.Value;
-            if (dto.ThumbnailUrl != null) product.ThumbnailUrl = dto.ThumbnailUrl;
-            if (dto.Status != null) product.Status = dto.Status.Value;
-            if (dto.IsFeatured != null) product.IsFeatured = dto.IsFeatured.Value;
-            if (dto.MetaTitle != null) product.MetaTitle = dto.MetaTitle;
-            if (dto.MetaDescription != null) product.MetaDescription = dto.MetaDescription;
-            if (dto.CategoryId != null) product.CategoryId = dto.CategoryId.Value;
-            if (dto.SectionId != null) product.SectionId = dto.SectionId.Value;
+            if (dto.Name != null)
+                product.Name = dto.Name.Trim();
+
+            if (dto.Description != null)
+                product.Description = dto.Description.Trim();
+
+            if (dto.ShortDescription != null)
+                product.ShortDescription = dto.ShortDescription.Trim();
+
+            if (dto.Price != null)
+                product.Price = dto.Price.Value;
+
+            if (dto.CompareAtPrice != null)
+                product.CompareAtPrice = dto.CompareAtPrice;
+
+            if (dto.CostPrice != null)
+                product.CostPrice = dto.CostPrice;
+
+            if (dto.StockQuantity != null)
+                product.StockQuantity = dto.StockQuantity.Value;
+
+            if (dto.TrackInventory != null)
+                product.TrackInventory = dto.TrackInventory.Value;
+
+            if (dto.ThumbnailUrl != null)
+                product.ThumbnailUrl = dto.ThumbnailUrl.Trim();
+
+            if (dto.Status != null)
+                product.Status = dto.Status.Value;
+
+            if (dto.IsFeatured != null)
+                product.IsFeatured = dto.IsFeatured.Value;
+
+            if (dto.MetaTitle != null)
+                product.MetaTitle = dto.MetaTitle.Trim();
+
+            if (dto.MetaDescription != null)
+                product.MetaDescription = dto.MetaDescription.Trim();
+
+            if (dto.CategoryId != null)
+                product.CategoryId = dto.CategoryId.Value;
+
+            if (dto.SectionId != null)
+                product.SectionId = dto.SectionId.Value;
 
             await _context.SaveChangesAsync();
 
+            var updatedProduct = await _context.Products
+                .AsNoTracking()
+                .Include(p => p.Category)
+                .Include(p => p.Section)
+                .Include(p => p.Images)
+                .Include(p => p.Variants)
+                .Include(p => p.AttributeValues)
+                    .ThenInclude(av => av.Attribute)
+                .FirstAsync(p => p.Id == id);
+
             _logger.LogInformation("Product updated: {ProductId}", id);
 
-            return ToDto(product);
+            return ToDto(updatedProduct);
         }
 
 
@@ -252,14 +335,17 @@ namespace onlineStore.Services.Product
         public async Task<bool> DeleteProductAsync(Guid id)
         {
             var product = await _context.Products
+                .Include(p => p.Images)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
-            if (product == null) return false;
+            if (product == null)
+                return false;
 
             product.IsDeleted = true;
+
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Product deleted: {ProductId}", id);
+            _logger.LogInformation("Product soft deleted: {ProductId}", id);
 
             return true;
         }
@@ -270,28 +356,46 @@ namespace onlineStore.Services.Product
         // ════════════════════════════════════════════════════
         public async Task<ProductImageDto> AddImageAsync(AddProductImageDto dto)
         {
-            // لو IsPrimary = true، نشيل Primary من الصور الثانية
+            var product = await _context.Products
+                .Include(p => p.Images)
+                .FirstOrDefaultAsync(p => p.Id == dto.ProductId);
+
+            if (product == null)
+                throw new Exception("product not exist");
+
+            if (product.IsDeleted)
+                throw new Exception("you cant add image for deleted product");
+
+            if (dto.Image == null || dto.Image.Length == 0)
+                throw new Exception("invalid image");
+
             if (dto.IsPrimary)
             {
-                var existingImages = await _context.ProductImages
-                    .Where(i => i.ProductId == dto.ProductId)
-                    .ToListAsync();
-
-                foreach (var img in existingImages)
-                    img.IsPrimary = false;
+                foreach (var existingImage in product.Images)
+                    existingImage.IsPrimary = false;
             }
+
+            var imageUrl = await SaveProductImageAsync(
+                product.StoreId,
+                product.Id,
+                dto.Image
+            );
 
             var image = new ProductImage
             {
-                Url = dto.Url,
-                AltText = dto.AltText,
+                Url = imageUrl,
+                AltText = dto.AltText?.Trim(),
                 DisplayOrder = dto.DisplayOrder,
-                IsPrimary = dto.IsPrimary,
+                IsPrimary = dto.IsPrimary || !product.Images.Any(),
                 ProductId = dto.ProductId,
                 CreatedAt = DateTime.UtcNow
             };
 
             _context.ProductImages.Add(image);
+
+            if (image.IsPrimary)
+                product.ThumbnailUrl = image.Url;
+
             await _context.SaveChangesAsync();
 
             return new ProductImageDto
@@ -303,20 +407,53 @@ namespace onlineStore.Services.Product
                 IsPrimary = image.IsPrimary
             };
         }
-
-
         // ════════════════════════════════════════════════════
         // Delete Image
         // ════════════════════════════════════════════════════
         public async Task<bool> DeleteImageAsync(Guid imageId)
         {
             var image = await _context.ProductImages
+                .Include(i => i.Product)
+                    .ThenInclude(p => p.Images)
                 .FirstOrDefaultAsync(i => i.Id == imageId);
 
-            if (image == null) return false;
+            if (image == null)
+                return false;
+
+            var product = image.Product;
+            var wasPrimary = image.IsPrimary;
+
+            DeletePhysicalImage(image.Url);
 
             _context.ProductImages.Remove(image);
             await _context.SaveChangesAsync();
+
+            if (product != null)
+            {
+                var remainingImages = await _context.ProductImages
+                    .Where(i => i.ProductId == product.Id)
+                    .OrderBy(i => i.DisplayOrder)
+                    .ToListAsync();
+
+                if (wasPrimary)
+                {
+                    foreach (var img in remainingImages)
+                        img.IsPrimary = false;
+
+                    var newPrimary = remainingImages.FirstOrDefault();
+                    if (newPrimary != null)
+                    {
+                        newPrimary.IsPrimary = true;
+                        product.ThumbnailUrl = newPrimary.Url;
+                    }
+                    else
+                    {
+                        product.ThumbnailUrl = null;
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
+            }
 
             return true;
         }
@@ -380,8 +517,12 @@ namespace onlineStore.Services.Product
         {
             var path = Path.Combine(
                 Directory.GetCurrentDirectory(),
-                "uploads", "stores", storeId.ToString(),
-                "products", productId.ToString()
+                "wwwroot",
+                "uploads",
+                "stores",
+                storeId.ToString(),
+                "products",
+                productId.ToString()
             );
 
             if (!Directory.Exists(path))
@@ -404,6 +545,7 @@ namespace onlineStore.Services.Product
 
             return product.VisitCount;
         }
+
         public async Task<int?> GetProductVisitCountAsync(Guid productId)
         {
             return await _context.Products
@@ -412,7 +554,6 @@ namespace onlineStore.Services.Product
                 .Select(p => (int?)p.VisitCount)
                 .FirstOrDefaultAsync();
         }
-
 
         // ════════════════════════════════════════════════════
         // Helper — ToDto
@@ -464,5 +605,62 @@ namespace onlineStore.Services.Product
                 Value = av.Value
             }).ToList()
         };
+        private async Task<string> SaveProductImageAsync(
+      Guid storeId,
+      Guid productId,
+      IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                throw new Exception("الصورة غير صالحة");
+
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+
+            if (string.IsNullOrWhiteSpace(extension) || !allowedExtensions.Contains(extension))
+                throw new Exception("صيغة الصورة غير مدعومة");
+
+            const long maxFileSize = 5 * 1024 * 1024;
+            if (file.Length > maxFileSize)
+                throw new Exception("حجم الصورة يجب ألا يتجاوز 5 MB");
+
+            var productFolder = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot",
+                "uploads",
+                "stores",
+                storeId.ToString(),
+                "products",
+                productId.ToString()
+            );
+
+            if (!Directory.Exists(productFolder))
+                Directory.CreateDirectory(productFolder);
+
+            var fileName = $"{Guid.NewGuid()}{extension}";
+            var filePath = Path.Combine(productFolder, fileName);
+
+            using var stream = new FileStream(filePath, FileMode.Create);
+            await file.CopyToAsync(stream);
+
+            return $"/uploads/stores/{storeId}/products/{productId}/{fileName}";
+        }
+        private void DeletePhysicalImage(string? imageUrl)
+        {
+            if (string.IsNullOrWhiteSpace(imageUrl))
+                return;
+
+            var relativePath = imageUrl
+                .TrimStart('/')
+                .Replace("/", Path.DirectorySeparatorChar.ToString());
+
+            var fullPath = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot",
+                relativePath
+            );
+
+            if (File.Exists(fullPath))
+                File.Delete(fullPath);
+        }
     }
 }

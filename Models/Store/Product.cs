@@ -8,8 +8,8 @@ namespace onlineStore.Models
     [Index(nameof(StoreId))]
     [Index(nameof(CategoryId))]
     [Index(nameof(SectionId))]
-    [Index(nameof(Slug), IsUnique = true)]
-    [Index(nameof(SKU), IsUnique = true)]
+    [Index(nameof(StoreId), nameof(Slug), IsUnique = true)]
+    [Index(nameof(StoreId), nameof(SKU), IsUnique = true)]
     [Index(nameof(Status))]
     [Index(nameof(Price))]
     public class Product : BaseEntity
@@ -65,8 +65,8 @@ namespace onlineStore.Models
         public Section Section { get; set; }
 
         // Navigation
-        public ICollection<ProductImage> Images { get; set; }
-        public ICollection<ProductVariant> Variants { get; set; }
-        public ICollection<ProductAttributeValue> AttributeValues { get; set; }
+        public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
+        public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
+        public ICollection<ProductAttributeValue> AttributeValues { get; set; } = new List<ProductAttributeValue>();
     }
 }

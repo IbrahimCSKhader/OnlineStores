@@ -1,12 +1,13 @@
-﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;// Controllers/AuthController.cs
 using Microsoft.AspNetCore.Mvc;
 using onlineStore.DTOs.Auth;
+using onlineStore.DTOs.Order;
 using onlineStore.Services.AuthServices;
 using System.Security.Claims;
-
+using onlineStore.Models.Identity;
 namespace onlineStore.Controllers
 {
     [ApiController]
@@ -103,6 +104,16 @@ namespace onlineStore.Controllers
                 return BadRequest(new { message = authResult.Message });
 
             return Ok(authResult);
+        }
+        [HttpPost("create-owner")]
+        [Authorize(Roles = "SuperAdmin")]
+        public async Task<ActionResult<OwnerResponseDto>> CreateOwner([FromBody] CreateOwnerDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var owner = await _authService.CreateOwnerAsync(dto);
+            return Ok(owner);
         }
     }
 

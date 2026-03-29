@@ -31,6 +31,7 @@ namespace onlineStore.DTOs.Product
         public bool TrackInventory { get; set; } = true;
 
         public string? ThumbnailUrl { get; set; }
+        public List<IFormFile>? Images { get; set; }
 
         // SEO
         public string? MetaTitle { get; set; }

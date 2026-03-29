@@ -1,8 +1,8 @@
-﻿// Controllers/StoreController.cs
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using onlineStore.DTOs.Store;
 using onlineStore.Services.Store;
+using System.Security.Claims;
 
 namespace onlineStore.Controllers
 {
@@ -17,8 +17,6 @@ namespace onlineStore.Controllers
             _storeService = storeService;
         }
 
-
-
         [HttpGet]
         [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> GetAll()
@@ -26,8 +24,6 @@ namespace onlineStore.Controllers
             var stores = await _storeService.GetAllStoresAsync();
             return Ok(stores);
         }
-
-
 
         [HttpGet("{id}")]
         [Authorize(Roles = "SuperAdmin,StoreOwner")]
@@ -41,8 +37,6 @@ namespace onlineStore.Controllers
             return Ok(store);
         }
 
-
-
         [HttpGet("slug/{slug}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetBySlug(string slug)
@@ -55,26 +49,26 @@ namespace onlineStore.Controllers
             return Ok(store);
         }
 
-
-
         [HttpPost]
         [Authorize(Roles = "SuperAdmin")]
-        public async Task<IActionResult> Create([FromBody] CreateStoreDto dto)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Create([FromForm] CreateStoreDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var store = await _storeService.CreateStoreAsync(dto);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(userId))
+                return Unauthorized(new { message = "User is not authenticated" });
+
+            var store = await _storeService.CreateStoreAsync(dto, userId);
             return Ok(store);
         }
 
-        // ════════════════════════════════════════════════════
-        // PUT api/store/{id} — SuperAdmin و StoreOwner
-        // ════════════════════════════════════════════════════
         [HttpPut("{id}")]
         [Authorize(Roles = "SuperAdmin,StoreOwner")]
-        public async Task<IActionResult> Update(
-            Guid id, [FromBody] UpdateStoreDto dto)
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateStoreDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -87,8 +81,6 @@ namespace onlineStore.Controllers
             return Ok(store);
         }
 
-
-        
         [HttpDelete("{id}")]
         [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> Delete(Guid id)
@@ -98,8 +90,9 @@ namespace onlineStore.Controllers
             if (!result)
                 return NotFound(new { message = "the store does not exist" });
 
-            return Ok(new { message = "soft delete done " });
+            return Ok(new { message = "soft delete done" });
         }
+
         [HttpPost("{id}/visit")]
         [AllowAnonymous]
         public async Task<IActionResult> IncrementVisit(Guid id)
@@ -111,11 +104,12 @@ namespace onlineStore.Controllers
 
             return Ok(new
             {
-                message = "store visit was added succesfuly",
+                message = "store visit was added successfully",
                 storeId = id,
                 visitCount = visitCount.Value
             });
         }
+
         [HttpGet("{id}/visit-count")]
         [AllowAnonymous]
         public async Task<IActionResult> GetVisitCount(Guid id)
