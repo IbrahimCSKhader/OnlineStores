@@ -1,4 +1,5 @@
 ﻿using onlineStore.DTOs.Auth;
+using onlineStore.Models.Identity;
 
 namespace onlineStore.Services.AuthServices
 {
@@ -8,5 +9,6 @@ namespace onlineStore.Services.AuthServices
         Task<AuthResponseDto> LoginAsync(LoginDto dto);
         Task LogoutAsync(string userId);
         Task<AuthResponseDto> GoogleLoginAsync(GoogleAuthDto dto);
+        Task<OwnerResponseDto> CreateOwnerAsync(CreateOwnerDto dto);
     }
 }

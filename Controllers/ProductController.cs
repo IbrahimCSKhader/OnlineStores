@@ -1,5 +1,4 @@
-﻿// Controllers/ProductController.cs
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using onlineStore.DTOs.Product;
 using onlineStore.Services.Product;
@@ -22,8 +21,7 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetByStore(Guid storeId)
         {
-            var products = await _productService
-                .GetStoreProductsAsync(storeId);
+            var products = await _productService.GetStoreProductsAsync(storeId);
             return Ok(products);
         }
 
@@ -32,8 +30,7 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetFeatured(Guid storeId)
         {
-            var products = await _productService
-                .GetFeaturedProductsAsync(storeId);
+            var products = await _productService.GetFeaturedProductsAsync(storeId);
             return Ok(products);
         }
 
@@ -42,8 +39,7 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetByCategory(Guid categoryId)
         {
-            var products = await _productService
-                .GetProductsByCategoryAsync(categoryId);
+            var products = await _productService.GetProductsByCategoryAsync(categoryId);
             return Ok(products);
         }
 
@@ -52,8 +48,7 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetBySection(Guid sectionId)
         {
-            var products = await _productService
-                .GetProductsBySectionAsync(sectionId);
+            var products = await _productService.GetProductsBySectionAsync(sectionId);
             return Ok(products);
         }
 
@@ -63,8 +58,10 @@ namespace onlineStore.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var product = await _productService.GetProductByIdAsync(id);
+
             if (product == null)
                 return NotFound(new { message = "المنتج غير موجود" });
+
             return Ok(product);
         }
 
@@ -74,18 +71,21 @@ namespace onlineStore.Controllers
         public async Task<IActionResult> GetBySlug(string slug)
         {
             var product = await _productService.GetProductBySlugAsync(slug);
+
             if (product == null)
                 return NotFound(new { message = "المنتج غير موجود" });
+
             return Ok(product);
         }
 
         // POST api/product
         [HttpPost]
         [Authorize(Roles = "SuperAdmin,StoreOwner")]
-        public async Task<IActionResult> Create([FromBody] CreateProductDto dto)
+        public async Task<IActionResult> Create([FromForm] CreateProductDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
             var product = await _productService.CreateProductAsync(dto);
             return Ok(product);
         }
@@ -93,14 +93,16 @@ namespace onlineStore.Controllers
         // PUT api/product/{id}
         [HttpPut("{id}")]
         [Authorize(Roles = "SuperAdmin,StoreOwner")]
-        public async Task<IActionResult> Update(
-            Guid id, [FromBody] UpdateProductDto dto)
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
             var product = await _productService.UpdateProductAsync(id, dto);
+
             if (product == null)
                 return NotFound(new { message = "المنتج غير موجود" });
+
             return Ok(product);
         }
 
@@ -110,16 +112,21 @@ namespace onlineStore.Controllers
         public async Task<IActionResult> Delete(Guid id)
         {
             var result = await _productService.DeleteProductAsync(id);
+
             if (!result)
                 return NotFound(new { message = "المنتج غير موجود" });
+
             return Ok(new { message = "تم حذف المنتج بنجاح" });
         }
 
         // POST api/product/image
         [HttpPost("image")]
         [Authorize(Roles = "SuperAdmin,StoreOwner")]
-        public async Task<IActionResult> AddImage([FromBody] AddProductImageDto dto)
+        public async Task<IActionResult> AddImage([FromForm] AddProductImageDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var image = await _productService.AddImageAsync(dto);
             return Ok(image);
         }
@@ -130,8 +137,10 @@ namespace onlineStore.Controllers
         public async Task<IActionResult> DeleteImage(Guid imageId)
         {
             var result = await _productService.DeleteImageAsync(imageId);
+
             if (!result)
                 return NotFound(new { message = "الصورة غير موجودة" });
+
             return Ok(new { message = "تم حذف الصورة بنجاح" });
         }
 
@@ -139,10 +148,13 @@ namespace onlineStore.Controllers
         [HttpPost("{productId}/variant")]
         [Authorize(Roles = "SuperAdmin,StoreOwner")]
         public async Task<IActionResult> AddVariant(
-            Guid productId, [FromBody] CreateProductVariantDto dto)
+            Guid productId,
+            [FromBody] CreateProductVariantDto dto)
         {
-            var variant = await _productService
-                .AddVariantAsync(productId, dto);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var variant = await _productService.AddVariantAsync(productId, dto);
             return Ok(variant);
         }
 
@@ -152,10 +164,14 @@ namespace onlineStore.Controllers
         public async Task<IActionResult> DeleteVariant(Guid variantId)
         {
             var result = await _productService.DeleteVariantAsync(variantId);
+
             if (!result)
                 return NotFound(new { message = "النسخة غير موجودة" });
+
             return Ok(new { message = "تم حذف النسخة بنجاح" });
         }
+
+        // POST api/product/{id}/visit
         [HttpPost("{id}/visit")]
         [AllowAnonymous]
         public async Task<IActionResult> IncrementVisit(Guid id)
@@ -163,15 +179,17 @@ namespace onlineStore.Controllers
             var visitCount = await _productService.IncrementProductVisitAsync(id);
 
             if (visitCount == null)
-                return NotFound(new { message = "product dous not exist" });
+                return NotFound(new { message = "product does not exist" });
 
             return Ok(new
             {
-                message = "visit incremanet was added succesfuly",
+                message = "visit incremented successfully",
                 productId = id,
                 visitCount = visitCount.Value
             });
         }
+
+        // GET api/product/{id}/visit-count
         [HttpGet("{id}/visit-count")]
         [AllowAnonymous]
         public async Task<IActionResult> GetVisitCount(Guid id)
@@ -179,7 +197,7 @@ namespace onlineStore.Controllers
             var visitCount = await _productService.GetProductVisitCountAsync(id);
 
             if (visitCount == null)
-                return NotFound(new { message = "product dous not exist" });
+                return NotFound(new { message = "product does not exist" });
 
             return Ok(new
             {

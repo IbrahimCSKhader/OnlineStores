@@ -11,10 +11,11 @@ using onlineStore.Services.Coupon;
 using onlineStore.Services.Order;
 using onlineStore.Services.Product;
 using onlineStore.Services.Review;
+using onlineStore.Services.Store;
 using Scalar.AspNetCore;
+using System.Diagnostics;
+using System.Security.Claims;
 using System.Text;
-
-
 var builder = WebApplication.CreateBuilder(args);
 
 
@@ -26,8 +27,6 @@ builder.Services.AddControllers();
 
 // ════════════════════════════════════════════════════
 // 2️⃣ DbContext
-// EnableRetryOnFailure = لو الداتابيس انقطع لحظياً
-// بيحاول تاني بدل ما يطير error فوراً
 // ════════════════════════════════════════════════════
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
@@ -39,28 +38,24 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         )
     )
 );
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IStoreOwnershipService, StoreOwnershipService>();
+
 
 // ════════════════════════════════════════════════════
 // 3️⃣ Identity
 // ════════════════════════════════════════════════════
 builder.Services.AddIdentity<AppUser, AppRole>(options =>
 {
-    // ── Password ──
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 8;
     options.Password.RequireUppercase = false;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireLowercase = true;
-
-    // ── User ──
     options.User.RequireUniqueEmail = true;
     options.SignIn.RequireConfirmedAccount = false;
-
-    // ── Lockout — حماية من Brute Force ──
-    // بعد 5 محاولات فاشلة = قفل 5 دقائق
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.AllowedForNewUsers = true;
@@ -75,6 +70,9 @@ builder.Services.AddIdentity<AppUser, AppRole>(options =>
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"]
     ?? throw new InvalidOperationException("JWT SecretKey not configured");
+if (string.IsNullOrWhiteSpace(secretKey))
+    throw new InvalidOperationException("JWT SecretKey is empty.");
+
 var key = Encoding.UTF8.GetBytes(secretKey);
 
 builder.Services.AddAuthentication(options =>
@@ -84,18 +82,103 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    options.MapInboundClaims = true;
     options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
     options.SaveToken = true;
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
+        ValidateIssuer = false,
+        ValidateAudience = false,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(key),
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+
+        RoleClaimType = ClaimTypes.Role,
+        NameClaimType = ClaimTypes.NameIdentifier
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            Debug.WriteLine("========== JWT OnMessageReceived ==========");
+            Debug.WriteLine("PATH: " + context.HttpContext.Request.Path);
+
+            var authHeader = context.Request.Headers.Authorization.ToString();
+            Debug.WriteLine("AUTH HEADER: " +
+                (string.IsNullOrWhiteSpace(authHeader) ? "EMPTY" : authHeader));
+
+            Debug.WriteLine("RAW TOKEN FROM CONTEXT: " +
+                (string.IsNullOrWhiteSpace(context.Token) ? "NULL / EMPTY" : context.Token));
+
+            return Task.CompletedTask;
+        },
+
+        OnTokenValidated = context =>
+        {
+            Debug.WriteLine("========== JWT OnTokenValidated ==========");
+            Debug.WriteLine("AUTHENTICATED: true");
+
+            var identity = context.Principal?.Identity;
+            Debug.WriteLine("AUTH TYPE: " + identity?.AuthenticationType);
+            Debug.WriteLine("IS AUTHENTICATED: " + identity?.IsAuthenticated);
+
+            if (context.Principal != null)
+            {
+                foreach (var claim in context.Principal.Claims)
+                {
+                    Debug.WriteLine($"CLAIM => Type: {claim.Type} | Value: {claim.Value}");
+                }
+            }
+
+            return Task.CompletedTask;
+        },
+
+        OnAuthenticationFailed = context =>
+        {
+            Debug.WriteLine("========== JWT OnAuthenticationFailed ==========");
+            Debug.WriteLine("JWT ERROR TYPE: " + context.Exception.GetType().Name);
+            Debug.WriteLine("JWT ERROR MESSAGE: " + context.Exception.Message);
+
+            if (context.Exception.InnerException != null)
+            {
+                Debug.WriteLine("JWT INNER ERROR: " + context.Exception.InnerException.Message);
+            }
+
+            return Task.CompletedTask;
+        },
+
+        OnChallenge = context =>
+        {
+            Debug.WriteLine("========== JWT OnChallenge ==========");
+            Debug.WriteLine("ERROR: " + context.Error);
+            Debug.WriteLine("ERROR DESCRIPTION: " + context.ErrorDescription);
+
+            return Task.CompletedTask;
+        },
+
+        OnForbidden = context =>
+        {
+            Debug.WriteLine("========== JWT OnForbidden ==========");
+            Debug.WriteLine("User is authenticated but NOT authorized.");
+
+            var user = context.HttpContext.User;
+
+            if (user?.Identity != null)
+            {
+                Debug.WriteLine("IS AUTHENTICATED: " + user.Identity.IsAuthenticated);
+                Debug.WriteLine("AUTH TYPE: " + user.Identity.AuthenticationType);
+            }
+
+            foreach (var claim in user?.Claims ?? Enumerable.Empty<Claim>())
+            {
+                Debug   .WriteLine($"FORBIDDEN CLAIM => Type: {claim.Type} | Value: {claim.Value}");
+            }
+
+            return Task.CompletedTask;
+        }
     };
 })
 .AddGoogle(options =>
@@ -103,8 +186,6 @@ builder.Services.AddAuthentication(options =>
     options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
     options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
 });
-
-
 
 // ════════════════════════════════════════════════════
 // 5️⃣ CORS
@@ -132,7 +213,7 @@ builder.Services.AddCors(options =>
 
 
 // ════════════════════════════════════════════════════
-// 6️⃣ Swagger — .NET 10 Built-in OpenAPI
+// 6️⃣ OpenAPI + Scalar
 // ════════════════════════════════════════════════════
 builder.Services.AddOpenApi();
 
@@ -143,34 +224,29 @@ builder.Services.AddOpenApi();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IProductService, ProductService>();
- builder.Services.AddScoped<IOrderService, OrderService>();
- builder.Services.AddScoped<ICouponService, CouponService>();
- builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<ICouponService, CouponService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IStoreService, StoreService>();
 
 
+// ════════════════════════════════════════════════════
 var app = builder.Build();
+// ════════════════════════════════════════════════════
 
 
 // ════════════════════════════════════════════════════
 // 8️⃣ Middleware Pipeline
-// ⚠️ الترتيب مهم جداً — لا تغيره
+// ⚠️ الترتيب مهم جداً
 // ════════════════════════════════════════════════════
-
-// Global Exception Handler — لازم يكون أول شي
+app.UseStaticFiles();
+// Global Exception Handler — أول شي دايماً
 app.UseMiddleware<GlobalExceptionHandler>();
 
-// Swagger في Development بس
-if (app.Environment.IsDevelopment())
-{
+// Scalar — بس في Development
     app.MapOpenApi();
-    app.MapScalarApiReference(); 
-}
-//builder.Services.AddAuthentication()
-//    .AddGoogle(options =>
-//    {
-//        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
-//        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
-//    });
+    app.MapScalarApiReference();
+
 app.UseHttpsRedirection();
 
 // CORS حسب البيئة
@@ -178,8 +254,8 @@ app.UseCors(app.Environment.IsDevelopment()
     ? "DevelopmentPolicy"
     : "ProductionPolicy");
 
-app.UseAuthentication();  // مين أنت؟
-app.UseAuthorization();   // شو مسموح لك؟
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

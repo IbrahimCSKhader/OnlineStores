@@ -701,18 +701,18 @@ namespace onlineStore.Migrations
 
                     b.HasIndex("Price");
 
-                    b.HasIndex("SKU")
-                        .IsUnique()
-                        .HasFilter("[SKU] IS NOT NULL");
-
                     b.HasIndex("SectionId");
-
-                    b.HasIndex("Slug")
-                        .IsUnique();
 
                     b.HasIndex("Status");
 
                     b.HasIndex("StoreId");
+
+                    b.HasIndex("StoreId", "SKU")
+                        .IsUnique()
+                        .HasFilter("[SKU] IS NOT NULL");
+
+                    b.HasIndex("StoreId", "Slug")
+                        .IsUnique();
 
                     b.ToTable("Products");
                 });

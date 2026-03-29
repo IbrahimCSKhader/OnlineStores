@@ -18,6 +18,7 @@ namespace onlineStore.DTOs.Product
         public decimal? CostPrice { get; set; }
         public int? StockQuantity { get; set; }
         public bool? TrackInventory { get; set; }
+        public List<IFormFile>? Images { get; set; }
         public string? ThumbnailUrl { get; set; }
         public ProductStatus? Status { get; set; }
         public bool? IsFeatured { get; set; }

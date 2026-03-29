@@ -1,6 +1,32 @@
 [
   {
     "ContainingType": "onlineStore.Controllers.AuthController",
+    "Method": "CreateOwner",
+    "RelativePath": "api/Auth/create-owner",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "onlineStore.DTOs.Auth.CreateOwnerDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "OwnerResponseDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "onlineStore.Controllers.AuthController",
     "Method": "GoogleLogin",
     "RelativePath": "api/Auth/google",
     "HttpMethod": "GET",
@@ -487,6 +513,38 @@
   },
   {
     "ContainingType": "onlineStore.Controllers.ProductController",
+    "Method": "IncrementVisit",
+    "RelativePath": "api/Product/{id}/visit",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "onlineStore.Controllers.ProductController",
+    "Method": "GetVisitCount",
+    "RelativePath": "api/Product/{id}/visit-count",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "onlineStore.Controllers.ProductController",
     "Method": "AddVariant",
     "RelativePath": "api/Product/{productId}/variant",
     "HttpMethod": "POST",
@@ -860,9 +918,49 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "dto",
-        "Type": "onlineStore.DTOs.Store.CreateStoreDto",
-        "IsRequired": true
+        "Name": "Name",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Slug",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Description",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "BusinessType",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Logo",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      },
+      {
+        "Name": "CoverPage",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      },
+      {
+        "Name": "WhatsAppNumber",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "ThemeTemplate",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "OwnerId",
+        "Type": "System.Guid",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
@@ -909,6 +1007,38 @@
     "Method": "Delete",
     "RelativePath": "api/Store/{id}",
     "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "onlineStore.Controllers.StoreController",
+    "Method": "IncrementVisit",
+    "RelativePath": "api/Store/{id}/visit",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "onlineStore.Controllers.StoreController",
+    "Method": "GetVisitCount",
+    "RelativePath": "api/Store/{id}/visit-count",
+    "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
     "Parameters": [

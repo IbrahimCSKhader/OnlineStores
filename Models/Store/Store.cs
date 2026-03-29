@@ -33,6 +33,7 @@ namespace onlineStore.Models
         [MaxLength(50)]
         public string? ThemeTemplate { get; set; } = "default";
         public int VisitCount { get; set; } = 0;
+        
         public ICollection<Category> Categories { get; set; } = new List<Category>();
         public ICollection<Section> Sections { get; set; } = new List<Section>();
     }

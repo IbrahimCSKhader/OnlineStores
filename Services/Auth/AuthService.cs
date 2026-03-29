@@ -329,6 +329,41 @@ namespace onlineStore.Services.AuthServices
         //        return Fail("حدث خطأ أثناء تسجيل الدخول بـ Google");
         //    }
         //}
+        public async Task<OwnerResponseDto> CreateOwnerAsync(CreateOwnerDto dto)
+        {
+            var existingUser = await _userManager.FindByEmailAsync(dto.Email);
+            if (existingUser != null)
+                throw new Exception("Email is already in use");
+
+            var owner = new AppUser
+            {
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                Email = dto.Email,
+                UserName = dto.Email,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var result = await _userManager.CreateAsync(owner, dto.Password);
+
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                throw new Exception(errors);
+            }
+
+            await _userManager.AddToRoleAsync(owner, "StoreOwner");
+
+            return new OwnerResponseDto
+            {
+                Id = owner.Id,
+                Email = owner.Email!,
+                FirstName = owner.FirstName,
+                LastName = owner.LastName,
+                IsActive = owner.IsActive
+            };
+        }
     }
 }
 

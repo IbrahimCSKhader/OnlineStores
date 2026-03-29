@@ -15,7 +15,7 @@ namespace onlineStore.DTOs.Product
     public class AddProductImageDto
     {
         [Required]
-        public string Url { get; set; }
+        public IFormFile Image { get; set; }
         public string? AltText { get; set; }
         public int DisplayOrder { get; set; } = 0;
         public bool IsPrimary { get; set; } = false;

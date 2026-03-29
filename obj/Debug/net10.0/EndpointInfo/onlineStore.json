@@ -393,6 +393,55 @@
         }
       }
     },
+    "/api/Auth/create-owner": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOwnerDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOwnerDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOwnerDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerResponseDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerResponseDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Cart/{storeId}": {
       "get": {
         "tags": [
@@ -1192,6 +1241,52 @@
         }
       }
     },
+    "/api/Product/{id}/visit": {
+      "post": {
+        "tags": [
+          "Product"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Product/{id}/visit-count": {
+      "get": {
+        "tags": [
+          "Product"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Review/product/{productId}": {
       "get": {
         "tags": [
@@ -1417,19 +1512,45 @@
         ],
         "requestBody": {
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/CreateStoreDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateStoreDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateStoreDto"
+                "type": "object",
+                "properties": {
+                  "Name": {
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  "Slug": {
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  "Description": {
+                    "maxLength": 500,
+                    "type": "string"
+                  },
+                  "BusinessType": {
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  "Logo": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  },
+                  "CoverPage": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  },
+                  "WhatsAppNumber": {
+                    "maxLength": 30,
+                    "type": "string"
+                  },
+                  "ThemeTemplate": {
+                    "maxLength": 50,
+                    "type": "string"
+                  },
+                  "OwnerId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
               }
             }
           },
@@ -1539,6 +1660,52 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Store/{id}/visit": {
+      "post": {
+        "tags": [
+          "Store"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Store/{id}/visit-count": {
+      "get": {
+        "tags": [
+          "Store"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -1815,6 +1982,32 @@
           }
         }
       },
+      "CreateOwnerDto": {
+        "required": [
+          "firstName",
+          "lastName",
+          "email",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "maxLength": 50,
+            "type": "string"
+          },
+          "lastName": {
+            "maxLength": 50,
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "minLength": 8,
+            "type": "string"
+          }
+        }
+      },
       "CreateProductAttributeValueDto": {
         "required": [
           "value"
@@ -2072,68 +2265,12 @@
           }
         }
       },
-      "CreateStoreDto": {
-        "required": [
-          "name",
-          "slug",
-          "ownerId"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "maxLength": 100,
-            "type": "string"
-          },
-          "slug": {
-            "maxLength": 100,
-            "type": "string"
-          },
-          "description": {
-            "maxLength": 500,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "businessType": {
-            "maxLength": 100,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "logoUrl": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "coverImageUrl": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "whatsAppNumber": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "themeTemplate": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "ownerId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
       "DiscountType": {
         "type": "integer"
+      },
+      "IFormFile": {
+        "type": "string",
+        "format": "binary"
       },
       "LoginDto": {
         "required": [
@@ -2152,6 +2289,27 @@
       },
       "OrderStatus": {
         "type": "integer"
+      },
+      "OwnerResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
       },
       "ProductStatus": {
         "type": "integer"
