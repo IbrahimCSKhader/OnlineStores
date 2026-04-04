@@ -18,7 +18,6 @@ namespace onlineStore.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> GetAll()
         {
             var stores = await _storeService.GetAllStoresAsync();

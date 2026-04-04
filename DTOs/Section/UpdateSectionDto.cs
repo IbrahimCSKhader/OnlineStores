@@ -1,5 +1,4 @@
-﻿// DTOs/Section/UpdateSectionDto.cs
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace onlineStore.DTOs.Section
 {
@@ -11,7 +10,6 @@ namespace onlineStore.DTOs.Section
         [MaxLength(500)]
         public string? Description { get; set; }
 
-        public string? ImageUrl { get; set; }
         public int? DisplayOrder { get; set; }
         public bool? IsActive { get; set; }
     }

@@ -13,6 +13,18 @@
     }
   ],
   "paths": {
+    "/debug-static": {
+      "get": {
+        "tags": [
+          "onlineStore"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Category/store/{storeId}": {
       "get": {
         "tags": [
@@ -357,6 +369,134 @@
         }
       }
     },
+    "/api/Auth/verify-email": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Auth/resend-verification-code": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendVerificationCodeDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendVerificationCodeDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendVerificationCodeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Auth/forgot-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Auth/reset-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Auth/logout": {
       "post": {
         "tags": [
@@ -438,6 +578,38 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/Auth/admin/change-password": {
+      "put": {
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminChangeUserPasswordDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminChangeUserPasswordDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminChangeUserPasswordDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -717,6 +889,333 @@
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/CustomerStore/store/{storeId}": {
+      "get": {
+        "tags": [
+          "CustomerStore"
+        ],
+        "parameters": [
+          {
+            "name": "storeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/CustomerStore": {
+      "post": {
+        "tags": [
+          "CustomerStore"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerStoreDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerStoreDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerStoreDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/CustomerStore/{id}": {
+      "put": {
+        "tags": [
+          "CustomerStore"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerStoreDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerStoreDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerStoreDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "CustomerStore"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Email/test-send": {
+      "post": {
+        "tags": [
+          "Email"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Email/send": {
+      "post": {
+        "tags": [
+          "Email"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendEmailDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendEmailDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendEmailDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Email/public-send": {
+      "post": {
+        "tags": [
+          "Email"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicSendEmailDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicSendEmailDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicSendEmailDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Email/send-welcome": {
+      "post": {
+        "tags": [
+          "Email"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendWelcomeEmailDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendWelcomeEmailDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendWelcomeEmailDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Email/send-verification-code": {
+      "post": {
+        "tags": [
+          "Email"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendCodeEmailDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendCodeEmailDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendCodeEmailDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Email/send-password-reset-code": {
+      "post": {
+        "tags": [
+          "Email"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendCodeEmailDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendCodeEmailDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendCodeEmailDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Email/test-send/welcome": {
+      "post": {
+        "tags": [
+          "Email"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Email/test-send/verification-code": {
+      "post": {
+        "tags": [
+          "Email"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Email/test-send/password-reset-code": {
+      "post": {
+        "tags": [
+          "Email"
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -1020,19 +1519,87 @@
         ],
         "requestBody": {
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateProductDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProductDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProductDto"
+                "type": "object",
+                "properties": {
+                  "Name": {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "Description": {
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  "ShortDescription": {
+                    "maxLength": 500,
+                    "type": "string"
+                  },
+                  "Price": {
+                    "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                    "type": [
+                      "number",
+                      "string"
+                    ],
+                    "format": "double"
+                  },
+                  "CompareAtPrice": {
+                    "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                    "type": [
+                      "number",
+                      "string"
+                    ],
+                    "format": "double"
+                  },
+                  "CostPrice": {
+                    "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                    "type": [
+                      "number",
+                      "string"
+                    ],
+                    "format": "double"
+                  },
+                  "StockQuantity": {
+                    "pattern": "^-?(?:0|[1-9]\\d*)$",
+                    "type": [
+                      "integer",
+                      "string"
+                    ],
+                    "format": "int32"
+                  },
+                  "TrackInventory": {
+                    "type": "boolean"
+                  },
+                  "Images": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/IFormFile"
+                    }
+                  },
+                  "ThumbnailUrl": {
+                    "type": "string"
+                  },
+                  "Status": {
+                    "$ref": "#/components/schemas/ProductStatus"
+                  },
+                  "IsFeatured": {
+                    "type": "boolean"
+                  },
+                  "MetaTitle": {
+                    "type": "string"
+                  },
+                  "MetaDescription": {
+                    "type": "string"
+                  },
+                  "CategoryId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "SectionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
               }
             }
           },
@@ -1095,19 +1662,105 @@
         ],
         "requestBody": {
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/CreateProductDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateProductDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateProductDto"
+                "type": "object",
+                "properties": {
+                  "Name": {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "Slug": {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "SKU": {
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  "Description": {
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  "ShortDescription": {
+                    "maxLength": 500,
+                    "type": "string"
+                  },
+                  "Price": {
+                    "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                    "type": [
+                      "number",
+                      "string"
+                    ],
+                    "format": "double"
+                  },
+                  "CompareAtPrice": {
+                    "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                    "type": [
+                      "number",
+                      "string"
+                    ],
+                    "format": "double"
+                  },
+                  "CostPrice": {
+                    "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                    "type": [
+                      "number",
+                      "string"
+                    ],
+                    "format": "double"
+                  },
+                  "StockQuantity": {
+                    "pattern": "^-?(?:0|[1-9]\\d*)$",
+                    "type": [
+                      "integer",
+                      "string"
+                    ],
+                    "format": "int32"
+                  },
+                  "TrackInventory": {
+                    "type": "boolean"
+                  },
+                  "ThumbnailUrl": {
+                    "type": "string"
+                  },
+                  "Images": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/IFormFile"
+                    }
+                  },
+                  "MetaTitle": {
+                    "type": "string"
+                  },
+                  "MetaDescription": {
+                    "type": "string"
+                  },
+                  "StoreId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "CategoryId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "SectionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "Variants": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CreateProductVariantDto"
+                    }
+                  },
+                  "AttributeValues": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CreateProductAttributeValueDto"
+                    }
+                  }
+                }
               }
             }
           },
@@ -1127,19 +1780,32 @@
         ],
         "requestBody": {
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/AddProductImageDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddProductImageDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddProductImageDto"
+                "type": "object",
+                "properties": {
+                  "Image": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  },
+                  "AltText": {
+                    "type": "string"
+                  },
+                  "DisplayOrder": {
+                    "pattern": "^-?(?:0|[1-9]\\d*)$",
+                    "type": [
+                      "integer",
+                      "string"
+                    ],
+                    "format": "int32"
+                  },
+                  "IsPrimary": {
+                    "type": "boolean"
+                  },
+                  "ProductId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
               }
             }
           },
@@ -1241,14 +1907,14 @@
         }
       }
     },
-    "/api/Product/{id}/visit": {
+    "/api/Product/{productId}/visit": {
       "post": {
         "tags": [
           "Product"
         ],
         "parameters": [
           {
-            "name": "id",
+            "name": "productId",
             "in": "path",
             "required": true,
             "schema": {
@@ -1264,14 +1930,14 @@
         }
       }
     },
-    "/api/Product/{id}/visit-count": {
+    "/api/Product/{productId}/visit-count": {
       "get": {
         "tags": [
           "Product"
         ],
         "parameters": [
           {
-            "name": "id",
+            "name": "productId",
             "in": "path",
             "required": true,
             "schema": {
@@ -1719,38 +2385,6 @@
   },
   "components": {
     "schemas": {
-      "AddProductImageDto": {
-        "required": [
-          "url"
-        ],
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": "string"
-          },
-          "altText": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "displayOrder": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "isPrimary": {
-            "type": "boolean"
-          },
-          "productId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
       "AddToCartDto": {
         "required": [
           "productId",
@@ -1786,29 +2420,38 @@
           }
         }
       },
+      "AdminChangeUserPasswordDto": {
+        "required": [
+          "userId",
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "newPassword": {
+            "minLength": 6,
+            "type": "string"
+          }
+        }
+      },
       "CreateCategoryDto": {
         "required": [
           "name",
-          "slug"
+          "slug",
+          "storeId"
         ],
         "type": "object",
         "properties": {
           "name": {
-            "maxLength": 100,
             "type": "string"
           },
           "slug": {
-            "maxLength": 100,
             "type": "string"
           },
           "description": {
-            "maxLength": 500,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "imageUrl": {
             "type": [
               "null",
               "string"
@@ -1821,13 +2464,6 @@
               "string"
             ],
             "format": "int32"
-          },
-          "parentCategoryId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
           },
           "storeId": {
             "type": "string",
@@ -1935,6 +2571,33 @@
           }
         }
       },
+      "CreateCustomerStoreDto": {
+        "required": [
+          "storeId",
+          "customerId"
+        ],
+        "type": "object",
+        "properties": {
+          "storeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "discountPercentage": {
+            "maximum": 100,
+            "minimum": 0,
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
       "CreateOrderDto": {
         "required": [
           "storeId"
@@ -2010,6 +2673,7 @@
       },
       "CreateProductAttributeValueDto": {
         "required": [
+          "attributeId",
           "value"
         ],
         "type": "object",
@@ -2021,129 +2685,6 @@
           "value": {
             "maxLength": 200,
             "type": "string"
-          }
-        }
-      },
-      "CreateProductDto": {
-        "required": [
-          "name",
-          "slug",
-          "price"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "maxLength": 200,
-            "type": "string"
-          },
-          "slug": {
-            "maxLength": 200,
-            "type": "string"
-          },
-          "sku": {
-            "maxLength": 100,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "description": {
-            "maxLength": 2000,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "shortDescription": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "price": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "compareAtPrice": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "costPrice": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "stockQuantity": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "trackInventory": {
-            "type": "boolean"
-          },
-          "thumbnailUrl": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "metaTitle": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "metaDescription": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "storeId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "categoryId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "sectionId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "variants": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/CreateProductVariantDto"
-            }
-          },
-          "attributeValues": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/CreateProductAttributeValueDto"
-            }
           }
         }
       },
@@ -2226,7 +2767,8 @@
       "CreateSectionDto": {
         "required": [
           "name",
-          "slug"
+          "slug",
+          "storeId"
         ],
         "type": "object",
         "properties": {
@@ -2240,12 +2782,6 @@
           },
           "description": {
             "maxLength": 500,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "imageUrl": {
             "type": [
               "null",
               "string"
@@ -2267,6 +2803,17 @@
       },
       "DiscountType": {
         "type": "integer"
+      },
+      "ForgotPasswordDto": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        }
       },
       "IFormFile": {
         "type": "string",
@@ -2314,6 +2861,28 @@
       "ProductStatus": {
         "type": "integer"
       },
+      "PublicSendEmailDto": {
+        "required": [
+          "to",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string"
+          },
+          "subject": {
+            "maxLength": 200,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "RegisterDto": {
         "required": [
           "firstName",
@@ -2335,6 +2904,98 @@
           "password": {
             "minLength": 8,
             "type": "string"
+          }
+        }
+      },
+      "ResendVerificationCodeDto": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        }
+      },
+      "ResetPasswordDto": {
+        "required": [
+          "email",
+          "code",
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "code": {
+            "maxLength": 10,
+            "minLength": 4,
+            "type": "string"
+          },
+          "newPassword": {
+            "minLength": 8,
+            "type": "string"
+          }
+        }
+      },
+      "SendCodeEmailDto": {
+        "required": [
+          "to",
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "code": {
+            "maxLength": 10,
+            "minLength": 4,
+            "type": "string"
+          }
+        }
+      },
+      "SendEmailDto": {
+        "required": [
+          "to",
+          "subject",
+          "htmlBody"
+        ],
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "htmlBody": {
+            "type": "string"
+          }
+        }
+      },
+      "SendWelcomeEmailDto": {
+        "required": [
+          "to"
+        ],
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -2360,20 +3021,12 @@
         "type": "object",
         "properties": {
           "name": {
-            "maxLength": 100,
             "type": [
               "null",
               "string"
             ]
           },
           "description": {
-            "maxLength": 500,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "imageUrl": {
             "type": [
               "null",
               "string"
@@ -2393,13 +3046,6 @@
               "null",
               "boolean"
             ]
-          },
-          "parentCategoryId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
           }
         }
       },
@@ -2507,6 +3153,28 @@
           }
         }
       },
+      "UpdateCustomerStoreDto": {
+        "type": "object",
+        "properties": {
+          "discountPercentage": {
+            "maximum": 100,
+            "minimum": 0,
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isActive": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
       "UpdateOrderStatusDto": {
         "required": [
           "status"
@@ -2522,121 +3190,6 @@
               "null",
               "string"
             ]
-          }
-        }
-      },
-      "UpdateProductDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "maxLength": 200,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "description": {
-            "maxLength": 2000,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "shortDescription": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "price": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "compareAtPrice": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "costPrice": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "null",
-              "number",
-              "string"
-            ],
-            "format": "double"
-          },
-          "stockQuantity": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "null",
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "trackInventory": {
-            "type": [
-              "null",
-              "boolean"
-            ]
-          },
-          "thumbnailUrl": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "status": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ProductStatus"
-              }
-            ]
-          },
-          "isFeatured": {
-            "type": [
-              "null",
-              "boolean"
-            ]
-          },
-          "metaTitle": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "metaDescription": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "categoryId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "sectionId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
           }
         }
       },
@@ -2686,12 +3239,6 @@
           },
           "description": {
             "maxLength": 500,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "imageUrl": {
             "type": [
               "null",
               "string"
@@ -2769,10 +3316,30 @@
             ]
           }
         }
+      },
+      "VerifyEmailDto": {
+        "required": [
+          "email",
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "code": {
+            "maxLength": 10,
+            "minLength": 4,
+            "type": "string"
+          }
+        }
       }
     }
   },
   "tags": [
+    {
+      "name": "onlineStore"
+    },
     {
       "name": "Category"
     },
@@ -2787,6 +3354,12 @@
     },
     {
       "name": "Coupon"
+    },
+    {
+      "name": "CustomerStore"
+    },
+    {
+      "name": "Email"
     },
     {
       "name": "Order"

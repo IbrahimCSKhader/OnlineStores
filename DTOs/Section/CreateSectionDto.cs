@@ -13,8 +13,9 @@ namespace onlineStore.DTOs.Section
         [MaxLength(500)]
         public string? Description { get; set; }
 
-        public string? ImageUrl { get; set; }
         public int DisplayOrder { get; set; } = 0;
+
+        [Required]
         public Guid StoreId { get; set; }
     }
 }

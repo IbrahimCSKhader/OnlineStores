@@ -6,7 +6,7 @@ namespace onlineStore.DTOs.Product
     public class ProductVariantDto
     {
         public Guid Id { get; set; }
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         public string? SKU { get; set; }
         public decimal? PriceOverride { get; set; }
         public int StockQuantity { get; set; }
@@ -17,7 +17,8 @@ namespace onlineStore.DTOs.Product
     public class CreateProductVariantDto
     {
         [Required, MaxLength(100)]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
+
         public string? SKU { get; set; }
         public decimal? PriceOverride { get; set; }
         public int StockQuantity { get; set; } = 0;

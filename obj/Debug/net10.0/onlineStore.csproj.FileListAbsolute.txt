@@ -7,9 +7,7 @@ C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\ne
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\onlineStore.pdb
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\Azure.Core.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\Azure.Identity.dll
-C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\BouncyCastle.Cryptography.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\Humanizer.dll
-C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\MailKit.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.Google.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
@@ -41,7 +39,6 @@ C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\ne
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\Microsoft.OpenApi.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\Microsoft.SqlServer.Server.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\Microsoft.VisualStudio.SolutionPersistence.dll
-C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\MimeKit.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\Mono.TextTemplating.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\Newtonsoft.Json.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\Scalar.AspNetCore.dll
@@ -164,4 +161,3 @@ C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Debug\ne
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Debug\net10.0\onlineStore.genruntimeconfig.cache
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Debug\net10.0\ref\onlineStore.dll
 c:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Debug\net10.0\onlineStore.staticwebassets.runtime.json
-C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt

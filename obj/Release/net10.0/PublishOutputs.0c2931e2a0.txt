@@ -5,8 +5,6 @@ C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\onlineStore.pdb
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\Azure.Core.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\Azure.Identity.dll
-C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\BouncyCastle.Cryptography.dll
-C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\MailKit.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\Microsoft.AspNetCore.Authentication.Google.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
@@ -28,7 +26,6 @@ C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\Microsoft.IdentityModel.Tokens.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\Microsoft.OpenApi.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\Microsoft.SqlServer.Server.dll
-C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\MimeKit.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\Scalar.AspNetCore.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\System.ClientModel.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\PubTmp\Out\System.Configuration.ConfigurationManager.dll

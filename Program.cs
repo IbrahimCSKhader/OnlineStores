@@ -1,28 +1,65 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using onlineStore.Data;
 using onlineStore.Models.Identity;
 using onlineStore.Security;
+using onlineStore.Serialization;
 using onlineStore.Services.AuthServices;
 using onlineStore.Services.Cart;
+using onlineStore.Services.Category;
 using onlineStore.Services.Coupon;
+using onlineStore.Services.CustomerStore;
+using onlineStore.Services.Email;
 using onlineStore.Services.Order;
 using onlineStore.Services.Product;
 using onlineStore.Services.Review;
+using onlineStore.Services.Section;
 using onlineStore.Services.Store;
+using onlineStore.Settings;
 using Scalar.AspNetCore;
 using System.Diagnostics;
 using System.Security.Claims;
 using System.Text;
 var builder = WebApplication.CreateBuilder(args);
+var productionCorsOrigins = new HashSet<string>(
+    (builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>() ?? ["https://onlinestoresfrontend.onrender.com", "http://localhost:5173"])
+    .Where(origin => !string.IsNullOrWhiteSpace(origin))
+    .Select(origin => origin.TrimEnd('/')),
+    StringComparer.OrdinalIgnoreCase);
+
+static bool IsAllowedCorsOrigin(string origin, HashSet<string> allowedOrigins)
+{
+    if (string.IsNullOrWhiteSpace(origin))
+    {
+        return false;
+    }
+
+    var normalizedOrigin = origin.TrimEnd('/');
+
+    if (allowedOrigins.Contains(normalizedOrigin))
+    {
+        return true;
+    }
+
+    return Uri.TryCreate(normalizedOrigin, UriKind.Absolute, out var uri)
+        && uri.IsLoopback;
+}
 
 
 // ════════════════════════════════════════════════════
 // 1️⃣ Controllers
 // ════════════════════════════════════════════════════
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new EmptyStringToNullableGuidConverter());
+    });
 
 
 // ════════════════════════════════════════════════════
@@ -42,6 +79,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IStoreOwnershipService, StoreOwnershipService>();
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection(EmailSettings.SectionName));
 
 
 // ════════════════════════════════════════════════════
@@ -56,6 +95,8 @@ builder.Services.AddIdentity<AppUser, AppRole>(options =>
     options.Password.RequireLowercase = true;
     options.User.RequireUniqueEmail = true;
     options.SignIn.RequireConfirmedAccount = false;
+    options.Tokens.EmailConfirmationTokenProvider = TokenOptions.DefaultEmailProvider;
+    options.Tokens.PasswordResetTokenProvider = TokenOptions.DefaultEmailProvider;
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.AllowedForNewUsers = true;
@@ -201,13 +242,10 @@ builder.Services.AddCors(options =>
 
     options.AddPolicy("ProductionPolicy", policy =>
     {
-        policy.WithOrigins(
-                "https://yourdomain.com",
-                "https://www.yourdomain.com"
-              )
+        policy.SetIsOriginAllowed(origin =>
+              IsAllowedCorsOrigin(origin, productionCorsOrigins))
               .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
+              .AllowAnyHeader();
     });
 });
 
@@ -223,23 +261,50 @@ builder.Services.AddOpenApi();
 // ════════════════════════════════════════════════════
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICouponService, CouponService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
-
+builder.Services.AddScoped<ISectionService, SectionService>();
+builder.Services.AddScoped<ICustomerStoreService, CustomerStoreService>();
 
 // ════════════════════════════════════════════════════
 var app = builder.Build();
-// ════════════════════════════════════════════════════
+Console.WriteLine("ContentRootPath: " + app.Environment.ContentRootPath);
+Console.WriteLine("WebRootPath: " + app.Environment.WebRootPath);
+var logger = app.Services.GetRequiredService<ILoggerFactory>()
+    .CreateLogger("StartupPaths");
 
+logger.LogInformation("ContentRootPath: {Path}", app.Environment.ContentRootPath);
+logger.LogInformation("WebRootPath: {Path}", app.Environment.WebRootPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        app.Environment.ContentRootPath
+    ),
+    RequestPath = ""
+});// ════════════════════════════════════════════════════
+app.MapGet("/debug-static", (IWebHostEnvironment env) =>
+{
+    var webRoot = env.WebRootPath;
+    var testFile = Path.Combine(webRoot ?? "", "test.txt");
+
+    return Results.Ok(new
+    {
+        env.ContentRootPath,
+        env.WebRootPath,
+        testFile,
+        testFileExists = System.IO.File.Exists(testFile)
+    });
+});
 
 // ════════════════════════════════════════════════════
 // 8️⃣ Middleware Pipeline
 // ⚠️ الترتيب مهم جداً
 // ════════════════════════════════════════════════════
-app.UseStaticFiles();
 // Global Exception Handler — أول شي دايماً
 app.UseMiddleware<GlobalExceptionHandler>();
 

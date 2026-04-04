@@ -27,22 +27,12 @@ namespace onlineStore.Services.Store
 
         public async Task<List<StoreDto>> GetAllStoresAsync()
         {
-            if (_currentUser.IsSuperAdmin)
-            {
                 return await _context.Stores
                     .AsNoTracking()
                     .Select(s => ToDto(s))
                     .ToListAsync();
-            }
 
-            if (!_currentUser.UserId.HasValue)
-                return new List<StoreDto>();
-
-            return await _context.Stores
-                .AsNoTracking()
-                .Where(s => s.OwnerId == _currentUser.UserId.Value)
-                .Select(s => ToDto(s))
-                .ToListAsync();
+               
         }
 
         public async Task<StoreDto?> GetStoreByIdAsync(Guid id)
@@ -63,10 +53,7 @@ namespace onlineStore.Services.Store
 
             var store = await _context.Stores
                 .AsNoTracking()
-                .FirstOrDefaultAsync(s =>
-                    s.Slug == normalizedSlug &&
-                    (_currentUser.IsSuperAdmin ||
-                     s.OwnerId == _currentUser.UserId));
+                .FirstOrDefaultAsync(s => s.Slug == normalizedSlug);
 
             return store == null ? null : ToDto(store);
         }
@@ -201,6 +188,7 @@ namespace onlineStore.Services.Store
             CoverImageUrl = s.CoverImageUrl,
             IsActive = s.IsActive,
             VisitCount = s.VisitCount,
+            WhatsAppNumber= s.WhatsAppNumber,
             CreatedAt = s.CreatedAt
         };
 

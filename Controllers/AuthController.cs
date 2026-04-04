@@ -1,13 +1,10 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;// Controllers/AuthController.cs
 using Microsoft.AspNetCore.Mvc;
 using onlineStore.DTOs.Auth;
-using onlineStore.DTOs.Order;
 using onlineStore.Services.AuthServices;
 using System.Security.Claims;
-using onlineStore.Models.Identity;
 namespace onlineStore.Controllers
 {
     [ApiController]
@@ -46,9 +43,71 @@ namespace onlineStore.Controllers
             var result = await _authService.LoginAsync(dto);
 
             if (!result.Success)
+            {
+                if (result.RequiresEmailVerification)
+                    return Unauthorized(result);
+
                 return Unauthorized(new { message = result.Message });
+            }
 
             return Ok(result);
+        }
+
+        [HttpPost("verify-email")]
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _authService.VerifyEmailAsync(dto);
+
+            if (!result.Success)
+                return BadRequest(new { message = result.Message });
+
+            return Ok(result);
+        }
+
+        [HttpPost("resend-verification-code")]
+        public async Task<IActionResult> ResendVerificationCode(
+            [FromBody] ResendVerificationCodeDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _authService.ResendVerificationCodeAsync(dto);
+
+            if (!result.Success)
+                return BadRequest(new { message = result.Message });
+
+            return Ok(new { message = result.Message });
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _authService.ForgotPasswordAsync(dto);
+
+            if (!result.Success)
+                return BadRequest(new { message = result.Message });
+
+            return Ok(new { message = result.Message });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _authService.ResetPasswordAsync(dto);
+
+            if (!result.Success)
+                return BadRequest(new { message = result.Message });
+
+            return Ok(new { message = result.Message });
         }
 
 
@@ -114,6 +173,24 @@ namespace onlineStore.Controllers
 
             var owner = await _authService.CreateOwnerAsync(dto);
             return Ok(owner);
+        }
+        [HttpPut("admin/change-password")]
+        [Authorize(Roles = "SuperAdmin")]
+        public async Task<IActionResult> ChangeUserPasswordBySuperAdmin(
+    [FromBody] AdminChangeUserPasswordDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _authService.ChangeUserPasswordBySuperAdminAsync(
+                dto.UserId,
+                dto.NewPassword
+            );
+
+            if (!result.Success)
+                return BadRequest(new { message = result.Message });
+
+            return Ok(new { message = result.Message });
         }
     }
 

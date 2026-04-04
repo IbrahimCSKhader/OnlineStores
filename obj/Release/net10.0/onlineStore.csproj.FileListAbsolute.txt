@@ -7,9 +7,7 @@ C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\onlineStore.pdb
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\Azure.Core.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\Azure.Identity.dll
-C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\BouncyCastle.Cryptography.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\Humanizer.dll
-C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\MailKit.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\Microsoft.AspNetCore.Authentication.Google.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
@@ -41,7 +39,6 @@ C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\Microsoft.OpenApi.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\Microsoft.SqlServer.Server.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\Microsoft.VisualStudio.SolutionPersistence.dll
-C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\MimeKit.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\Mono.TextTemplating.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\Newtonsoft.Json.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\Scalar.AspNetCore.dll
@@ -157,7 +154,6 @@ C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\staticwebassets.development.json
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\staticwebassets.build.endpoints.json
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\swae.build.ex.cache
-C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\staticwebassets.upToDateCheck.txt
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\onlineSt.936E6E87.Up2Date
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\onlineStore.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\refint\onlineStore.dll
@@ -165,3 +161,4 @@ C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\onlineStore.genruntimeconfig.cache
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\ref\onlineStore.dll
 C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\bin\Release\net10.0\onlineStore.staticwebassets.runtime.json
+C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\obj\Release\net10.0\staticwebassets.upToDateCheck.txt
