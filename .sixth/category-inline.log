@@ -1,0 +1,104 @@
+Using launch settings from C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\Properties\launchSettings.json...
+ContentRootPath: C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore
+WebRootPath: C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\wwwroot
+info: StartupPaths[0]
+      ContentRootPath: C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore
+info: StartupPaths[0]
+      WebRootPath: C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\wwwroot
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'CartItem'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Store' has a global query filter defined and is the required end of a relationship with the entity 'ShoppingCart'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Order' has a global query filter defined and is the required end of a relationship with the entity 'OrderItem'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Store' has a global query filter defined and is the required end of a relationship with the entity 'ProductAttribute'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'ProductAttributeValue'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'ProductImage'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'ProductVariant'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (132ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT 1
+info: Microsoft.EntityFrameworkCore.Migrations[20411]
+      Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (112ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      DECLARE @result int;
+      EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+      SELECT @result
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (82ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+      BEGIN
+          CREATE TABLE [__EFMigrationsHistory] (
+              [MigrationId] nvarchar(150) NOT NULL,
+              [ProductVersion] nvarchar(32) NOT NULL,
+              CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+          );
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (82ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (78ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (83ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [MigrationId], [ProductVersion]
+      FROM [__EFMigrationsHistory]
+      ORDER BY [MigrationId];
+info: Microsoft.EntityFrameworkCore.Migrations[20405]
+      No migrations were applied. The database is already up to date.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (81ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      DECLARE @result int;
+      EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+      SELECT @result
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (108ms) [Parameters=[@normalizedName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[Id], [r].[ConcurrencyStamp], [r].[Name], [r].[NormalizedName]
+      FROM [Roles] AS [r]
+      WHERE [r].[NormalizedName] = @normalizedName
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (79ms) [Parameters=[@normalizedName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[Id], [r].[ConcurrencyStamp], [r].[Name], [r].[NormalizedName]
+      FROM [Roles] AS [r]
+      WHERE [r].[NormalizedName] = @normalizedName
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (85ms) [Parameters=[@normalizedName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[Id], [r].[ConcurrencyStamp], [r].[Name], [r].[NormalizedName]
+      FROM [Roles] AS [r]
+      WHERE [r].[NormalizedName] = @normalizedName
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (84ms) [Parameters=[@normalizedEmail='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [u].[Id], [u].[AccessFailedCount], [u].[AvatarUrl], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FirstName], [u].[IsActive], [u].[IsDeleted], [u].[LastName], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[SecurityStamp], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+      FROM [Users] AS [u]
+      WHERE [u].[NormalizedEmail] = @normalizedEmail
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5099
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore
+warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
+      Failed to determine the https port for redirect.
+info: onlineStore.Services.Category.CategoryService[0]
+      GetStoreCategoriesAsync started. StoreId: 00000000-0000-0000-0000-000000000000
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (85ms) [Parameters=[@storeId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT [c].[Id], [c].[CreatedAt], [c].[Description], [c].[DisplayOrder], [c].[IsActive], [c].[IsDeleted], [c].[Name], [c].[ParentCategoryId], [c].[Slug], [c].[StoreId], [c].[UpdatedAt], [c1].[Id], [c1].[CreatedAt], [c1].[Description], [c1].[DisplayOrder], [c1].[IsActive], [c1].[IsDeleted], [c1].[Name], [c1].[ParentCategoryId], [c1].[Slug], [c1].[StoreId], [c1].[UpdatedAt]
+      FROM [Categories] AS [c]
+      LEFT JOIN (
+          SELECT [c0].[Id], [c0].[CreatedAt], [c0].[Description], [c0].[DisplayOrder], [c0].[IsActive], [c0].[IsDeleted], [c0].[Name], [c0].[ParentCategoryId], [c0].[Slug], [c0].[StoreId], [c0].[UpdatedAt]
+          FROM [Categories] AS [c0]
+          WHERE [c0].[IsDeleted] = CAST(0 AS bit)
+      ) AS [c1] ON [c].[ParentCategoryId] = [c1].[Id]
+      WHERE [c].[IsDeleted] = CAST(0 AS bit) AND [c].[StoreId] = @storeId
+      ORDER BY [c].[DisplayOrder], [c].[Name]
+info: onlineStore.Services.Category.CategoryService[0]
+      GetStoreCategoriesAsync completed. StoreId: 00000000-0000-0000-0000-000000000000, Count: 0

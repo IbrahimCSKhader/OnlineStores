@@ -4,18 +4,16 @@ namespace onlineStore.DTOs.Category
 {
     public class CreateCategoryDto
     {
-        [Required, MaxLength(100)]
+        [Required]
         public string Name { get; set; }
 
-        [Required, MaxLength(100)]
+        [Required]
         public string Slug { get; set; }
 
-        [MaxLength(500)]
         public string? Description { get; set; }
-
-        public string? ImageUrl { get; set; }
         public int DisplayOrder { get; set; } = 0;
-        public Guid? ParentCategoryId { get; set; }
+
+        [Required]
         public Guid StoreId { get; set; }
     }
 }

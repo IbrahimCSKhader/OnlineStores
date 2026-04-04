@@ -1,4 +1,5 @@
-﻿namespace onlineStore.DTOs.Product
+﻿// DTOs/Product/ProductVisitDto.cs
+namespace onlineStore.DTOs.Product
 {
     public class ProductVisitDto
     {

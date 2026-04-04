@@ -25,7 +25,7 @@ namespace onlineStore.Data
         public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
         public DbSet<ProductAttribute> ProductAttributes => Set<ProductAttribute>();
         public DbSet<ProductAttributeValue> ProductAttributeValues => Set<ProductAttributeValue>();
-
+        public DbSet<CustomerStore> CustomerStores => Set<CustomerStore>();
         public DbSet<ShoppingCart> Carts => Set<ShoppingCart>();
         public DbSet<CartItem> CartItems => Set<CartItem>();
 
@@ -231,7 +231,25 @@ namespace onlineStore.Data
             builder.Entity<Review>()
                 .HasIndex(r => new { r.UserId, r.ProductId })
                 .IsUnique();
+            builder.Entity<CustomerStore>()
+    .HasOne(cs => cs.Store)
+    .WithMany()
+    .HasForeignKey(cs => cs.StoreId)
+    .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<CustomerStore>()
+                .HasOne(cs => cs.Customer)
+                .WithMany()
+                .HasForeignKey(cs => cs.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<CustomerStore>(e =>
+            {
+                e.Property(x => x.DiscountPercentage).HasColumnType("decimal(5,2)");
+            });
+
+            builder.Entity<CustomerStore>()
+                .HasQueryFilter(x => !x.IsDeleted);
 
             // ────────────────────────────────────────────────────
             // ⚡ PERFORMANCE: No Tracking للـ Read-Only Queries

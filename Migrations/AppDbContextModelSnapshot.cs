@@ -212,9 +212,6 @@ namespace onlineStore.Migrations
                     b.Property<int>("DisplayOrder")
                         .HasColumnType("int");
 
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -225,9 +222,6 @@ namespace onlineStore.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<Guid?>("ParentCategoryId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -242,13 +236,49 @@ namespace onlineStore.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentCategoryId");
-
-                    b.HasIndex("Slug");
+                    b.HasIndex("Slug")
+                        .IsUnique();
 
                     b.HasIndex("StoreId");
 
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.CustomerStore", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("DiscountPercentage")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("StoreId", "CustomerId")
+                        .IsUnique();
+
+                    b.ToTable("CustomerStores");
                 });
 
             modelBuilder.Entity("onlineStore.Models.Discounts.Coupon", b =>
@@ -664,7 +694,8 @@ namespace onlineStore.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ShortDescription")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -692,9 +723,6 @@ namespace onlineStore.Migrations
                     b.Property<int>("VisitCount")
                         .HasColumnType("int");
 
-                    b.Property<double?>("WeightKg")
-                        .HasColumnType("float");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
@@ -702,6 +730,9 @@ namespace onlineStore.Migrations
                     b.HasIndex("Price");
 
                     b.HasIndex("SectionId");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
 
                     b.HasIndex("Status");
 
@@ -789,8 +820,8 @@ namespace onlineStore.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AltText")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -934,9 +965,6 @@ namespace onlineStore.Migrations
 
                     b.Property<int>("DisplayOrder")
                         .HasColumnType("int");
-
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -1132,17 +1160,30 @@ namespace onlineStore.Migrations
 
             modelBuilder.Entity("onlineStore.Models.Category", b =>
                 {
-                    b.HasOne("onlineStore.Models.Category", "ParentCategory")
-                        .WithMany("SubCategories")
-                        .HasForeignKey("ParentCategoryId");
-
                     b.HasOne("onlineStore.Models.Store", "Store")
                         .WithMany("Categories")
                         .HasForeignKey("StoreId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("ParentCategory");
+                    b.Navigation("Store");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.CustomerStore", b =>
+                {
+                    b.HasOne("onlineStore.Models.Identity.AppUser", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("onlineStore.Models.Store", "Store")
+                        .WithMany()
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
 
                     b.Navigation("Store");
                 });
@@ -1362,8 +1403,6 @@ namespace onlineStore.Migrations
             modelBuilder.Entity("onlineStore.Models.Category", b =>
                 {
                     b.Navigation("Products");
-
-                    b.Navigation("SubCategories");
                 });
 
             modelBuilder.Entity("onlineStore.Models.Discounts.Coupon", b =>

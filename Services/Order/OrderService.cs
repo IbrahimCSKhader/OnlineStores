@@ -1,9 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using onlineStore.Data;
 using onlineStore.DTOs.Order;
-using CouponEntity = onlineStore.Models.Discounts.Coupon;
 using onlineStore.Models.Enums;
 using onlineStore.Models.Orders;
+using CouponEntity = onlineStore.Models.Discounts.Coupon;
+
 namespace onlineStore.Services.Order
 {
     public class OrderService : IOrderService
@@ -21,130 +22,156 @@ namespace onlineStore.Services.Order
 
         public async Task<OrderDto> CreateOrderAsync(Guid userId, CreateOrderDto dto)
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync();
+            if (dto == null)
+                throw new ArgumentNullException(nameof(dto));
 
-            try
+            if (dto.StoreId == Guid.Empty)
+                throw new Exception("StoreId is required");
+
+            if (string.IsNullOrWhiteSpace(dto.DeliveryAddress))
+                throw new Exception("عنوان التوصيل مطلوب");
+
+            if (string.IsNullOrWhiteSpace(dto.DeliveryCity))
+                throw new Exception("المدينة مطلوبة");
+
+            if (string.IsNullOrWhiteSpace(dto.DeliveryPhone))
+                throw new Exception("رقم الهاتف مطلوب");
+
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            return await strategy.ExecuteAsync(async () =>
             {
-                var cart = await _context.Carts
-                    .Include(c => c.Items)
-                        .ThenInclude(i => i.Product)
-                    .Include(c => c.Items)
-                        .ThenInclude(i => i.Variant)
-                    .FirstOrDefaultAsync(c => c.UserId == userId && c.StoreId == dto.StoreId);
+                await using var transaction = await _context.Database.BeginTransactionAsync();
 
-                if (cart == null || cart.Items == null || !cart.Items.Any())
-                    throw new Exception("Empty cart");
-
-                foreach (var item in cart.Items)
+                try
                 {
-                    if (item.Product == null)
-                        throw new Exception("their ar an unvalid item");
+                    var cart = await _context.Carts
+                        .Include(c => c.Items)
+                            .ThenInclude(i => i.Product)
+                        .Include(c => c.Items)
+                            .ThenInclude(i => i.Variant)
+                        .FirstOrDefaultAsync(c =>
+                            c.UserId == userId &&
+                            c.StoreId == dto.StoreId);
 
-                    if (item.Product.StoreId != dto.StoreId)
-                        throw new Exception("their are an item didnt belong to the store");
+                    if (cart == null || cart.Items == null || !cart.Items.Any())
+                        throw new Exception("السلة فارغة");
 
-                    var availableStock = item.Variant != null
-                        ? item.Variant.StockQuantity
-                        : item.Product.StockQuantity;
-
-                    if (item.Product.TrackInventory && availableStock < item.Quantity)
-                        throw new Exception($"the current quantity for item {item.Product.Name} is {availableStock} only");
-                }
-
-                var subTotal = cart.Items.Sum(i => i.UnitPrice * i.Quantity);
-                var discountAmount = 0m;
-                CouponEntity? coupon = null;
-
-                if (!string.IsNullOrWhiteSpace(dto.CouponCode))
-                {
-                    coupon = await ValidateCouponAsync(
-                        dto.CouponCode.Trim(),
-                        dto.StoreId,
-                        userId,
-                        subTotal);
-
-                    discountAmount = CalculateDiscount(coupon, subTotal);
-                }
-
-                var totalAmount = subTotal - discountAmount;
-                if (totalAmount < 0)
-                    totalAmount = 0;
-
-                var order = new Models.Orders.Order
-                {
-                    OrderNumber = await GenerateOrderNumberAsync(),
-                    Status = OrderStatus.Pending,
-                    SubTotal = subTotal,
-                    DiscountAmount = discountAmount,
-                    TotalAmount = totalAmount,
-                    CustomerNotes = dto.CustomerNotes?.Trim(),
-                    DeliveryAddress = dto.DeliveryAddress?.Trim(),
-                    DeliveryCity = dto.DeliveryCity?.Trim(),
-                    DeliveryPhone = dto.DeliveryPhone?.Trim(),
-                    CouponId = coupon?.Id,
-                    UserId = userId,
-                    StoreId = dto.StoreId,
-                    CreatedAt = DateTime.UtcNow,
-                    Items = new List<OrderItem>()
-                };
-
-                foreach (var cartItem in cart.Items)
-                {
-                    var orderItem = new OrderItem
+                    foreach (var item in cart.Items)
                     {
-                        ProductId = cartItem.ProductId,
-                        ProductName = cartItem.Product?.Name?.Trim() ?? "Unknown Product",
-                        VariantId = cartItem.VariantId,
-                        VariantName = cartItem.Variant?.Name?.Trim(),
-                        Quantity = cartItem.Quantity,
-                        UnitPrice = cartItem.UnitPrice,
-                        TotalPrice = cartItem.UnitPrice * cartItem.Quantity,
-                        CreatedAt = DateTime.UtcNow
+                        if (item.Product == null)
+                            throw new Exception("يوجد عنصر غير صالح في السلة");
+
+                        if (item.Product.StoreId != dto.StoreId)
+                            throw new Exception("يوجد عنصر لا ينتمي لهذا المتجر");
+
+                        var availableStock = item.Variant != null
+                            ? item.Variant.StockQuantity
+                            : item.Product.StockQuantity;
+
+                        if (item.Product.TrackInventory && availableStock < item.Quantity)
+                            throw new Exception(
+                                $"الكمية المتاحة من المنتج {item.Product.Name} هي {availableStock} فقط");
+                    }
+
+                    var subTotal = cart.Items.Sum(i => i.UnitPrice * i.Quantity);
+                    decimal discountAmount = 0m;
+                    CouponEntity? coupon = null;
+
+                    if (!string.IsNullOrWhiteSpace(dto.CouponCode))
+                    {
+                        coupon = await ValidateCouponAsync(
+                            dto.CouponCode.Trim(),
+                            dto.StoreId,
+                            userId,
+                            subTotal);
+
+                        discountAmount = CalculateDiscount(coupon, subTotal);
+                    }
+
+                    var totalAmount = subTotal - discountAmount;
+                    if (totalAmount < 0)
+                        totalAmount = 0;
+
+                    var order = new Models.Orders.Order
+                    {
+                        OrderNumber = GenerateOrderNumber(),
+                        Status = OrderStatus.Pending,
+                        SubTotal = subTotal,
+                        DiscountAmount = discountAmount,
+                        TotalAmount = totalAmount,
+                        CustomerNotes = dto.CustomerNotes?.Trim(),
+                        DeliveryAddress = dto.DeliveryAddress.Trim(),
+                        DeliveryCity = dto.DeliveryCity.Trim(),
+                        DeliveryPhone = dto.DeliveryPhone.Trim(),
+                        CouponId = coupon?.Id,
+                        UserId = userId,
+                        StoreId = dto.StoreId,
+                        CreatedAt = DateTime.UtcNow,
+                        Items = new List<OrderItem>()
                     };
 
-                    order.Items.Add(orderItem);
-
-                    if (cartItem.Product != null && cartItem.Product.TrackInventory)
+                    foreach (var cartItem in cart.Items)
                     {
-                        if (cartItem.Variant != null)
-                            cartItem.Variant.StockQuantity -= cartItem.Quantity;
-                        else
-                            cartItem.Product.StockQuantity -= cartItem.Quantity;
+                        var orderItem = new OrderItem
+                        {
+                            ProductId = cartItem.ProductId,
+                            ProductName = cartItem.Product?.Name?.Trim() ?? "Unknown Product",
+                            VariantId = cartItem.VariantId,
+                            VariantName = cartItem.Variant?.Name?.Trim(),
+                            Quantity = cartItem.Quantity,
+                            UnitPrice = cartItem.UnitPrice,
+                            TotalPrice = cartItem.UnitPrice * cartItem.Quantity,
+                            CreatedAt = DateTime.UtcNow
+                        };
+
+                        order.Items.Add(orderItem);
+
+                        if (cartItem.Product != null && cartItem.Product.TrackInventory)
+                        {
+                            if (cartItem.Variant != null)
+                                cartItem.Variant.StockQuantity -= cartItem.Quantity;
+                            else
+                                cartItem.Product.StockQuantity -= cartItem.Quantity;
+                        }
                     }
+
+                    _context.Orders.Add(order);
+
+                    if (coupon != null)
+                        coupon.UsageCount += 1;
+
+                    _context.CartItems.RemoveRange(cart.Items);
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    _logger.LogInformation(
+                        "Order created successfully: {OrderNumber} for user {UserId}",
+                        order.OrderNumber,
+                        userId);
+
+                    var createdOrder = await GetOrderDtoByIdAsync(order.Id);
+                    if (createdOrder == null)
+                        throw new Exception("فشل في تحميل الطلب بعد إنشائه");
+
+                    return createdOrder;
                 }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
 
-                _context.Orders.Add(order);
+                    _logger.LogError(
+                        ex,
+                        "Error while creating order for user {UserId} and store {StoreId}",
+                        userId,
+                        dto.StoreId);
 
-                if (coupon != null)
-                    coupon.UsageCount += 1;
-
-                _context.CartItems.RemoveRange(cart.Items);
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                _logger.LogInformation(
-                    "Order created: {OrderNumber} for user {UserId}",
-                    order.OrderNumber, userId);
-
-                return await GetOrderDtoByIdAsync(order.Id)
-                       ?? throw new Exception("error in downloading");
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-
-                _logger.LogError(ex,
-                    "Error while creating order for user {UserId} and store {StoreId}",
-                    userId, dto.StoreId);
-
-                throw;
-            }
+                    throw;
+                }
+            });
         }
 
-        // ════════════════════════════════════════════════════
-        // Get User Orders
-        // ════════════════════════════════════════════════════
         public async Task<List<OrderSummaryDto>> GetUserOrdersAsync(Guid userId)
         {
             return await _context.Orders
@@ -159,28 +186,24 @@ namespace onlineStore.Services.Order
                     SubTotal = o.SubTotal,
                     DiscountAmount = o.DiscountAmount,
                     TotalAmount = o.TotalAmount,
-                    ItemsCount = o.Items.Count,
+                    ItemsCount = o.Items.Count(),
                     StoreId = o.StoreId,
                     CreatedAt = o.CreatedAt
                 })
                 .ToListAsync();
         }
 
-        // ════════════════════════════════════════════════════
-        // Get User Order By Id
-        // ════════════════════════════════════════════════════
         public async Task<OrderDto?> GetUserOrderByIdAsync(Guid userId, Guid orderId)
         {
-            return await _context.Orders
+            var order = await _context.Orders
                 .AsNoTracking()
-                .Where(o => o.UserId == userId && o.Id == orderId)
-                .Select(o => ToDto(o))
-                .FirstOrDefaultAsync();
+                .Include(o => o.Coupon)
+                .Include(o => o.Items)
+                .FirstOrDefaultAsync(o => o.UserId == userId && o.Id == orderId);
+
+            return order == null ? null : MapOrderToDto(order);
         }
 
-        // ════════════════════════════════════════════════════
-        // Get Store Orders
-        // ════════════════════════════════════════════════════
         public async Task<List<OrderSummaryDto>> GetStoreOrdersAsync(Guid storeId)
         {
             return await _context.Orders
@@ -195,30 +218,29 @@ namespace onlineStore.Services.Order
                     SubTotal = o.SubTotal,
                     DiscountAmount = o.DiscountAmount,
                     TotalAmount = o.TotalAmount,
-                    ItemsCount = o.Items.Count,
+                    ItemsCount = o.Items.Count(),
                     StoreId = o.StoreId,
                     CreatedAt = o.CreatedAt
                 })
                 .ToListAsync();
         }
 
-        // ════════════════════════════════════════════════════
-        // Get Store Order By Id
-        // ════════════════════════════════════════════════════
         public async Task<OrderDto?> GetStoreOrderByIdAsync(Guid storeId, Guid orderId)
         {
-            return await _context.Orders
+            var order = await _context.Orders
                 .AsNoTracking()
-                .Where(o => o.StoreId == storeId && o.Id == orderId)
-                .Select(o => ToDto(o))
-                .FirstOrDefaultAsync();
+                .Include(o => o.Coupon)
+                .Include(o => o.Items)
+                .FirstOrDefaultAsync(o => o.StoreId == storeId && o.Id == orderId);
+
+            return order == null ? null : MapOrderToDto(order);
         }
 
-        // ════════════════════════════════════════════════════
-        // Update Order Status
-        // ════════════════════════════════════════════════════
         public async Task<OrderDto?> UpdateOrderStatusAsync(Guid orderId, UpdateOrderStatusDto dto)
         {
+            if (dto == null)
+                throw new ArgumentNullException(nameof(dto));
+
             var order = await _context.Orders
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
@@ -234,23 +256,23 @@ namespace onlineStore.Services.Order
 
             _logger.LogInformation(
                 "Order status updated: {OrderId} => {Status}",
-                orderId, dto.Status);
+                orderId,
+                dto.Status);
 
             return await GetOrderDtoByIdAsync(orderId);
         }
 
-        // ════════════════════════════════════════════════════
-        // Helper — Validate Coupon
-        // ════════════════════════════════════════════════════
         private async Task<CouponEntity> ValidateCouponAsync(
             string code,
             Guid storeId,
             Guid userId,
             decimal subTotal)
         {
+            var normalizedCode = code.Trim().ToUpper();
+
             var coupon = await _context.Coupons
                 .FirstOrDefaultAsync(c =>
-                    c.Code == code.ToUpper() &&
+                    c.Code == normalizedCode &&
                     c.StoreId == storeId &&
                     c.IsActive);
 
@@ -266,7 +288,8 @@ namespace onlineStore.Services.Order
                 throw new Exception("الكوبون منتهي الصلاحية");
 
             if (coupon.MinOrderAmount.HasValue && subTotal < coupon.MinOrderAmount.Value)
-                throw new Exception($"الحد الأدنى لاستخدام الكوبون هو {coupon.MinOrderAmount.Value}");
+                throw new Exception(
+                    $"الحد الأدنى لاستخدام الكوبون هو {coupon.MinOrderAmount.Value}");
 
             if (coupon.UsageLimit.HasValue && coupon.UsageCount >= coupon.UsageLimit.Value)
                 throw new Exception("تم الوصول للحد الأقصى لاستخدام الكوبون");
@@ -283,12 +306,9 @@ namespace onlineStore.Services.Order
             return coupon;
         }
 
-        // ════════════════════════════════════════════════════
-        // Helper — Calculate Discount
-        // ════════════════════════════════════════════════════
         private static decimal CalculateDiscount(CouponEntity coupon, decimal subTotal)
         {
-            decimal discount = 0;
+            decimal discount = 0m;
 
             if (coupon.DiscountType == DiscountType.Percentage)
             {
@@ -311,64 +331,54 @@ namespace onlineStore.Services.Order
             return discount;
         }
 
-        // ════════════════════════════════════════════════════
-        // Helper — Generate Order Number
-        // ════════════════════════════════════════════════════
-        private async Task<string> GenerateOrderNumberAsync()
+        private static string GenerateOrderNumber()
         {
-            var today = DateTime.UtcNow.ToString("yyyyMMdd");
-
-            var todayOrdersCount = await _context.Orders
-                .IgnoreQueryFilters()
-                .CountAsync(o => o.CreatedAt.Date == DateTime.UtcNow.Date);
-
-            return $"ORD-{today}-{(todayOrdersCount + 1):D4}";
+            return $"ORD-{DateTime.UtcNow:yyyyMMddHHmmssfff}-{Random.Shared.Next(100, 999)}";
         }
 
-        // ════════════════════════════════════════════════════
-        // Helper — Get Order Dto By Id
-        // ════════════════════════════════════════════════════
         private async Task<OrderDto?> GetOrderDtoByIdAsync(Guid orderId)
         {
-            return await _context.Orders
+            var order = await _context.Orders
                 .AsNoTracking()
-                .Where(o => o.Id == orderId)
-                .Select(o => ToDto(o))
-                .FirstOrDefaultAsync();
+                .Include(o => o.Coupon)
+                .Include(o => o.Items)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            return order == null ? null : MapOrderToDto(order);
         }
 
-        // ════════════════════════════════════════════════════
-        // Helper — ToDto
-        // ════════════════════════════════════════════════════
-        private static OrderDto ToDto(Models.Orders.Order o) => new()
+        private static OrderDto MapOrderToDto(Models.Orders.Order order)
         {
-            Id = o.Id,
-            OrderNumber = o.OrderNumber,
-            Status = o.Status,
-            SubTotal = o.SubTotal,
-            DiscountAmount = o.DiscountAmount,
-            TotalAmount = o.TotalAmount,
-            CustomerNotes = o.CustomerNotes,
-            StoreNotes = o.StoreNotes,
-            DeliveryAddress = o.DeliveryAddress,
-            DeliveryCity = o.DeliveryCity,
-            DeliveryPhone = o.DeliveryPhone,
-            UserId = o.UserId,
-            StoreId = o.StoreId,
-            CouponId = o.CouponId,
-            CouponCode = o.Coupon != null ? o.Coupon.Code : null,
-            CreatedAt = o.CreatedAt,
-            Items = o.Items.Select(i => new OrderItemDto
+            return new OrderDto
             {
-                Id = i.Id,
-                ProductId = i.ProductId,
-                ProductName = i.ProductName,
-                VariantId = i.VariantId,
-                VariantName = i.VariantName,
-                Quantity = i.Quantity,
-                UnitPrice = i.UnitPrice,
-                TotalPrice = i.TotalPrice
-            }).ToList()
-        };
+                Id = order.Id,
+                OrderNumber = order.OrderNumber,
+                Status = order.Status,
+                SubTotal = order.SubTotal,
+                DiscountAmount = order.DiscountAmount,
+                TotalAmount = order.TotalAmount,
+                CustomerNotes = order.CustomerNotes,
+                StoreNotes = order.StoreNotes,
+                DeliveryAddress = order.DeliveryAddress,
+                DeliveryCity = order.DeliveryCity,
+                DeliveryPhone = order.DeliveryPhone,
+                UserId = order.UserId,
+                StoreId = order.StoreId,
+                CouponId = order.CouponId,
+                CouponCode = order.Coupon?.Code,
+                CreatedAt = order.CreatedAt,
+                Items = order.Items.Select(i => new OrderItemDto
+                {
+                    Id = i.Id,
+                    ProductId = i.ProductId,
+                    ProductName = i.ProductName,
+                    VariantId = i.VariantId,
+                    VariantName = i.VariantName,
+                    Quantity = i.Quantity,
+                    UnitPrice = i.UnitPrice,
+                    TotalPrice = i.TotalPrice
+                }).ToList()
+            };
+        }
     }
 }

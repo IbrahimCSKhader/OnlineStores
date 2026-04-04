@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using onlineStore.DTOs.Product;
 using onlineStore.Services.Product;
+using System.Security.Claims;
 
 namespace onlineStore.Controllers
 {
@@ -21,7 +22,8 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetByStore(Guid storeId)
         {
-            var products = await _productService.GetStoreProductsAsync(storeId);
+            var userId = GetUserIdOrNull();
+            var products = await _productService.GetStoreProductsAsync(storeId, userId);
             return Ok(products);
         }
 
@@ -30,7 +32,8 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetFeatured(Guid storeId)
         {
-            var products = await _productService.GetFeaturedProductsAsync(storeId);
+            var userId = GetUserIdOrNull();
+            var products = await _productService.GetFeaturedProductsAsync(storeId, userId);
             return Ok(products);
         }
 
@@ -39,7 +42,8 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetByCategory(Guid categoryId)
         {
-            var products = await _productService.GetProductsByCategoryAsync(categoryId);
+            var userId = GetUserIdOrNull();
+            var products = await _productService.GetProductsByCategoryAsync(categoryId, userId);
             return Ok(products);
         }
 
@@ -48,7 +52,8 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetBySection(Guid sectionId)
         {
-            var products = await _productService.GetProductsBySectionAsync(sectionId);
+            var userId = GetUserIdOrNull();
+            var products = await _productService.GetProductsBySectionAsync(sectionId, userId);
             return Ok(products);
         }
 
@@ -57,7 +62,8 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var product = await _productService.GetProductByIdAsync(id);
+            var userId = GetUserIdOrNull();
+            var product = await _productService.GetProductByIdAsync(id, userId);
 
             if (product == null)
                 return NotFound(new { message = "المنتج غير موجود" });
@@ -70,7 +76,8 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetBySlug(string slug)
         {
-            var product = await _productService.GetProductBySlugAsync(slug);
+            var userId = GetUserIdOrNull();
+            var product = await _productService.GetProductBySlugAsync(slug, userId);
 
             if (product == null)
                 return NotFound(new { message = "المنتج غير موجود" });
@@ -81,6 +88,7 @@ namespace onlineStore.Controllers
         // POST api/product
         [HttpPost]
         [Authorize(Roles = "SuperAdmin,StoreOwner")]
+        [Consumes("multipart/form-data")]
         public async Task<IActionResult> Create([FromForm] CreateProductDto dto)
         {
             if (!ModelState.IsValid)
@@ -93,7 +101,8 @@ namespace onlineStore.Controllers
         // PUT api/product/{id}
         [HttpPut("{id}")]
         [Authorize(Roles = "SuperAdmin,StoreOwner")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductDto dto)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Update(Guid id, [FromForm] UpdateProductDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -122,6 +131,7 @@ namespace onlineStore.Controllers
         // POST api/product/image
         [HttpPost("image")]
         [Authorize(Roles = "SuperAdmin,StoreOwner")]
+        [Consumes("multipart/form-data")]
         public async Task<IActionResult> AddImage([FromForm] AddProductImageDto dto)
         {
             if (!ModelState.IsValid)
@@ -147,9 +157,7 @@ namespace onlineStore.Controllers
         // POST api/product/{productId}/variant
         [HttpPost("{productId}/variant")]
         [Authorize(Roles = "SuperAdmin,StoreOwner")]
-        public async Task<IActionResult> AddVariant(
-            Guid productId,
-            [FromBody] CreateProductVariantDto dto)
+        public async Task<IActionResult> AddVariant(Guid productId, [FromBody] CreateProductVariantDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -171,39 +179,39 @@ namespace onlineStore.Controllers
             return Ok(new { message = "تم حذف النسخة بنجاح" });
         }
 
-        // POST api/product/{id}/visit
-        [HttpPost("{id}/visit")]
+        // POST api/product/{productId}/visit
+        [HttpPost("{productId}/visit")]
         [AllowAnonymous]
-        public async Task<IActionResult> IncrementVisit(Guid id)
+        public async Task<IActionResult> IncrementVisit(Guid productId)
         {
-            var visitCount = await _productService.IncrementProductVisitAsync(id);
+            var count = await _productService.IncrementProductVisitAsync(productId);
 
-            if (visitCount == null)
-                return NotFound(new { message = "product does not exist" });
+            if (count == null)
+                return NotFound(new { message = "المنتج غير موجود" });
 
-            return Ok(new
-            {
-                message = "visit incremented successfully",
-                productId = id,
-                visitCount = visitCount.Value
-            });
+            return Ok(new { visitCount = count });
         }
 
-        // GET api/product/{id}/visit-count
-        [HttpGet("{id}/visit-count")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetVisitCount(Guid id)
+        // GET api/product/{productId}/visit-count
+        [HttpGet("{productId}/visit-count")]
+        [Authorize(Roles = "SuperAdmin,StoreOwner")]
+        public async Task<IActionResult> GetVisitCount(Guid productId)
         {
-            var visitCount = await _productService.GetProductVisitCountAsync(id);
+            var count = await _productService.GetProductVisitCountAsync(productId);
 
-            if (visitCount == null)
-                return NotFound(new { message = "product does not exist" });
+            if (count == null)
+                return NotFound(new { message = "المنتج غير موجود" });
 
-            return Ok(new
-            {
-                productId = id,
-                visitCount = visitCount.Value
-            });
+            return Ok(new { visitCount = count });
+        }
+
+        private Guid? GetUserIdOrNull()
+        {
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            return Guid.TryParse(userIdStr, out var userId)
+                ? userId
+                : null;
         }
     }
 }

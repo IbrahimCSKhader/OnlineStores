@@ -1,0 +1,192 @@
+Using launch settings from C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\Properties\launchSettings.json...
+ContentRootPath: C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore
+WebRootPath: C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\wwwroot
+info: StartupPaths[0]
+      ContentRootPath: C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore
+info: StartupPaths[0]
+      WebRootPath: C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore\wwwroot
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'CartItem'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Store' has a global query filter defined and is the required end of a relationship with the entity 'ShoppingCart'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Order' has a global query filter defined and is the required end of a relationship with the entity 'OrderItem'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Store' has a global query filter defined and is the required end of a relationship with the entity 'ProductAttribute'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'ProductAttributeValue'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'ProductImage'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[10622]
+      Entity 'Product' has a global query filter defined and is the required end of a relationship with the entity 'ProductVariant'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (152ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT 1
+info: Microsoft.EntityFrameworkCore.Migrations[20411]
+      Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (125ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      DECLARE @result int;
+      EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+      SELECT @result
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (108ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+      BEGIN
+          CREATE TABLE [__EFMigrationsHistory] (
+              [MigrationId] nvarchar(150) NOT NULL,
+              [ProductVersion] nvarchar(32) NOT NULL,
+              CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+          );
+      END;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (81ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (80ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (83ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [MigrationId], [ProductVersion]
+      FROM [__EFMigrationsHistory]
+      ORDER BY [MigrationId];
+info: Microsoft.EntityFrameworkCore.Migrations[20405]
+      No migrations were applied. The database is already up to date.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (148ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      DECLARE @result int;
+      EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+      SELECT @result
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (117ms) [Parameters=[@normalizedName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[Id], [r].[ConcurrencyStamp], [r].[Name], [r].[NormalizedName]
+      FROM [Roles] AS [r]
+      WHERE [r].[NormalizedName] = @normalizedName
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (115ms) [Parameters=[@normalizedName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[Id], [r].[ConcurrencyStamp], [r].[Name], [r].[NormalizedName]
+      FROM [Roles] AS [r]
+      WHERE [r].[NormalizedName] = @normalizedName
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (88ms) [Parameters=[@normalizedName='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [r].[Id], [r].[ConcurrencyStamp], [r].[Name], [r].[NormalizedName]
+      FROM [Roles] AS [r]
+      WHERE [r].[NormalizedName] = @normalizedName
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (84ms) [Parameters=[@normalizedEmail='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [u].[Id], [u].[AccessFailedCount], [u].[AvatarUrl], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FirstName], [u].[IsActive], [u].[IsDeleted], [u].[LastName], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[SecurityStamp], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+      FROM [Users] AS [u]
+      WHERE [u].[NormalizedEmail] = @normalizedEmail
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5099
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\Users\wesal\OneDrive\سطح المكتب\OnlienStore\onlineStore
+warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
+      Failed to determine the https port for redirect.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (82ms) [Parameters=[@normalizedEmail='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(2) [u].[Id], [u].[AccessFailedCount], [u].[AvatarUrl], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FirstName], [u].[IsActive], [u].[IsDeleted], [u].[LastName], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[SecurityStamp], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+      FROM [Users] AS [u]
+      WHERE [u].[NormalizedEmail] = @normalizedEmail
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (94ms) [Parameters=[@userId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT [r].[Name]
+      FROM [UserRoles] AS [u]
+      INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[Id]
+      WHERE [u].[UserId] = @userId
+info: onlineStore.Services.AuthServices.AuthService[0]
+      User logged in: ik2907951@gmail.com
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (83ms) [Parameters=[@userId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT [r].[Name]
+      FROM [UserRoles] AS [u]
+      INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[Id]
+      WHERE [u].[UserId] = @userId
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (81ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [s].[Id], [s].[BusinessType], [s].[CoverImageUrl], [s].[CreatedAt], [s].[Description], [s].[IsActive], [s].[IsDeleted], [s].[LogoUrl], [s].[Name], [s].[OwnerId], [s].[Slug], [s].[ThemeTemplate], [s].[UpdatedAt], [s].[VisitCount], [s].[WhatsAppNumber]
+      FROM [Stores] AS [s]
+      WHERE [s].[IsDeleted] = CAST(0 AS bit)
+info: CategoryController[0]
+      Create category request started. StoreId: 6d975a81-ebbd-428d-bae9-5c536048a7a7, Name: Temp Category 20260331195414, Slug: temp-category-20260331195414
+info: onlineStore.Services.Category.CategoryService[0]
+      CreateCategoryAsync started.
+info: onlineStore.Services.Category.CategoryService[0]
+      EnsureCanManageStoreAsync started. StoreId: 6d975a81-ebbd-428d-bae9-5c536048a7a7
+info: onlineStore.Services.Category.CategoryService[0]
+      EnsureCanManageStoreAsync passed because current user is SuperAdmin. StoreId: 6d975a81-ebbd-428d-bae9-5c536048a7a7
+info: onlineStore.Services.Category.CategoryService[0]
+      Store management permission check passed.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (117ms) [Parameters=[@dto_StoreId='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [s].[Id], [s].[BusinessType], [s].[CoverImageUrl], [s].[CreatedAt], [s].[Description], [s].[IsActive], [s].[IsDeleted], [s].[LogoUrl], [s].[Name], [s].[OwnerId], [s].[Slug], [s].[ThemeTemplate], [s].[UpdatedAt], [s].[VisitCount], [s].[WhatsAppNumber]
+      FROM [Stores] AS [s]
+      WHERE [s].[IsDeleted] = CAST(0 AS bit) AND [s].[Id] = @dto_StoreId
+info: onlineStore.Services.Category.CategoryService[0]
+      Store found successfully. StoreId: 6d975a81-ebbd-428d-bae9-5c536048a7a7, StoreSlug: حكاية-خرزة
+info: onlineStore.Services.Category.CategoryService[0]
+      Final category slug generated. FinalSlug: حكاية-خرزة-temp-category-20260331195414
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (81ms) [Parameters=[@finalSlug='?' (Size = 100)], CommandType='Text', CommandTimeout='30']
+      SELECT CASE
+          WHEN EXISTS (
+              SELECT 1
+              FROM [Categories] AS [c]
+              WHERE [c].[Slug] = @finalSlug) THEN CAST(1 AS bit)
+          ELSE CAST(0 AS bit)
+      END
+info: onlineStore.Services.Category.CategoryService[0]
+      Category entity prepared. Name: Temp Category 20260331195414, Slug: حكاية-خرزة-temp-category-20260331195414, StoreId: 6d975a81-ebbd-428d-bae9-5c536048a7a7
+info: onlineStore.Services.Category.CategoryService[0]
+      Saving category entity to database...
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (90ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime2), @p2='?' (Size = 500), @p3='?' (DbType = Int32), @p4='?' (DbType = Boolean), @p5='?' (DbType = Boolean), @p6='?' (Size = 100), @p7='?' (DbType = Guid), @p8='?' (Size = 100), @p9='?' (DbType = Guid), @p10='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      INSERT INTO [Categories] ([Id], [CreatedAt], [Description], [DisplayOrder], [IsActive], [IsDeleted], [Name], [ParentCategoryId], [Slug], [StoreId], [UpdatedAt])
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10);
+info: onlineStore.Services.Category.CategoryService[0]
+      Category created successfully. CategoryId: 0c597470-1640-4078-b1b6-29f16d56f13f
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[@category_Id='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [c].[Id], [c].[CreatedAt], [c].[Description], [c].[DisplayOrder], [c].[IsActive], [c].[IsDeleted], [c].[Name], [c].[ParentCategoryId], [c].[Slug], [c].[StoreId], [c].[UpdatedAt], [c1].[Id], [c1].[CreatedAt], [c1].[Description], [c1].[DisplayOrder], [c1].[IsActive], [c1].[IsDeleted], [c1].[Name], [c1].[ParentCategoryId], [c1].[Slug], [c1].[StoreId], [c1].[UpdatedAt]
+      FROM [Categories] AS [c]
+      LEFT JOIN (
+          SELECT [c0].[Id], [c0].[CreatedAt], [c0].[Description], [c0].[DisplayOrder], [c0].[IsActive], [c0].[IsDeleted], [c0].[Name], [c0].[ParentCategoryId], [c0].[Slug], [c0].[StoreId], [c0].[UpdatedAt]
+          FROM [Categories] AS [c0]
+          WHERE [c0].[IsDeleted] = CAST(0 AS bit)
+      ) AS [c1] ON [c].[ParentCategoryId] = [c1].[Id]
+      WHERE [c].[IsDeleted] = CAST(0 AS bit) AND [c].[Id] = @category_Id
+info: CategoryController[0]
+      Create category request succeeded. CategoryId: 0c597470-1640-4078-b1b6-29f16d56f13f, StoreId: 6d975a81-ebbd-428d-bae9-5c536048a7a7
+info: onlineStore.Services.Category.CategoryService[0]
+      DeleteCategoryAsync started. CategoryId: 0c597470-1640-4078-b1b6-29f16d56f13f
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (119ms) [Parameters=[@id='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [c].[Id], [c].[CreatedAt], [c].[Description], [c].[DisplayOrder], [c].[IsActive], [c].[IsDeleted], [c].[Name], [c].[ParentCategoryId], [c].[Slug], [c].[StoreId], [c].[UpdatedAt], [s0].[Id], [s0].[BusinessType], [s0].[CoverImageUrl], [s0].[CreatedAt], [s0].[Description], [s0].[IsActive], [s0].[IsDeleted], [s0].[LogoUrl], [s0].[Name], [s0].[OwnerId], [s0].[Slug], [s0].[ThemeTemplate], [s0].[UpdatedAt], [s0].[VisitCount], [s0].[WhatsAppNumber]
+      FROM [Categories] AS [c]
+      INNER JOIN (
+          SELECT [s].[Id], [s].[BusinessType], [s].[CoverImageUrl], [s].[CreatedAt], [s].[Description], [s].[IsActive], [s].[IsDeleted], [s].[LogoUrl], [s].[Name], [s].[OwnerId], [s].[Slug], [s].[ThemeTemplate], [s].[UpdatedAt], [s].[VisitCount], [s].[WhatsAppNumber]
+          FROM [Stores] AS [s]
+          WHERE [s].[IsDeleted] = CAST(0 AS bit)
+      ) AS [s0] ON [c].[StoreId] = [s0].[Id]
+      WHERE [c].[IsDeleted] = CAST(0 AS bit) AND [c].[Id] = @id
+info: onlineStore.Services.Category.CategoryService[0]
+      EnsureCanManageStoreAsync started. StoreId: 6d975a81-ebbd-428d-bae9-5c536048a7a7
+info: onlineStore.Services.Category.CategoryService[0]
+      EnsureCanManageStoreAsync passed because current user is SuperAdmin. StoreId: 6d975a81-ebbd-428d-bae9-5c536048a7a7
+info: onlineStore.Services.Category.CategoryService[0]
+      Store management permission check passed for delete.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (85ms) [Parameters=[@p2='?' (DbType = Guid), @p0='?' (DbType = Boolean), @p1='?' (DbType = DateTime2)], CommandType='Text', CommandTimeout='30']
+      SET IMPLICIT_TRANSACTIONS OFF;
+      SET NOCOUNT ON;
+      UPDATE [Categories] SET [IsDeleted] = @p0, [UpdatedAt] = @p1
+      OUTPUT 1
+      WHERE [Id] = @p2;
+info: onlineStore.Services.Category.CategoryService[0]
+      Category soft deleted successfully. CategoryId: 0c597470-1640-4078-b1b6-29f16d56f13f
