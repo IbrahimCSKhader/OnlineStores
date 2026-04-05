@@ -174,5 +174,54 @@ namespace onlineStore.Services.Email
 
             return new EmailTemplateContent(subject, htmlBody, plainTextBody);
         }
+
+        public static EmailTemplateContent BuildPasswordResetConfirmationEmail(string? firstName)
+        {
+            var normalizedFirstName = string.IsNullOrWhiteSpace(firstName)
+                ? "Customer"
+                : firstName.Trim();
+
+            var safeFirstName = WebUtility.HtmlEncode(normalizedFirstName);
+            const string subject = "Your password was changed";
+
+            var htmlBody = $$"""
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>{{subject}}</title>
+                </head>
+                <body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+                    <div style="width:100%;padding:24px 12px;box-sizing:border-box;">
+                        <div style="max-width:600px;margin:0 auto;background-color:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+                            <div style="padding:32px 32px 16px;background-color:#0f172a;color:#ffffff;">
+                                <h1 style="margin:0;font-size:28px;line-height:1.3;">Password updated</h1>
+                                <p style="margin:12px 0 0;font-size:16px;line-height:1.6;color:#cbd5e1;">
+                                    Hello {{safeFirstName}}, your password was changed successfully.
+                                </p>
+                            </div>
+                            <div style="padding:32px;">
+                                <p style="margin:0 0 12px;font-size:16px;line-height:1.7;">
+                                    This is a confirmation that your account password has just been updated.
+                                </p>
+                                <p style="margin:0;font-size:14px;line-height:1.7;color:#6b7280;">
+                                    If you did not make this change, please reset your password immediately and contact support.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """;
+
+            var plainTextBody =
+                $"Hello {normalizedFirstName},{Environment.NewLine}{Environment.NewLine}" +
+                "This is a confirmation that your password was changed successfully." +
+                $"{Environment.NewLine}{Environment.NewLine}" +
+                "If you did not make this change, reset your password immediately and contact support.";
+
+            return new EmailTemplateContent(subject, htmlBody, plainTextBody);
+        }
     }
 }

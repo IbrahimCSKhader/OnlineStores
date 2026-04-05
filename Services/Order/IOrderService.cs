@@ -4,10 +4,10 @@ namespace onlineStore.Services.Order
 {
     public interface IOrderService
     {
-        Task<OrderDto> CreateOrderAsync(Guid userId, CreateOrderDto dto);
+        Task<OrderDto> CreateOrderAsync(Guid storeCustomerId, CreateOrderDto dto);
 
-        Task<List<OrderSummaryDto>> GetUserOrdersAsync(Guid userId);
-        Task<OrderDto?> GetUserOrderByIdAsync(Guid userId, Guid orderId);
+        Task<List<OrderSummaryDto>> GetUserOrdersAsync(Guid storeCustomerId);
+        Task<OrderDto?> GetUserOrderByIdAsync(Guid storeCustomerId, Guid orderId);
 
         Task<List<OrderSummaryDto>> GetStoreOrdersAsync(Guid storeId);
         Task<OrderDto?> GetStoreOrderByIdAsync(Guid storeId, Guid orderId);

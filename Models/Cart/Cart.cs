@@ -1,19 +1,17 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using onlineStore.Models.Identity;
-
 namespace onlineStore.Models.CartModels
 {
-    [Index(nameof(UserId))]
+    [Index(nameof(StoreCustomerId))]
     [Index(nameof(StoreId))]
     public class ShoppingCart : BaseEntity
     {
-        public Guid UserId { get; set; }
-        public AppUser User { get; set; }
+        public Guid StoreCustomerId { get; set; }
+        public StoreCustomer StoreCustomer { get; set; } = null!;
 
         public Guid StoreId { get; set; }
-        public Store Store { get; set; }
+        public Store Store { get; set; } = null!;
 
         // Navigation
-        public ICollection<CartItem> Items { get; set; }
+        public ICollection<CartItem> Items { get; set; } = new List<CartItem>();
     }
 }

@@ -16,7 +16,10 @@ namespace onlineStore.DTOs.Store
         public string? LogoUrl { get; set; }
         public string? CoverImageUrl { get; set; }
         public string? WhatsAppNumber { get; set; }
+        [MaxLength(100000)]
+        public string? StoreStory { get; set; }
         public string? ThemeTemplate { get; set; }
         public bool? IsActive { get; set; }
+        public List<StoreContactAccountInputDto>? ContactAccounts { get; set; }
     }
 }

@@ -1,12 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using onlineStore.Models.Enums;
-using onlineStore.Models.Identity;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using onlineStore.Models.Discounts;
 namespace onlineStore.Models.Orders
 {
-    [Index(nameof(UserId))]
+    [Index(nameof(StoreCustomerId))]
     [Index(nameof(StoreId))]
     [Index(nameof(Status))]
     [Index(nameof(OrderNumber), IsUnique = true)]
@@ -47,13 +46,13 @@ namespace onlineStore.Models.Orders
         public Coupon? Coupon { get; set; }
 
         // FKs
-        public Guid UserId { get; set; }
-        public AppUser User { get; set; }
+        public Guid StoreCustomerId { get; set; }
+        public StoreCustomer StoreCustomer { get; set; } = null!;
 
         public Guid StoreId { get; set; }
-        public Store Store { get; set; }
+        public Store Store { get; set; } = null!;
 
         // Navigation
-        public ICollection<OrderItem> Items { get; set; }
+        public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
     }
 }

@@ -24,8 +24,13 @@ namespace onlineStore.DTOs.Store
         [MaxLength(30)]
         public string? WhatsAppNumber { get; set; }
 
+        [MaxLength(100000)]
+        public string? StoreStory { get; set; }
+
         [MaxLength(50)]
         public string? ThemeTemplate { get; set; } = "default";
+
+        public List<StoreContactAccountInputDto>? ContactAccounts { get; set; }
 
         [Required]
         public Guid OwnerId { get; set; }

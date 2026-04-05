@@ -9,10 +9,10 @@ namespace onlineStore.Models
     public class Store : BaseEntity
     {
         [Required, MaxLength(100)]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
         [Required, MaxLength(100)]
-        public string Slug { get; set; }
+        public string Slug { get; set; } = null!;
 
         [MaxLength(500)]
         public string? Description { get; set; }
@@ -26,9 +26,11 @@ namespace onlineStore.Models
         public bool IsActive { get; set; } = true;
 
         public Guid OwnerId { get; set; }
-        public AppUser Owner { get; set; }
+        public AppUser Owner { get; set; } = null!;
         [MaxLength(30)]
         public string? WhatsAppNumber { get; set; }
+        [MaxLength(100000)]
+        public string? StoreStory { get; set; }
 
         [MaxLength(50)]
         public string? ThemeTemplate { get; set; } = "default";
@@ -36,5 +38,6 @@ namespace onlineStore.Models
         
         public ICollection<Category> Categories { get; set; } = new List<Category>();
         public ICollection<Section> Sections { get; set; } = new List<Section>();
+        public ICollection<StoreContactAccount> ContactAccounts { get; set; } = new List<StoreContactAccount>();
     }
 }

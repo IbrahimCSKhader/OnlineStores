@@ -10,6 +10,6 @@ namespace onlineStore.Services.CustomerStore
         Task<CustomerStoreDto?> UpdateAsync(Guid id, UpdateCustomerStoreDto dto);
         Task<bool> DeleteAsync(Guid id);
 
-        Task<decimal?> GetCustomerDiscountAsync(Guid storeId, Guid customerId);
+        Task<decimal?> GetCustomerDiscountAsync(Guid storeId, Guid storeCustomerId);
     }
 }

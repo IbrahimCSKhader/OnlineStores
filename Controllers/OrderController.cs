@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using onlineStore.DTOs.Order;
+using onlineStore.Security;
 using onlineStore.Services.Order;
-using System.Security.Claims;
 
 namespace onlineStore.Controllers
 {
@@ -20,18 +20,19 @@ namespace onlineStore.Controllers
 
 
         [HttpPost]
-        [Authorize(Roles = "Customer")]
+        [Authorize(Policy = "StoreCustomerOnly")]
         public async Task<IActionResult> Create([FromBody] CreateOrderDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var userId = GetUserId();
-            if (userId == null) return Unauthorized();
+            var storeCustomer = GetStoreCustomerContext();
+            if (storeCustomer == null) return Unauthorized();
+            if (storeCustomer.Value.StoreId != dto.StoreId) return Forbid();
 
             try
             {
-                var order = await _orderService.CreateOrderAsync(userId.Value, dto);
+                var order = await _orderService.CreateOrderAsync(storeCustomer.Value.StoreCustomerId, dto);
                 return Ok(order);
             }
             catch (Exception ex)
@@ -42,25 +43,25 @@ namespace onlineStore.Controllers
 
 
         [HttpGet("my-orders")]
-        [Authorize(Roles = "Customer")]
+        [Authorize(Policy = "StoreCustomerOnly")]
         public async Task<IActionResult> GetMyOrders()
         {
-            var userId = GetUserId();
-            if (userId == null) return Unauthorized();
+            var storeCustomer = GetStoreCustomerContext();
+            if (storeCustomer == null) return Unauthorized();
 
-            var orders = await _orderService.GetUserOrdersAsync(userId.Value);
+            var orders = await _orderService.GetUserOrdersAsync(storeCustomer.Value.StoreCustomerId);
             return Ok(orders);
         }
 
       
         [HttpGet("my-orders/{orderId}")]
-        [Authorize(Roles = "Customer")]
+        [Authorize(Policy = "StoreCustomerOnly")]
         public async Task<IActionResult> GetMyOrderById(Guid orderId)
         {
-            var userId = GetUserId();
-            if (userId == null) return Unauthorized();
+            var storeCustomer = GetStoreCustomerContext();
+            if (storeCustomer == null) return Unauthorized();
 
-            var order = await _orderService.GetUserOrderByIdAsync(userId.Value, orderId);
+            var order = await _orderService.GetUserOrderByIdAsync(storeCustomer.Value.StoreCustomerId, orderId);
 
             if (order == null)
                 return NotFound(new { message = " Order does not exit" });
@@ -108,12 +109,13 @@ namespace onlineStore.Controllers
         }
 
 
-        private Guid? GetUserId()
+        private (Guid StoreCustomerId, Guid StoreId)? GetStoreCustomerContext()
         {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var storeCustomerId = User.GetStoreCustomerId();
+            var storeId = User.GetStoreCustomerStoreId();
 
-            return Guid.TryParse(userIdStr, out var userId)
-                ? userId
+            return storeCustomerId.HasValue && storeId.HasValue
+                ? (storeCustomerId.Value, storeId.Value)
                 : null;
         }
     }

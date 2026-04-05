@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using onlineStore.DTOs.Product;
+using onlineStore.Security;
 using onlineStore.Services.Product;
-using System.Security.Claims;
 
 namespace onlineStore.Controllers
 {
@@ -207,11 +207,7 @@ namespace onlineStore.Controllers
 
         private Guid? GetUserIdOrNull()
         {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            return Guid.TryParse(userIdStr, out var userId)
-                ? userId
-                : null;
+            return User.GetStoreCustomerId();
         }
     }
 }

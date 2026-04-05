@@ -23,22 +23,44 @@ namespace onlineStore.Services.Review
                 .AsNoTracking()
                 .Where(r => r.ProductId == productId && r.IsApproved)
                 .OrderByDescending(r => r.CreatedAt)
-                .Select(r => ToDto(r))
+                .Select(r => new ReviewDto
+                {
+                    Id = r.Id,
+                    Rating = r.Rating,
+                    Comment = r.Comment,
+                    IsApproved = r.IsApproved,
+                    ProductId = r.ProductId,
+                    StoreCustomerId = r.StoreCustomerId,
+                    StoreId = r.StoreId,
+                    StoreCustomerFullName = (r.StoreCustomer.FirstName + " " + r.StoreCustomer.LastName).Trim(),
+                    CreatedAt = r.CreatedAt
+                })
                 .ToListAsync();
         }
 
 
-        public async Task<ReviewDto?> GetUserReviewForProductAsync(Guid userId, Guid productId)
+        public async Task<ReviewDto?> GetUserReviewForProductAsync(Guid storeCustomerId, Guid productId)
         {
-            var review = await _context.Reviews
+            return await _context.Reviews
                 .AsNoTracking()
-                .FirstOrDefaultAsync(r => r.UserId == userId && r.ProductId == productId);
-
-            return review == null ? null : ToDto(review);
+                .Where(r => r.StoreCustomerId == storeCustomerId && r.ProductId == productId)
+                .Select(r => new ReviewDto
+                {
+                    Id = r.Id,
+                    Rating = r.Rating,
+                    Comment = r.Comment,
+                    IsApproved = r.IsApproved,
+                    ProductId = r.ProductId,
+                    StoreCustomerId = r.StoreCustomerId,
+                    StoreId = r.StoreId,
+                    StoreCustomerFullName = (r.StoreCustomer.FirstName + " " + r.StoreCustomer.LastName).Trim(),
+                    CreatedAt = r.CreatedAt
+                })
+                .FirstOrDefaultAsync();
         }
 
 
-        public async Task<ReviewDto> CreateReviewAsync(Guid userId, CreateReviewDto dto)
+        public async Task<ReviewDto> CreateReviewAsync(Guid storeCustomerId, CreateReviewDto dto)
         {
             if (dto.StoreId == Guid.Empty || dto.ProductId == Guid.Empty)
                 throw new Exception("Invalid store or product identifier");
@@ -53,9 +75,11 @@ namespace onlineStore.Services.Review
             if (product.StoreId != dto.StoreId)
                 throw new Exception("Product does not belong to this store");
 
+            await EnsureActiveStoreCustomerAsync(storeCustomerId, dto.StoreId);
+
             var alreadyReviewed = await _context.Reviews
                 .IgnoreQueryFilters()
-                .AnyAsync(r => r.UserId == userId && r.ProductId == dto.ProductId);
+                .AnyAsync(r => r.StoreCustomerId == storeCustomerId && r.ProductId == dto.ProductId);
 
             if (alreadyReviewed)
                 throw new Exception("You have already reviewed this product");
@@ -66,7 +90,7 @@ namespace onlineStore.Services.Review
                 Comment = dto.Comment?.Trim(),
                 IsApproved = false,
                 ProductId = dto.ProductId,
-                UserId = userId,
+                StoreCustomerId = storeCustomerId,
                 StoreId = dto.StoreId,
                 CreatedAt = DateTime.UtcNow
             };
@@ -76,17 +100,17 @@ namespace onlineStore.Services.Review
 
             _logger.LogInformation(
                 "Review created for product {ProductId} by user {UserId}",
-                dto.ProductId, userId);
+                dto.ProductId, storeCustomerId);
 
             return await GetReviewDtoByIdAsync(review.Id)
                    ?? throw new Exception("Failed to load review after creation");
         }
 
 
-        public async Task<ReviewDto?> UpdateReviewAsync(Guid userId, Guid reviewId, UpdateReviewDto dto)
+        public async Task<ReviewDto?> UpdateReviewAsync(Guid storeCustomerId, Guid reviewId, UpdateReviewDto dto)
         {
             var review = await _context.Reviews
-                .FirstOrDefaultAsync(r => r.Id == reviewId && r.UserId == userId);
+                .FirstOrDefaultAsync(r => r.Id == reviewId && r.StoreCustomerId == storeCustomerId);
 
             if (review == null)
                 return null;
@@ -104,16 +128,16 @@ namespace onlineStore.Services.Review
 
             _logger.LogInformation(
                 "Review updated: {ReviewId} by user {UserId}",
-                reviewId, userId);
+                reviewId, storeCustomerId);
 
             return await GetReviewDtoByIdAsync(reviewId);
         }
 
 
-        public async Task<bool> DeleteReviewAsync(Guid userId, Guid reviewId)
+        public async Task<bool> DeleteReviewAsync(Guid storeCustomerId, Guid reviewId)
         {
             var review = await _context.Reviews
-                .FirstOrDefaultAsync(r => r.Id == reviewId && r.UserId == userId);
+                .FirstOrDefaultAsync(r => r.Id == reviewId && r.StoreCustomerId == storeCustomerId);
 
             if (review == null)
                 return false;
@@ -123,7 +147,7 @@ namespace onlineStore.Services.Review
 
             _logger.LogInformation(
                 "Review deleted: {ReviewId} by user {UserId}",
-                reviewId, userId);
+                reviewId, storeCustomerId);
 
             return true;
         }
@@ -134,7 +158,18 @@ namespace onlineStore.Services.Review
                 .AsNoTracking()
                 .Where(r => r.StoreId == storeId)
                 .OrderByDescending(r => r.CreatedAt)
-                .Select(r => ToDto(r))
+                .Select(r => new ReviewDto
+                {
+                    Id = r.Id,
+                    Rating = r.Rating,
+                    Comment = r.Comment,
+                    IsApproved = r.IsApproved,
+                    ProductId = r.ProductId,
+                    StoreCustomerId = r.StoreCustomerId,
+                    StoreId = r.StoreId,
+                    StoreCustomerFullName = (r.StoreCustomer.FirstName + " " + r.StoreCustomer.LastName).Trim(),
+                    CreatedAt = r.CreatedAt
+                })
                 .ToListAsync();
         }
 
@@ -163,24 +198,31 @@ namespace onlineStore.Services.Review
             return await _context.Reviews
                 .AsNoTracking()
                 .Where(r => r.Id == reviewId)
-                .Select(r => ToDto(r))
+                .Select(r => new ReviewDto
+                {
+                    Id = r.Id,
+                    Rating = r.Rating,
+                    Comment = r.Comment,
+                    IsApproved = r.IsApproved,
+                    ProductId = r.ProductId,
+                    StoreCustomerId = r.StoreCustomerId,
+                    StoreId = r.StoreId,
+                    StoreCustomerFullName = (r.StoreCustomer.FirstName + " " + r.StoreCustomer.LastName).Trim(),
+                    CreatedAt = r.CreatedAt
+                })
                 .FirstOrDefaultAsync();
         }
 
-
-        private static ReviewDto ToDto(Models.Reviews.Review r) => new()
+        private async Task EnsureActiveStoreCustomerAsync(Guid storeCustomerId, Guid storeId)
         {
-            Id = r.Id,
-            Rating = r.Rating,
-            Comment = r.Comment,
-            IsApproved = r.IsApproved,
-            ProductId = r.ProductId,
-            UserId = r.UserId,
-            StoreId = r.StoreId,
-            UserFullName = r.User != null
-                ? $"{r.User.FirstName} {r.User.LastName}".Trim()
-                : null,
-            CreatedAt = r.CreatedAt
-        };
+            var exists = await _context.StoreCustomers
+                .AsNoTracking()
+                .AnyAsync(c => c.Id == storeCustomerId
+                            && c.StoreId == storeId
+                            && c.IsActive);
+
+            if (!exists)
+                throw new UnauthorizedAccessException("العميل لا يملك صلاحية الوصول إلى هذا المتجر");
+        }
     }
 }

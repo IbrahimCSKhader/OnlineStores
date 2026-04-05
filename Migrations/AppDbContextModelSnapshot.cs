@@ -178,20 +178,20 @@ namespace onlineStore.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<Guid>("StoreCustomerId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("StoreId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("StoreId");
+                    b.HasIndex("StoreCustomerId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("StoreId");
 
                     b.ToTable("Carts");
                 });
@@ -242,43 +242,6 @@ namespace onlineStore.Migrations
                     b.HasIndex("StoreId");
 
                     b.ToTable("Categories");
-                });
-
-            modelBuilder.Entity("onlineStore.Models.CustomerStore", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("CustomerId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("DiscountPercentage")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid>("StoreId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CustomerId");
-
-                    b.HasIndex("StoreId", "CustomerId")
-                        .IsUnique();
-
-                    b.ToTable("CustomerStores");
                 });
 
             modelBuilder.Entity("onlineStore.Models.Discounts.Coupon", b =>
@@ -554,6 +517,9 @@ namespace onlineStore.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("StoreCustomerId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("StoreId")
                         .HasColumnType("uniqueidentifier");
 
@@ -570,9 +536,6 @@ namespace onlineStore.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CouponId");
@@ -582,9 +545,9 @@ namespace onlineStore.Migrations
 
                     b.HasIndex("Status");
 
-                    b.HasIndex("StoreId");
+                    b.HasIndex("StoreCustomerId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("StoreId");
 
                     b.ToTable("Orders");
                 });
@@ -927,24 +890,24 @@ namespace onlineStore.Migrations
                     b.Property<int>("Rating")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("StoreCustomerId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("StoreId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ProductId");
 
+                    b.HasIndex("StoreCustomerId");
+
                     b.HasIndex("StoreId");
 
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("UserId", "ProductId")
+                    b.HasIndex("StoreCustomerId", "ProductId")
                         .IsUnique();
 
                     b.ToTable("Reviews");
@@ -1039,6 +1002,10 @@ namespace onlineStore.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("StoreStory")
+                        .HasMaxLength(100000)
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("ThemeTemplate")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -1061,6 +1028,122 @@ namespace onlineStore.Migrations
                         .IsUnique();
 
                     b.ToTable("Stores");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.StoreContactAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StoreId", "SortOrder");
+
+                    b.ToTable("StoreContactAccounts");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.StoreCustomer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("DiscountPercentage")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("EmailVerificationCodeExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmailVerificationCodeHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("PasswordResetCodeExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PasswordResetCodeHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StoreId");
+
+                    b.HasIndex("StoreId", "Email")
+                        .IsUnique();
+
+                    b.ToTable("CustomerStores", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -1141,21 +1224,21 @@ namespace onlineStore.Migrations
 
             modelBuilder.Entity("onlineStore.Models.CartModels.ShoppingCart", b =>
                 {
+                    b.HasOne("onlineStore.Models.StoreCustomer", "StoreCustomer")
+                        .WithMany("Carts")
+                        .HasForeignKey("StoreCustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("onlineStore.Models.Store", "Store")
                         .WithMany()
                         .HasForeignKey("StoreId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("onlineStore.Models.Identity.AppUser", "User")
-                        .WithMany("Carts")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("Store");
 
-                    b.Navigation("User");
+                    b.Navigation("StoreCustomer");
                 });
 
             modelBuilder.Entity("onlineStore.Models.Category", b =>
@@ -1165,25 +1248,6 @@ namespace onlineStore.Migrations
                         .HasForeignKey("StoreId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Store");
-                });
-
-            modelBuilder.Entity("onlineStore.Models.CustomerStore", b =>
-                {
-                    b.HasOne("onlineStore.Models.Identity.AppUser", "Customer")
-                        .WithMany()
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("onlineStore.Models.Store", "Store")
-                        .WithMany()
-                        .HasForeignKey("StoreId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Customer");
 
                     b.Navigation("Store");
                 });
@@ -1223,15 +1287,15 @@ namespace onlineStore.Migrations
                         .HasForeignKey("CouponId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("onlineStore.Models.Store", "Store")
-                        .WithMany()
-                        .HasForeignKey("StoreId")
+                    b.HasOne("onlineStore.Models.StoreCustomer", "StoreCustomer")
+                        .WithMany("Orders")
+                        .HasForeignKey("StoreCustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("onlineStore.Models.Identity.AppUser", "User")
-                        .WithMany("Orders")
-                        .HasForeignKey("UserId")
+                    b.HasOne("onlineStore.Models.Store", "Store")
+                        .WithMany()
+                        .HasForeignKey("StoreId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1239,7 +1303,7 @@ namespace onlineStore.Migrations
 
                     b.Navigation("Store");
 
-                    b.Navigation("User");
+                    b.Navigation("StoreCustomer");
                 });
 
             modelBuilder.Entity("onlineStore.Models.Orders.OrderItem", b =>
@@ -1354,15 +1418,15 @@ namespace onlineStore.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("onlineStore.Models.Store", "Store")
-                        .WithMany()
-                        .HasForeignKey("StoreId")
+                    b.HasOne("onlineStore.Models.StoreCustomer", "StoreCustomer")
+                        .WithMany("Reviews")
+                        .HasForeignKey("StoreCustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("onlineStore.Models.Identity.AppUser", "User")
-                        .WithMany("Reviews")
-                        .HasForeignKey("UserId")
+                    b.HasOne("onlineStore.Models.Store", "Store")
+                        .WithMany()
+                        .HasForeignKey("StoreId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1370,7 +1434,7 @@ namespace onlineStore.Migrations
 
                     b.Navigation("Store");
 
-                    b.Navigation("User");
+                    b.Navigation("StoreCustomer");
                 });
 
             modelBuilder.Entity("onlineStore.Models.Section", b =>
@@ -1395,6 +1459,28 @@ namespace onlineStore.Migrations
                     b.Navigation("Owner");
                 });
 
+            modelBuilder.Entity("onlineStore.Models.StoreContactAccount", b =>
+                {
+                    b.HasOne("onlineStore.Models.Store", "Store")
+                        .WithMany("ContactAccounts")
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Store");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.StoreCustomer", b =>
+                {
+                    b.HasOne("onlineStore.Models.Store", "Store")
+                        .WithMany()
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Store");
+                });
+
             modelBuilder.Entity("onlineStore.Models.CartModels.ShoppingCart", b =>
                 {
                     b.Navigation("Items");
@@ -1408,15 +1494,6 @@ namespace onlineStore.Migrations
             modelBuilder.Entity("onlineStore.Models.Discounts.Coupon", b =>
                 {
                     b.Navigation("Orders");
-                });
-
-            modelBuilder.Entity("onlineStore.Models.Identity.AppUser", b =>
-                {
-                    b.Navigation("Carts");
-
-                    b.Navigation("Orders");
-
-                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("onlineStore.Models.Orders.Order", b =>
@@ -1447,7 +1524,18 @@ namespace onlineStore.Migrations
                 {
                     b.Navigation("Categories");
 
+                    b.Navigation("ContactAccounts");
+
                     b.Navigation("Sections");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.StoreCustomer", b =>
+                {
+                    b.Navigation("Carts");
+
+                    b.Navigation("Orders");
+
+                    b.Navigation("Reviews");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,11 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using onlineStore.Models.Identity;
 using System.ComponentModel.DataAnnotations;
 
 namespace onlineStore.Models.Reviews
 {
     [Index(nameof(ProductId))]
-    [Index(nameof(UserId))]
+    [Index(nameof(StoreCustomerId))]
     [Index(nameof(StoreId))]
     public class Review : BaseEntity
     {
@@ -18,12 +17,12 @@ namespace onlineStore.Models.Reviews
         public bool IsApproved { get; set; } = false; // صاحب المتجر يوافق قبل النشر
 
         public Guid ProductId { get; set; }
-        public Product Product { get; set; }
+        public Product Product { get; set; } = null!;
 
-        public Guid UserId { get; set; }
-        public AppUser User { get; set; }
+        public Guid StoreCustomerId { get; set; }
+        public StoreCustomer StoreCustomer { get; set; } = null!;
 
         public Guid StoreId { get; set; }
-        public Store Store { get; set; }
+        public Store Store { get; set; } = null!;
     }
 }

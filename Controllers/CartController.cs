@@ -2,14 +2,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using onlineStore.DTOs.Cart;
+using onlineStore.Security;
 using onlineStore.Services.Cart;
-using System.Security.Claims;
 
 namespace onlineStore.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // ← كل الكارت محتاج تسجيل دخول
+    [Authorize(Policy = "StoreCustomerOnly")]
     public class CartController : ControllerBase
     {
         private readonly ICartService _cartService;
@@ -26,10 +26,11 @@ namespace onlineStore.Controllers
         [HttpGet("{storeId}")]
         public async Task<IActionResult> GetCart(Guid storeId)
         {
-            var userId = GetUserId();
-            if (userId == null) return Unauthorized();
+            var storeCustomer = GetStoreCustomerContext();
+            if (storeCustomer == null) return Unauthorized();
+            if (storeCustomer.Value.StoreId != storeId) return Forbid();
 
-            var cart = await _cartService.GetCartAsync(userId.Value, storeId);
+            var cart = await _cartService.GetCartAsync(storeCustomer.Value.StoreCustomerId, storeId);
             return Ok(cart);
         }
 
@@ -43,10 +44,11 @@ namespace onlineStore.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var userId = GetUserId();
-            if (userId == null) return Unauthorized();
+            var storeCustomer = GetStoreCustomerContext();
+            if (storeCustomer == null) return Unauthorized();
+            if (storeCustomer.Value.StoreId != dto.StoreId) return Forbid();
 
-            var cart = await _cartService.AddToCartAsync(userId.Value, dto);
+            var cart = await _cartService.AddToCartAsync(storeCustomer.Value.StoreCustomerId, dto);
             return Ok(cart);
         }
 
@@ -61,11 +63,11 @@ namespace onlineStore.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var userId = GetUserId();
-            if (userId == null) return Unauthorized();
+            var storeCustomer = GetStoreCustomerContext();
+            if (storeCustomer == null) return Unauthorized();
 
             var cart = await _cartService
-                .UpdateCartItemAsync(userId.Value, cartItemId, dto);
+                .UpdateCartItemAsync(storeCustomer.Value.StoreCustomerId, cartItemId, dto);
             return Ok(cart);
         }
 
@@ -76,11 +78,11 @@ namespace onlineStore.Controllers
         [HttpDelete("item/{cartItemId}")]
         public async Task<IActionResult> RemoveItem(Guid cartItemId)
         {
-            var userId = GetUserId();
-            if (userId == null) return Unauthorized();
+            var storeCustomer = GetStoreCustomerContext();
+            if (storeCustomer == null) return Unauthorized();
 
             var cart = await _cartService
-                .RemoveFromCartAsync(userId.Value, cartItemId);
+                .RemoveFromCartAsync(storeCustomer.Value.StoreCustomerId, cartItemId);
             return Ok(cart);
         }
 
@@ -91,10 +93,11 @@ namespace onlineStore.Controllers
         [HttpDelete("clear/{storeId}")]
         public async Task<IActionResult> ClearCart(Guid storeId)
         {
-            var userId = GetUserId();
-            if (userId == null) return Unauthorized();
+            var storeCustomer = GetStoreCustomerContext();
+            if (storeCustomer == null) return Unauthorized();
+            if (storeCustomer.Value.StoreId != storeId) return Forbid();
 
-            await _cartService.ClearCartAsync(userId.Value, storeId);
+            await _cartService.ClearCartAsync(storeCustomer.Value.StoreCustomerId, storeId);
             return Ok(new { message = "تم تفريغ الكارت بنجاح" });
         }
 
@@ -102,13 +105,13 @@ namespace onlineStore.Controllers
         // ════════════════════════════════════════════════════
         // 🔐 Helper — Get UserId من الـ JWT Token
         // ════════════════════════════════════════════════════
-        private Guid? GetUserId()
+        private (Guid StoreCustomerId, Guid StoreId)? GetStoreCustomerContext()
         {
-            var userIdStr = User.FindFirst(
-                ClaimTypes.NameIdentifier)?.Value;
+            var storeCustomerId = User.GetStoreCustomerId();
+            var storeId = User.GetStoreCustomerStoreId();
 
-            return Guid.TryParse(userIdStr, out var userId)
-                ? userId
+            return storeCustomerId.HasValue && storeId.HasValue
+                ? (storeCustomerId.Value, storeId.Value)
                 : null;
         }
     }

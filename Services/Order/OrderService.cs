@@ -20,7 +20,7 @@ namespace onlineStore.Services.Order
             _logger = logger;
         }
 
-        public async Task<OrderDto> CreateOrderAsync(Guid userId, CreateOrderDto dto)
+        public async Task<OrderDto> CreateOrderAsync(Guid storeCustomerId, CreateOrderDto dto)
         {
             if (dto == null)
                 throw new ArgumentNullException(nameof(dto));
@@ -45,13 +45,15 @@ namespace onlineStore.Services.Order
 
                 try
                 {
+                    await EnsureActiveStoreCustomerAsync(storeCustomerId, dto.StoreId);
+
                     var cart = await _context.Carts
                         .Include(c => c.Items)
                             .ThenInclude(i => i.Product)
                         .Include(c => c.Items)
                             .ThenInclude(i => i.Variant)
                         .FirstOrDefaultAsync(c =>
-                            c.UserId == userId &&
+                            c.StoreCustomerId == storeCustomerId &&
                             c.StoreId == dto.StoreId);
 
                     if (cart == null || cart.Items == null || !cart.Items.Any())
@@ -83,7 +85,7 @@ namespace onlineStore.Services.Order
                         coupon = await ValidateCouponAsync(
                             dto.CouponCode.Trim(),
                             dto.StoreId,
-                            userId,
+                            storeCustomerId,
                             subTotal);
 
                         discountAmount = CalculateDiscount(coupon, subTotal);
@@ -105,7 +107,7 @@ namespace onlineStore.Services.Order
                         DeliveryCity = dto.DeliveryCity.Trim(),
                         DeliveryPhone = dto.DeliveryPhone.Trim(),
                         CouponId = coupon?.Id,
-                        UserId = userId,
+                        StoreCustomerId = storeCustomerId,
                         StoreId = dto.StoreId,
                         CreatedAt = DateTime.UtcNow,
                         Items = new List<OrderItem>()
@@ -149,7 +151,7 @@ namespace onlineStore.Services.Order
                     _logger.LogInformation(
                         "Order created successfully: {OrderNumber} for user {UserId}",
                         order.OrderNumber,
-                        userId);
+                        storeCustomerId);
 
                     var createdOrder = await GetOrderDtoByIdAsync(order.Id);
                     if (createdOrder == null)
@@ -164,7 +166,7 @@ namespace onlineStore.Services.Order
                     _logger.LogError(
                         ex,
                         "Error while creating order for user {UserId} and store {StoreId}",
-                        userId,
+                        storeCustomerId,
                         dto.StoreId);
 
                     throw;
@@ -172,11 +174,11 @@ namespace onlineStore.Services.Order
             });
         }
 
-        public async Task<List<OrderSummaryDto>> GetUserOrdersAsync(Guid userId)
+        public async Task<List<OrderSummaryDto>> GetUserOrdersAsync(Guid storeCustomerId)
         {
             return await _context.Orders
                 .AsNoTracking()
-                .Where(o => o.UserId == userId)
+                .Where(o => o.StoreCustomerId == storeCustomerId)
                 .OrderByDescending(o => o.CreatedAt)
                 .Select(o => new OrderSummaryDto
                 {
@@ -193,13 +195,13 @@ namespace onlineStore.Services.Order
                 .ToListAsync();
         }
 
-        public async Task<OrderDto?> GetUserOrderByIdAsync(Guid userId, Guid orderId)
+        public async Task<OrderDto?> GetUserOrderByIdAsync(Guid storeCustomerId, Guid orderId)
         {
             var order = await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Coupon)
                 .Include(o => o.Items)
-                .FirstOrDefaultAsync(o => o.UserId == userId && o.Id == orderId);
+                .FirstOrDefaultAsync(o => o.StoreCustomerId == storeCustomerId && o.Id == orderId);
 
             return order == null ? null : MapOrderToDto(order);
         }
@@ -265,7 +267,7 @@ namespace onlineStore.Services.Order
         private async Task<CouponEntity> ValidateCouponAsync(
             string code,
             Guid storeId,
-            Guid userId,
+            Guid storeCustomerId,
             decimal subTotal)
         {
             var normalizedCode = code.Trim().ToUpper();
@@ -297,7 +299,7 @@ namespace onlineStore.Services.Order
             if (coupon.PerUserLimit.HasValue)
             {
                 var userUsageCount = await _context.Orders
-                    .CountAsync(o => o.UserId == userId && o.CouponId == coupon.Id);
+                    .CountAsync(o => o.StoreCustomerId == storeCustomerId && o.CouponId == coupon.Id);
 
                 if (userUsageCount >= coupon.PerUserLimit.Value)
                     throw new Exception("تم استخدام هذا الكوبون من قبلك مسبقاً");
@@ -362,7 +364,7 @@ namespace onlineStore.Services.Order
                 DeliveryAddress = order.DeliveryAddress,
                 DeliveryCity = order.DeliveryCity,
                 DeliveryPhone = order.DeliveryPhone,
-                UserId = order.UserId,
+                StoreCustomerId = order.StoreCustomerId,
                 StoreId = order.StoreId,
                 CouponId = order.CouponId,
                 CouponCode = order.Coupon?.Code,
@@ -379,6 +381,18 @@ namespace onlineStore.Services.Order
                     TotalPrice = i.TotalPrice
                 }).ToList()
             };
+        }
+
+        private async Task EnsureActiveStoreCustomerAsync(Guid storeCustomerId, Guid storeId)
+        {
+            var exists = await _context.StoreCustomers
+                .AsNoTracking()
+                .AnyAsync(c => c.Id == storeCustomerId
+                            && c.StoreId == storeId
+                            && c.IsActive);
+
+            if (!exists)
+                throw new UnauthorizedAccessException("العميل لا يملك صلاحية الوصول إلى هذا المتجر");
         }
     }
 }

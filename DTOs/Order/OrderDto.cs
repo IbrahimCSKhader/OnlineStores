@@ -20,7 +20,7 @@ namespace onlineStore.DTOs.Order
         public string? DeliveryCity { get; set; }
         public string? DeliveryPhone { get; set; }
 
-        public Guid UserId { get; set; }
+        public Guid StoreCustomerId { get; set; }
         public Guid StoreId { get; set; }
 
         public Guid? CouponId { get; set; }

@@ -25,7 +25,9 @@ namespace onlineStore.Data
         public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
         public DbSet<ProductAttribute> ProductAttributes => Set<ProductAttribute>();
         public DbSet<ProductAttributeValue> ProductAttributeValues => Set<ProductAttributeValue>();
-        public DbSet<CustomerStore> CustomerStores => Set<CustomerStore>();
+        public DbSet<StoreContactAccount> StoreContactAccounts => Set<StoreContactAccount>();
+        public DbSet<StoreCustomer> StoreCustomers => Set<StoreCustomer>();
+        public DbSet<StoreCustomer> CustomerStores => Set<StoreCustomer>();
         public DbSet<ShoppingCart> Carts => Set<ShoppingCart>();
         public DbSet<CartItem> CartItems => Set<CartItem>();
 
@@ -57,9 +59,9 @@ namespace onlineStore.Data
 
 
             builder.Entity<Order>()
-                .HasOne(o => o.User)
-                .WithMany(u => u.Orders)
-                .HasForeignKey(o => o.UserId)
+                .HasOne(o => o.StoreCustomer)
+                .WithMany(sc => sc.Orders)
+                .HasForeignKey(o => o.StoreCustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // OrderItem العلاقات
@@ -77,9 +79,9 @@ namespace onlineStore.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<ShoppingCart>()
-                .HasOne(c => c.User)
-                .WithMany(u => u.Carts)
-                .HasForeignKey(c => c.UserId)
+                .HasOne(c => c.StoreCustomer)
+                .WithMany(sc => sc.Carts)
+                .HasForeignKey(c => c.StoreCustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // CartItem العلاقات
@@ -103,9 +105,9 @@ namespace onlineStore.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<Review>()
-                .HasOne(r => r.User)
-                .WithMany(u => u.Reviews)
-                .HasForeignKey(r => r.UserId)
+                .HasOne(r => r.StoreCustomer)
+                .WithMany(sc => sc.Reviews)
+                .HasForeignKey(r => r.StoreCustomerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<Review>()
@@ -159,6 +161,12 @@ namespace onlineStore.Data
 .HasForeignKey(s => s.OwnerId)
 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<StoreContactAccount>()
+                .HasOne(sca => sca.Store)
+                .WithMany(s => s.ContactAccounts)
+                .HasForeignKey(sca => sca.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.Entity<AppUser>().ToTable("Users");
             builder.Entity<AppRole>().ToTable("Roles");
             builder.Entity<IdentityUserRole<Guid>>().ToTable("UserRoles");
@@ -176,6 +184,7 @@ namespace onlineStore.Data
             builder.Entity<Review>().HasQueryFilter(x => !x.IsDeleted);
             builder.Entity<Coupon>().HasQueryFilter(x => !x.IsDeleted);
             builder.Entity<Notification>().HasQueryFilter(x => !x.IsDeleted);
+            builder.Entity<StoreContactAccount>().HasQueryFilter(x => !x.IsDeleted);
 
 
         
@@ -229,26 +238,23 @@ namespace onlineStore.Data
 
 
             builder.Entity<Review>()
-                .HasIndex(r => new { r.UserId, r.ProductId })
+                .HasIndex(r => new { r.StoreCustomerId, r.ProductId })
                 .IsUnique();
-            builder.Entity<CustomerStore>()
-    .HasOne(cs => cs.Store)
-    .WithMany()
-    .HasForeignKey(cs => cs.StoreId)
-    .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Entity<CustomerStore>()
-                .HasOne(cs => cs.Customer)
+            builder.Entity<StoreCustomer>().ToTable("CustomerStores");
+
+            builder.Entity<StoreCustomer>()
+                .HasOne(cs => cs.Store)
                 .WithMany()
-                .HasForeignKey(cs => cs.CustomerId)
+                .HasForeignKey(cs => cs.StoreId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Entity<CustomerStore>(e =>
+            builder.Entity<StoreCustomer>(e =>
             {
                 e.Property(x => x.DiscountPercentage).HasColumnType("decimal(5,2)");
             });
 
-            builder.Entity<CustomerStore>()
+            builder.Entity<StoreCustomer>()
                 .HasQueryFilter(x => !x.IsDeleted);
 
             // ────────────────────────────────────────────────────

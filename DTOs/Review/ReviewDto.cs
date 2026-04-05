@@ -9,10 +9,10 @@
         public bool IsApproved { get; set; }
 
         public Guid ProductId { get; set; }
-        public Guid UserId { get; set; }
+        public Guid StoreCustomerId { get; set; }
         public Guid StoreId { get; set; }
 
-        public string? UserFullName { get; set; }
+        public string? StoreCustomerFullName { get; set; }
 
         public DateTime CreatedAt { get; set; }
     }

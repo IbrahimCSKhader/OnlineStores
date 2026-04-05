@@ -1,59 +1,45 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using onlineStore.Data;
 using onlineStore.DTOs.CustomerStore;
+using onlineStore.Models;
+using onlineStore.Services.StoreCustomerAuth;
 
 namespace onlineStore.Services.CustomerStore
 {
     public class CustomerStoreService : ICustomerStoreService
     {
         private readonly AppDbContext _context;
+        private readonly IPasswordHasher<StoreCustomer> _passwordHasher;
+        private readonly IStoreCustomerEmailWorkflowService _emailWorkflowService;
         private readonly ILogger<CustomerStoreService> _logger;
 
         public CustomerStoreService(
             AppDbContext context,
+            IPasswordHasher<StoreCustomer> passwordHasher,
+            IStoreCustomerEmailWorkflowService emailWorkflowService,
             ILogger<CustomerStoreService> logger)
         {
             _context = context;
+            _passwordHasher = passwordHasher;
+            _emailWorkflowService = emailWorkflowService;
             _logger = logger;
         }
 
         public async Task<List<CustomerListDto>> GetAllCustomersAsync()
         {
-            return await (
-                from user in _context.Users.AsNoTracking()
-                join userRole in _context.UserRoles.AsNoTracking()
-                    on user.Id equals userRole.UserId
-                join role in _context.Roles.AsNoTracking()
-                    on userRole.RoleId equals role.Id
-                where role.Name == "Customer" && !user.IsDeleted
-                orderby user.CreatedAt descending
-                select new CustomerListDto
-                {
-                    Id = user.Id,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    FullName = (user.FirstName + " " + user.LastName).Trim(),
-                    Email = user.Email ?? string.Empty,
-                    IsActive = user.IsActive,
-                    CreatedAt = user.CreatedAt
-                })
-                .ToListAsync();
-        }
-
-        public async Task<List<CustomerStoreDto>> GetStoreCustomersAsync(Guid storeId)
-        {
-            return await _context.CustomerStores
+            return await _context.StoreCustomers
                 .AsNoTracking()
-                .Where(x => x.StoreId == storeId)
-                .Include(x => x.Customer)
                 .OrderByDescending(x => x.CreatedAt)
-                .Select(x => new CustomerStoreDto
+                .Select(x => new CustomerListDto
                 {
                     Id = x.Id,
                     StoreId = x.StoreId,
-                    CustomerId = x.CustomerId,
-                    CustomerName = x.Customer.FirstName + " " + x.Customer.LastName,
-                    CustomerEmail = x.Customer.Email!,
+                    FirstName = x.FirstName,
+                    LastName = x.LastName,
+                    FullName = (x.FirstName + " " + x.LastName).Trim(),
+                    Email = x.Email,
+                    Phone = x.Phone,
                     DiscountPercentage = x.DiscountPercentage,
                     IsActive = x.IsActive,
                     CreatedAt = x.CreatedAt
@@ -61,66 +47,122 @@ namespace onlineStore.Services.CustomerStore
                 .ToListAsync();
         }
 
+        public async Task<List<CustomerStoreDto>> GetStoreCustomersAsync(Guid storeId)
+        {
+            return await _context.StoreCustomers
+                .AsNoTracking()
+                .Where(x => x.StoreId == storeId)
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(x => new CustomerStoreDto
+                {
+                    Id = x.Id,
+                    StoreId = x.StoreId,
+                    FirstName = x.FirstName,
+                    LastName = x.LastName,
+                    FullName = (x.FirstName + " " + x.LastName).Trim(),
+                    Email = x.Email,
+                    Phone = x.Phone,
+                    DiscountPercentage = x.DiscountPercentage,
+                    IsActive = x.IsActive,
+                    CreatedAt = x.CreatedAt,
+                    UpdatedAt = x.UpdatedAt
+                })
+                .ToListAsync();
+        }
+
         public async Task<CustomerStoreDto> CreateAsync(CreateCustomerStoreDto dto)
         {
-            var storeExists = await _context.Stores
+            var store = await _context.Stores
                 .AsNoTracking()
-                .AnyAsync(x => x.Id == dto.StoreId);
+                .FirstOrDefaultAsync(x => x.Id == dto.StoreId);
 
-            if (!storeExists)
-                throw new Exception("المتجر غير موجود");
+            if (store == null)
+                throw new Exception("ط§ظ„ظ…طھط¬ط± ط؛ظٹط± ظ…ظˆط¬ظˆط¯");
 
-            var customer = await _context.Users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == dto.CustomerId);
+            var normalizedEmail = NormalizeEmail(dto.Email);
 
-            if (customer == null)
-                throw new Exception("الزبون غير موجود");
-
-            var exists = await _context.CustomerStores
-                .AnyAsync(x => x.StoreId == dto.StoreId && x.CustomerId == dto.CustomerId);
+            var exists = await _context.StoreCustomers
+                .IgnoreQueryFilters()
+                .AnyAsync(x => x.StoreId == dto.StoreId && x.Email == normalizedEmail);
 
             if (exists)
-                throw new Exception("هذا الزبون مضاف مسبقاً لهذا المتجر");
+                throw new Exception("ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ ظ…ط³طھط®ط¯ظ… ظ…ط³ط¨ظ‚ط§ظ‹ ط¯ط§ط®ظ„ ظ‡ط°ط§ ط§ظ„ظ…طھط¬ط±");
 
-            var entity = new Models.CustomerStore
+            var entity = new StoreCustomer
             {
                 StoreId = dto.StoreId,
-                CustomerId = dto.CustomerId,
+                FirstName = NormalizeValue(dto.FirstName),
+                LastName = NormalizeValue(dto.LastName),
+                Email = normalizedEmail,
+                Phone = NormalizeOptionalValue(dto.Phone),
                 DiscountPercentage = dto.DiscountPercentage,
-                IsActive = true,
+                IsActive = dto.IsActive,
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.CustomerStores.Add(entity);
+            entity.PasswordHash = _passwordHasher.HashPassword(entity, dto.Password);
+            var verificationCode = _emailWorkflowService.PrepareEmailVerification(entity);
+
+            _context.StoreCustomers.Add(entity);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "CustomerStore created for store {StoreId} and customer {CustomerId}",
-                dto.StoreId,
-                dto.CustomerId);
+            await _emailWorkflowService.SendEmailVerificationCodeAsync(
+                entity,
+                verificationCode,
+                "store customer creation by owner");
 
-            return new CustomerStoreDto
-            {
-                Id = entity.Id,
-                StoreId = entity.StoreId,
-                CustomerId = entity.CustomerId,
-                CustomerName = $"{customer.FirstName} {customer.LastName}",
-                CustomerEmail = customer.Email ?? "",
-                DiscountPercentage = entity.DiscountPercentage,
-                IsActive = entity.IsActive,
-                CreatedAt = entity.CreatedAt
-            };
+            _logger.LogInformation(
+                "Store customer created. StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}",
+                dto.StoreId,
+                entity.Id);
+
+            return MapToDto(entity);
         }
 
         public async Task<CustomerStoreDto?> UpdateAsync(Guid id, UpdateCustomerStoreDto dto)
         {
-            var entity = await _context.CustomerStores
-                .Include(x => x.Customer)
+            var entity = await _context.StoreCustomers
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (entity == null)
                 return null;
+
+            string? verificationCode = null;
+
+            if (dto.FirstName != null)
+                entity.FirstName = NormalizeValue(dto.FirstName);
+
+            if (dto.LastName != null)
+                entity.LastName = NormalizeValue(dto.LastName);
+
+            if (dto.Email != null)
+            {
+                var normalizedEmail = NormalizeEmail(dto.Email);
+
+                var emailExists = await _context.StoreCustomers
+                    .IgnoreQueryFilters()
+                    .AnyAsync(x => x.StoreId == entity.StoreId
+                                && x.Email == normalizedEmail
+                                && x.Id != entity.Id);
+
+                if (emailExists)
+                    throw new Exception("ط§ظ„ط¨ط±ظٹط¯ ط§ظ„ط¥ظ„ظƒطھط±ظˆظ†ظٹ ظ…ط³طھط®ط¯ظ… ظ…ط³ط¨ظ‚ط§ظ‹ ط¯ط§ط®ظ„ ظ‡ط°ط§ ط§ظ„ظ…طھط¬ط±");
+
+                if (!string.Equals(entity.Email, normalizedEmail, StringComparison.Ordinal))
+                {
+                    entity.Email = normalizedEmail;
+                    verificationCode = _emailWorkflowService.PrepareEmailVerification(entity);
+                }
+            }
+
+            if (dto.Phone != null)
+                entity.Phone = NormalizeOptionalValue(dto.Phone);
+
+            if (dto.Password != null)
+            {
+                entity.PasswordHash = _passwordHasher.HashPassword(entity, dto.Password);
+                _emailWorkflowService.ClearPasswordReset(entity);
+            }
 
             if (dto.DiscountPercentage.HasValue)
                 entity.DiscountPercentage = dto.DiscountPercentage.Value;
@@ -130,22 +172,27 @@ namespace onlineStore.Services.CustomerStore
 
             await _context.SaveChangesAsync();
 
-            return new CustomerStoreDto
+            if (verificationCode != null)
             {
-                Id = entity.Id,
-                StoreId = entity.StoreId,
-                CustomerId = entity.CustomerId,
-                CustomerName = $"{entity.Customer.FirstName} {entity.Customer.LastName}",
-                CustomerEmail = entity.Customer.Email ?? "",
-                DiscountPercentage = entity.DiscountPercentage,
-                IsActive = entity.IsActive,
-                CreatedAt = entity.CreatedAt
-            };
+                await _emailWorkflowService.SendEmailVerificationCodeAsync(
+                    entity,
+                    verificationCode,
+                    "store customer email update by owner");
+            }
+
+            if (dto.Password != null)
+            {
+                await _emailWorkflowService.SendPasswordResetConfirmationAsync(
+                    entity,
+                    "store customer password update by owner");
+            }
+
+            return MapToDto(entity);
         }
 
         public async Task<bool> DeleteAsync(Guid id)
         {
-            var entity = await _context.CustomerStores
+            var entity = await _context.StoreCustomers
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (entity == null)
@@ -157,16 +204,43 @@ namespace onlineStore.Services.CustomerStore
             return true;
         }
 
-        public async Task<decimal?> GetCustomerDiscountAsync(Guid storeId, Guid customerId)
+        public async Task<decimal?> GetCustomerDiscountAsync(Guid storeId, Guid storeCustomerId)
         {
-            var row = await _context.CustomerStores
+            var row = await _context.StoreCustomers
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x =>
                     x.StoreId == storeId &&
-                    x.CustomerId == customerId &&
+                    x.Id == storeCustomerId &&
                     x.IsActive);
 
             return row?.DiscountPercentage;
+        }
+
+        private static CustomerStoreDto MapToDto(StoreCustomer entity) => new()
+        {
+            Id = entity.Id,
+            StoreId = entity.StoreId,
+            FirstName = entity.FirstName,
+            LastName = entity.LastName,
+            FullName = $"{entity.FirstName} {entity.LastName}".Trim(),
+            Email = entity.Email,
+            Phone = entity.Phone,
+            DiscountPercentage = entity.DiscountPercentage,
+            IsActive = entity.IsActive,
+            CreatedAt = entity.CreatedAt,
+            UpdatedAt = entity.UpdatedAt
+        };
+
+        private static string NormalizeEmail(string email) =>
+            email.Trim().ToLowerInvariant();
+
+        private static string NormalizeValue(string value) =>
+            value.Trim();
+
+        private static string? NormalizeOptionalValue(string? value)
+        {
+            var normalizedValue = value?.Trim();
+            return string.IsNullOrWhiteSpace(normalizedValue) ? null : normalizedValue;
         }
     }
 }

@@ -27,17 +27,20 @@ namespace onlineStore.Services.Store
 
         public async Task<List<StoreDto>> GetAllStoresAsync()
         {
-                return await _context.Stores
-                    .AsNoTracking()
-                    .Select(s => ToDto(s))
+                var stores = await GetStoresWithContacts(asNoTracking: true)
                     .ToListAsync();
 
-               
+                return stores
+                    .Select(ToDto)
+                    .ToList();
+
+
         }
 
         public async Task<StoreDto?> GetStoreByIdAsync(Guid id)
         {
             var store = await _context.Stores
+                .Include(s => s.ContactAccounts)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s =>
                     s.Id == id &&
@@ -52,6 +55,7 @@ namespace onlineStore.Services.Store
             var normalizedSlug = slug.Trim().ToLower();
 
             var store = await _context.Stores
+                .Include(s => s.ContactAccounts)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.Slug == normalizedSlug);
 
@@ -123,6 +127,7 @@ namespace onlineStore.Services.Store
         public async Task<StoreDto?> UpdateStoreAsync(Guid id, UpdateStoreDto dto)
         {
             var store = await _context.Stores
+                .Include(s => s.ContactAccounts)
                 .FirstOrDefaultAsync(s =>
                     s.Id == id &&
                     (_currentUser.IsSuperAdmin ||
@@ -135,19 +140,33 @@ namespace onlineStore.Services.Store
                 store.Name = dto.Name.Trim();
 
             if (dto.Description != null)
-                store.Description = dto.Description;
+                store.Description = NormalizeOptional(dto.Description);
 
             if (dto.BusinessType != null)
-                store.BusinessType = dto.BusinessType;
+                store.BusinessType = NormalizeOptional(dto.BusinessType);
 
             if (dto.LogoUrl != null)
-                store.LogoUrl = dto.LogoUrl;
+                store.LogoUrl = NormalizeOptional(dto.LogoUrl);
 
             if (dto.CoverImageUrl != null)
-                store.CoverImageUrl = dto.CoverImageUrl;
+                store.CoverImageUrl = NormalizeOptional(dto.CoverImageUrl);
+
+            if (dto.WhatsAppNumber != null)
+                store.WhatsAppNumber = NormalizeOptional(dto.WhatsAppNumber);
+
+            if (dto.StoreStory != null)
+                store.StoreStory = NormalizeOptional(dto.StoreStory);
+
+            if (dto.ThemeTemplate != null)
+                store.ThemeTemplate = string.IsNullOrWhiteSpace(dto.ThemeTemplate)
+                    ? "default"
+                    : dto.ThemeTemplate.Trim();
 
             if (dto.IsActive != null)
                 store.IsActive = dto.IsActive.Value;
+
+            if (dto.ContactAccounts != null)
+                ReplaceContactAccounts(store, dto.ContactAccounts);
 
             await _context.SaveChangesAsync();
 
@@ -188,7 +207,23 @@ namespace onlineStore.Services.Store
             CoverImageUrl = s.CoverImageUrl,
             IsActive = s.IsActive,
             VisitCount = s.VisitCount,
-            WhatsAppNumber= s.WhatsAppNumber,
+            WhatsAppNumber = s.WhatsAppNumber,
+            StoreStory = s.StoreStory,
+            ThemeTemplate = s.ThemeTemplate,
+            ContactAccounts = s.ContactAccounts
+                .Where(c => !c.IsDeleted)
+                .OrderBy(c => c.SortOrder)
+                .ThenBy(c => c.CreatedAt)
+                .Select(c => new StoreContactAccountDto
+                {
+                    Id = c.Id,
+                    Platform = c.Platform,
+                    Username = c.Username,
+                    Label = c.Label,
+                    Url = StoreContactPlatforms.BuildUrl(c.Platform, c.Username),
+                    SortOrder = c.SortOrder
+                })
+                .ToList(),
             CreatedAt = s.CreatedAt
         };
 
@@ -254,32 +289,29 @@ namespace onlineStore.Services.Store
         }
         private string GetBrandingFolderPath(Guid storeId)
         {
-            var rootPath = _environment.WebRootPath ?? _environment.ContentRootPath;
-
             return Path.Combine(
-                rootPath,
-                "uploads",
-                "stores",
-                storeId.ToString(),
+                GetStoreFolderPath(storeId),
                 "branding"
             );
         }
-        private void CreateStoreFolders(Guid storeId)
+        private string GetStoreFolderPath(Guid storeId)
         {
-            var rootPath = _environment.WebRootPath ?? _environment.ContentRootPath;
-
-            var basePath = Path.Combine(
-                rootPath,
+            return Path.Combine(
+                _environment.ContentRootPath,
                 "uploads",
                 "stores",
                 storeId.ToString()
             );
+        }
+        private void CreateStoreFolders(Guid storeId)
+        {
+            var basePath = GetStoreFolderPath(storeId);
 
             var folders = new[]
             {
-        Path.Combine(basePath, "branding"),
-        Path.Combine(basePath, "products")
-    };
+                Path.Combine(basePath, "branding"),
+                Path.Combine(basePath, "products")
+            };
 
             foreach (var folder in folders)
             {
@@ -288,7 +320,9 @@ namespace onlineStore.Services.Store
             }
 
             _logger.LogInformation(
-                "Store folders created for: {StoreId}", storeId);
+                "Store folders created for: {StoreId} at {BasePath}",
+                storeId,
+                basePath);
         }
         private void DeleteExistingBrandingFileIfExists(
       string brandingPath,
@@ -324,15 +358,17 @@ namespace onlineStore.Services.Store
     {
         Name = dto.Name.Trim(),
         Slug = normalizedSlug,
-        Description = dto.Description?.Trim(),
-        BusinessType = dto.BusinessType?.Trim(),
-        WhatsAppNumber = dto.WhatsAppNumber?.Trim(),
+        Description = NormalizeOptional(dto.Description),
+        BusinessType = NormalizeOptional(dto.BusinessType),
+        WhatsAppNumber = NormalizeOptional(dto.WhatsAppNumber),
+        StoreStory = NormalizeOptional(dto.StoreStory),
         ThemeTemplate = string.IsNullOrWhiteSpace(dto.ThemeTemplate)
             ? "default"
             : dto.ThemeTemplate.Trim(),
         OwnerId = Guid.Parse(userId), // 🔥 هون الفرق
         IsActive = true,
-        CreatedAt = DateTime.UtcNow
+        CreatedAt = DateTime.UtcNow,
+        ContactAccounts = BuildContactAccounts(dto.ContactAccounts)
     };
 
     _context.Stores.Add(store);
@@ -360,5 +396,52 @@ namespace onlineStore.Services.Store
 
     return ToDto(store);
 }
+
+        private IQueryable<Models.Store> GetStoresWithContacts(bool asNoTracking = false)
+        {
+            var query = _context.Stores
+                .Include(s => s.ContactAccounts)
+                .AsQueryable();
+
+            return asNoTracking ? query.AsNoTracking() : query;
+        }
+
+        private static List<StoreContactAccount> BuildContactAccounts(
+            IEnumerable<StoreContactAccountInputDto>? contactAccounts)
+        {
+            if (contactAccounts == null)
+                return new List<StoreContactAccount>();
+
+            return contactAccounts
+                .Where(c => !string.IsNullOrWhiteSpace(c.Platform) && !string.IsNullOrWhiteSpace(c.Username))
+                .Select(c => new StoreContactAccount
+                {
+                    Platform = StoreContactPlatforms.NormalizePlatform(c.Platform),
+                    Username = StoreContactPlatforms.NormalizeUsername(c.Platform, c.Username),
+                    Label = NormalizeOptional(c.Label),
+                    SortOrder = c.SortOrder
+                })
+                .ToList();
+        }
+
+        private static void ReplaceContactAccounts(
+            Models.Store store,
+            IEnumerable<StoreContactAccountInputDto> contactAccounts)
+        {
+            foreach (var existingContact in store.ContactAccounts.Where(c => !c.IsDeleted))
+                existingContact.IsDeleted = true;
+
+            foreach (var contactAccount in BuildContactAccounts(contactAccounts))
+                store.ContactAccounts.Add(contactAccount);
+        }
+
+        private static string? NormalizeOptional(string? value)
+        {
+            if (value == null)
+                return null;
+
+            var trimmedValue = value.Trim();
+            return string.IsNullOrWhiteSpace(trimmedValue) ? null : trimmedValue;
+        }
     }
 }

@@ -806,7 +806,7 @@ namespace onlineStore.Services.Product
             if (string.IsNullOrWhiteSpace(imageUrl))
                 return;
 
-            var rootPath = _environment.WebRootPath ?? _environment.ContentRootPath;
+            var rootPath = _environment.ContentRootPath;
 
             var relativePath = imageUrl
                 .TrimStart('/')
@@ -880,15 +880,15 @@ namespace onlineStore.Services.Product
 
         private async Task<decimal> GetCustomerDiscountPercentageAsync(
             Guid storeId,
-            Guid? userId)
+            Guid? storeCustomerId)
         {
-            if (!userId.HasValue)
+            if (!storeCustomerId.HasValue)
                 return 0m;
 
             var discount = await _context.CustomerStores
                 .AsNoTracking()
                 .Where(x => x.StoreId == storeId &&
-                            x.CustomerId == userId.Value &&
+                            x.Id == storeCustomerId.Value &&
                             x.IsActive)
                 .Select(x => x.DiscountPercentage)
                 .FirstOrDefaultAsync();

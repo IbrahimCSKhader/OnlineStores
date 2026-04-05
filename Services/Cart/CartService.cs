@@ -21,15 +21,15 @@ namespace onlineStore.Services.Cart
         // ════════════════════════════════════════════════════
         // Get Cart
         // ════════════════════════════════════════════════════
-        public async Task<CartDto> GetCartAsync(Guid userId, Guid storeId)
+        public async Task<CartDto> GetCartAsync(Guid storeCustomerId, Guid storeId)
         {
             try
             {
                 _logger.LogInformation(
-                    "GetCartAsync started. UserId: {UserId}, StoreId: {StoreId}",
-                    userId, storeId);
+                    "GetCartAsync started. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                    storeCustomerId, storeId);
 
-                var cart = await GetOrCreateCartAsync(userId, storeId);
+                var cart = await GetOrCreateCartAsync(storeCustomerId, storeId);
 
                 _logger.LogInformation(
                     "GetCartAsync completed successfully. CartId: {CartId}, ItemsCount: {ItemsCount}",
@@ -41,8 +41,8 @@ namespace onlineStore.Services.Cart
             {
                 _logger.LogError(
                     ex,
-                    "Error in GetCartAsync. UserId: {UserId}, StoreId: {StoreId}",
-                    userId, storeId);
+                    "Error in GetCartAsync. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                    storeCustomerId, storeId);
 
                 throw;
             }
@@ -51,17 +51,17 @@ namespace onlineStore.Services.Cart
         // ════════════════════════════════════════════════════
         // Add To Cart
         // ════════════════════════════════════════════════════
-        public async Task<CartDto> AddToCartAsync(Guid userId, AddToCartDto dto)
+        public async Task<CartDto> AddToCartAsync(Guid storeCustomerId, AddToCartDto dto)
         {
             try
             {
                 _logger.LogInformation(
-                    "AddToCartAsync started. UserId: {UserId}, StoreId: {StoreId}, ProductId: {ProductId}, VariantId: {VariantId}, Quantity: {Quantity}",
-                    userId, dto?.StoreId, dto?.ProductId, dto?.VariantId, dto?.Quantity);
+                    "AddToCartAsync started. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, ProductId: {ProductId}, VariantId: {VariantId}, Quantity: {Quantity}",
+                    storeCustomerId, dto?.StoreId, dto?.ProductId, dto?.VariantId, dto?.Quantity);
 
                 if (dto == null)
                 {
-                    _logger.LogWarning("AddToCartAsync failed because dto is null. UserId: {UserId}", userId);
+                    _logger.LogWarning("AddToCartAsync failed because dto is null. StoreCustomerId: {StoreCustomerId}", storeCustomerId);
                     throw new Exception("بيانات الطلب غير صالحة");
                 }
 
@@ -69,17 +69,17 @@ namespace onlineStore.Services.Cart
                 {
                     _logger.LogWarning(
                         "AddToCartAsync failed because quantity <= 0. UserId: {UserId}, Quantity: {Quantity}",
-                        userId, dto.Quantity);
+                        storeCustomerId, dto.Quantity);
 
                     throw new Exception("الكمية يجب أن تكون أكبر من صفر");
                 }
 
                 // 1) جيب أو أنشئ الكارت
-                var cart = await GetOrCreateCartAsync(userId, dto.StoreId);
+                var cart = await GetOrCreateCartAsync(storeCustomerId, dto.StoreId);
 
                 _logger.LogInformation(
-                    "Cart resolved successfully. CartId: {CartId}, UserId: {UserId}, StoreId: {StoreId}",
-                    cart.Id, userId, dto.StoreId);
+                    "Cart resolved successfully. CartId: {CartId}, StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                    cart.Id, storeCustomerId, dto.StoreId);
 
                 // 2) تحقق من المنتج
                 var product = await _context.Products
@@ -185,13 +185,13 @@ namespace onlineStore.Services.Cart
                     }
 
                     var unitPrice = await ApplyWholesaleDiscountIfExistsAsync(
-                        userId,
+                        storeCustomerId,
                         dto.StoreId,
                         basePrice);
 
                     _logger.LogInformation(
-                        "Final unit price resolved. UserId: {UserId}, StoreId: {StoreId}, ProductId: {ProductId}, VariantId: {VariantId}, UnitPrice: {UnitPrice}",
-                        userId, dto.StoreId, dto.ProductId, dto.VariantId, unitPrice);
+                        "Final unit price resolved. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, ProductId: {ProductId}, VariantId: {VariantId}, UnitPrice: {UnitPrice}",
+                        storeCustomerId, dto.StoreId, dto.ProductId, dto.VariantId, unitPrice);
 
                     var newItem = new CartItem
                     {
@@ -213,8 +213,8 @@ namespace onlineStore.Services.Cart
                 }
 
                 _logger.LogInformation(
-                    "Calling SaveChangesAsync in AddToCartAsync. UserId: {UserId}, StoreId: {StoreId}, ProductId: {ProductId}",
-                    userId, dto.StoreId, dto.ProductId);
+                    "Calling SaveChangesAsync in AddToCartAsync. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, ProductId: {ProductId}",
+                    storeCustomerId, dto.StoreId, dto.ProductId);
 
                 await _context.SaveChangesAsync();
 
@@ -250,8 +250,8 @@ namespace onlineStore.Services.Cart
             {
                 _logger.LogError(
                     ex,
-                    "Error in AddToCartAsync. UserId: {UserId}, StoreId: {StoreId}, ProductId: {ProductId}, VariantId: {VariantId}, Quantity: {Quantity}",
-                    userId, dto?.StoreId, dto?.ProductId, dto?.VariantId, dto?.Quantity);
+                    "Error in AddToCartAsync. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, ProductId: {ProductId}, VariantId: {VariantId}, Quantity: {Quantity}",
+                    storeCustomerId, dto?.StoreId, dto?.ProductId, dto?.VariantId, dto?.Quantity);
 
                 throw;
             }
@@ -260,21 +260,21 @@ namespace onlineStore.Services.Cart
         // Update Cart Item
         // ════════════════════════════════════════════════════
         public async Task<CartDto> UpdateCartItemAsync(
-            Guid userId,
+            Guid storeCustomerId,
             Guid cartItemId,
             UpdateCartItemDto dto)
         {
             try
             {
                 _logger.LogInformation(
-                    "UpdateCartItemAsync started. UserId: {UserId}, CartItemId: {CartItemId}, Quantity: {Quantity}",
-                    userId, cartItemId, dto.Quantity);
+                    "UpdateCartItemAsync started. StoreCustomerId: {StoreCustomerId}, CartItemId: {CartItemId}, Quantity: {Quantity}",
+                    storeCustomerId, cartItemId, dto.Quantity);
 
                 if (dto == null || dto.Quantity <= 0)
                 {
                     _logger.LogWarning(
                         "UpdateCartItemAsync failed because quantity is invalid. UserId: {UserId}, CartItemId: {CartItemId}, Quantity: {Quantity}",
-                        userId, cartItemId, dto?.Quantity);
+                        storeCustomerId, cartItemId, dto?.Quantity);
 
                     throw new Exception("الكمية يجب أن تكون أكبر من صفر");
                 }
@@ -284,13 +284,13 @@ namespace onlineStore.Services.Cart
                         .ThenInclude(i => i.Product)
                     .Include(c => c.Items)
                         .ThenInclude(i => i.Variant)
-                    .FirstOrDefaultAsync(c => c.UserId == userId);
+                    .FirstOrDefaultAsync(c => c.StoreCustomerId == storeCustomerId);
 
                 if (cart == null)
                 {
                     _logger.LogWarning(
-                        "Cart not found in UpdateCartItemAsync. UserId: {UserId}",
-                        userId);
+                        "Cart not found in UpdateCartItemAsync. StoreCustomerId: {StoreCustomerId}",
+                        storeCustomerId);
 
                     throw new Exception("الكارت غير موجود");
                 }
@@ -299,8 +299,8 @@ namespace onlineStore.Services.Cart
                 if (item == null)
                 {
                     _logger.LogWarning(
-                        "Cart item not found in UpdateCartItemAsync. UserId: {UserId}, CartItemId: {CartItemId}",
-                        userId, cartItemId);
+                        "Cart item not found in UpdateCartItemAsync. StoreCustomerId: {StoreCustomerId}, CartItemId: {CartItemId}",
+                        storeCustomerId, cartItemId);
 
                     throw new Exception("العنصر غير موجود في الكارت");
                 }
@@ -348,8 +348,8 @@ namespace onlineStore.Services.Cart
             {
                 _logger.LogError(
                     ex,
-                    "Error in UpdateCartItemAsync. UserId: {UserId}, CartItemId: {CartItemId}, Quantity: {Quantity}",
-                    userId, cartItemId, dto?.Quantity);
+                    "Error in UpdateCartItemAsync. StoreCustomerId: {StoreCustomerId}, CartItemId: {CartItemId}, Quantity: {Quantity}",
+                    storeCustomerId, cartItemId, dto?.Quantity);
 
                 throw;
             }
@@ -359,27 +359,27 @@ namespace onlineStore.Services.Cart
         // Remove From Cart
         // ════════════════════════════════════════════════════
         public async Task<CartDto> RemoveFromCartAsync(
-            Guid userId,
+            Guid storeCustomerId,
             Guid cartItemId)
         {
             try
             {
                 _logger.LogInformation(
-                    "RemoveFromCartAsync started. UserId: {UserId}, CartItemId: {CartItemId}",
-                    userId, cartItemId);
+                    "RemoveFromCartAsync started. StoreCustomerId: {StoreCustomerId}, CartItemId: {CartItemId}",
+                    storeCustomerId, cartItemId);
 
                 var cart = await _context.Carts
                     .Include(c => c.Items)
                         .ThenInclude(i => i.Product)
                     .Include(c => c.Items)
                         .ThenInclude(i => i.Variant)
-                    .FirstOrDefaultAsync(c => c.UserId == userId);
+                    .FirstOrDefaultAsync(c => c.StoreCustomerId == storeCustomerId);
 
                 if (cart == null)
                 {
                     _logger.LogWarning(
-                        "Cart not found in RemoveFromCartAsync. UserId: {UserId}",
-                        userId);
+                        "Cart not found in RemoveFromCartAsync. StoreCustomerId: {StoreCustomerId}",
+                        storeCustomerId);
 
                     throw new Exception("الكارت غير موجود");
                 }
@@ -388,8 +388,8 @@ namespace onlineStore.Services.Cart
                 if (item == null)
                 {
                     _logger.LogWarning(
-                        "Cart item not found in RemoveFromCartAsync. UserId: {UserId}, CartItemId: {CartItemId}",
-                        userId, cartItemId);
+                        "Cart item not found in RemoveFromCartAsync. StoreCustomerId: {StoreCustomerId}, CartItemId: {CartItemId}",
+                        storeCustomerId, cartItemId);
 
                     throw new Exception("العنصر غير موجود في الكارت");
                 }
@@ -399,8 +399,8 @@ namespace onlineStore.Services.Cart
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation(
-                    "RemoveFromCartAsync completed successfully. UserId: {UserId}, CartItemId: {CartItemId}",
-                    userId, cartItemId);
+                    "RemoveFromCartAsync completed successfully. StoreCustomerId: {StoreCustomerId}, CartItemId: {CartItemId}",
+                    storeCustomerId, cartItemId);
 
                 return ToDto(cart);
             }
@@ -408,8 +408,8 @@ namespace onlineStore.Services.Cart
             {
                 _logger.LogError(
                     ex,
-                    "Error in RemoveFromCartAsync. UserId: {UserId}, CartItemId: {CartItemId}",
-                    userId, cartItemId);
+                    "Error in RemoveFromCartAsync. StoreCustomerId: {StoreCustomerId}, CartItemId: {CartItemId}",
+                    storeCustomerId, cartItemId);
 
                 throw;
             }
@@ -418,24 +418,24 @@ namespace onlineStore.Services.Cart
         // ════════════════════════════════════════════════════
         // Clear Cart
         // ════════════════════════════════════════════════════
-        public async Task<bool> ClearCartAsync(Guid userId, Guid storeId)
+        public async Task<bool> ClearCartAsync(Guid storeCustomerId, Guid storeId)
         {
             try
             {
                 _logger.LogInformation(
-                    "ClearCartAsync started. UserId: {UserId}, StoreId: {StoreId}",
-                    userId, storeId);
+                    "ClearCartAsync started. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                    storeCustomerId, storeId);
 
                 var cart = await _context.Carts
                     .Include(c => c.Items)
-                    .FirstOrDefaultAsync(c => c.UserId == userId
+                    .FirstOrDefaultAsync(c => c.StoreCustomerId == storeCustomerId
                                            && c.StoreId == storeId);
 
                 if (cart == null)
                 {
                     _logger.LogWarning(
-                        "Cart not found in ClearCartAsync. UserId: {UserId}, StoreId: {StoreId}",
-                        userId, storeId);
+                        "Cart not found in ClearCartAsync. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                        storeCustomerId, storeId);
 
                     return false;
                 }
@@ -444,8 +444,8 @@ namespace onlineStore.Services.Cart
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation(
-                    "ClearCartAsync completed successfully. UserId: {UserId}, StoreId: {StoreId}",
-                    userId, storeId);
+                    "ClearCartAsync completed successfully. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                    storeCustomerId, storeId);
 
                 return true;
             }
@@ -453,8 +453,8 @@ namespace onlineStore.Services.Cart
             {
                 _logger.LogError(
                     ex,
-                    "Error in ClearCartAsync. UserId: {UserId}, StoreId: {StoreId}",
-                    userId, storeId);
+                    "Error in ClearCartAsync. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                    storeCustomerId, storeId);
 
                 throw;
             }
@@ -463,17 +463,19 @@ namespace onlineStore.Services.Cart
         // ════════════════════════════════════════════════════
         // Helper — Get Or Create Cart
         // ════════════════════════════════════════════════════
-        private async Task<ShoppingCart> GetOrCreateCartAsync(Guid userId, Guid storeId)
+        private async Task<ShoppingCart> GetOrCreateCartAsync(Guid storeCustomerId, Guid storeId)
         {
             try
             {
+                await EnsureActiveStoreCustomerAsync(storeCustomerId, storeId);
+
                 _logger.LogInformation(
-                    "GetOrCreateCartAsync started. UserId: {UserId}, StoreId: {StoreId}",
-                    userId, storeId);
+                    "GetOrCreateCartAsync started. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                    storeCustomerId, storeId);
 
                 var cart = await _context.Carts
                     .Include(c => c.Items)
-                    .FirstOrDefaultAsync(c => c.UserId == userId && c.StoreId == storeId);
+                    .FirstOrDefaultAsync(c => c.StoreCustomerId == storeCustomerId && c.StoreId == storeId);
 
                 if (cart != null)
                 {
@@ -487,7 +489,7 @@ namespace onlineStore.Services.Cart
                 cart = new ShoppingCart
                 {
                     Id = Guid.NewGuid(),
-                    UserId = userId,
+                    StoreCustomerId = storeCustomerId,
                     StoreId = storeId,
                     CreatedAt = DateTime.UtcNow,
                     IsDeleted = false,
@@ -498,8 +500,8 @@ namespace onlineStore.Services.Cart
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation(
-                    "New cart created successfully. CartId: {CartId}, UserId: {UserId}, StoreId: {StoreId}",
-                    cart.Id, userId, storeId);
+                    "New cart created successfully. CartId: {CartId}, StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                    cart.Id, storeCustomerId, storeId);
 
                 return cart;
             }
@@ -507,8 +509,8 @@ namespace onlineStore.Services.Cart
             {
                 _logger.LogError(
                     ex,
-                    "Error in GetOrCreateCartAsync. UserId: {UserId}, StoreId: {StoreId}",
-                    userId, storeId);
+                    "Error in GetOrCreateCartAsync. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                    storeCustomerId, storeId);
 
                 throw;
             }
@@ -562,27 +564,27 @@ namespace onlineStore.Services.Cart
         // Helper — Apply Wholesale Discount
         // ════════════════════════════════════════════════════
         private async Task<decimal> ApplyWholesaleDiscountIfExistsAsync(
-            Guid userId,
+            Guid storeCustomerId,
             Guid storeId,
             decimal price)
         {
             try
             {
                 _logger.LogInformation(
-                    "ApplyWholesaleDiscountIfExistsAsync started. UserId: {UserId}, StoreId: {StoreId}, OriginalPrice: {Price}",
-                    userId, storeId, price);
+                    "ApplyWholesaleDiscountIfExistsAsync started. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, OriginalPrice: {Price}",
+                    storeCustomerId, storeId, price);
 
                 var discount = await _context.CustomerStores
                     .AsNoTracking()
                     .Where(x => x.StoreId == storeId
-                             && x.CustomerId == userId
+                             && x.Id == storeCustomerId
                              && x.IsActive)
                     .Select(x => x.DiscountPercentage)
                     .FirstOrDefaultAsync();
 
                 _logger.LogInformation(
-                    "Wholesale discount query completed. UserId: {UserId}, StoreId: {StoreId}, DiscountPercentage: {Discount}",
-                    userId, storeId, discount);
+                    "Wholesale discount query completed. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, DiscountPercentage: {Discount}",
+                    storeCustomerId, storeId, discount);
 
                 if (discount <= 0)
                 {
@@ -605,8 +607,8 @@ namespace onlineStore.Services.Cart
             {
                 _logger.LogError(
                     ex,
-                    "Error in ApplyWholesaleDiscountIfExistsAsync. UserId: {UserId}, StoreId: {StoreId}, Price: {Price}",
-                    userId, storeId, price);
+                    "Error in ApplyWholesaleDiscountIfExistsAsync. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, Price: {Price}",
+                    storeCustomerId, storeId, price);
 
                 throw;
             }
@@ -618,7 +620,7 @@ namespace onlineStore.Services.Cart
         private static CartDto ToDto(ShoppingCart cart) => new()
         {
             Id = cart.Id,
-            UserId = cart.UserId,
+            StoreCustomerId = cart.StoreCustomerId,
             StoreId = cart.StoreId,
             CreatedAt = cart.CreatedAt,
             Items = cart.Items?.Select(i => new CartItemDto
@@ -636,5 +638,17 @@ namespace onlineStore.Services.Cart
                     : i.Product?.StockQuantity ?? 0
             }).ToList() ?? new()
         };
+
+        private async Task EnsureActiveStoreCustomerAsync(Guid storeCustomerId, Guid storeId)
+        {
+            var exists = await _context.StoreCustomers
+                .AsNoTracking()
+                .AnyAsync(c => c.Id == storeCustomerId
+                            && c.StoreId == storeId
+                            && c.IsActive);
+
+            if (!exists)
+                throw new UnauthorizedAccessException("العميل لا يملك صلاحية الوصول إلى هذا المتجر");
+        }
     }
 }

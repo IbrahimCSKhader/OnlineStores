@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using onlineStore.DTOs.Review;
+using onlineStore.Security;
 using onlineStore.Services.Review;
-using System.Security.Claims;
 
 namespace onlineStore.Controllers
 {
@@ -27,13 +27,13 @@ namespace onlineStore.Controllers
 
 
         [HttpGet("product/{productId}/my-review")]
-        [Authorize(Roles = "Customer")]
+        [Authorize(Policy = "StoreCustomerOnly")]
         public async Task<IActionResult> GetMyReview(Guid productId)
         {
-            var userId = GetUserId();
-            if (userId == null) return Unauthorized();
+            var storeCustomer = GetStoreCustomerContext();
+            if (storeCustomer == null) return Unauthorized();
 
-            var review = await _reviewService.GetUserReviewForProductAsync(userId.Value, productId);
+            var review = await _reviewService.GetUserReviewForProductAsync(storeCustomer.Value.StoreCustomerId, productId);
 
             if (review == null)
                 return NotFound(new { message = "Review not found" });
@@ -42,18 +42,19 @@ namespace onlineStore.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Customer")]
+        [Authorize(Policy = "StoreCustomerOnly")]
         public async Task<IActionResult> Create([FromBody] CreateReviewDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var userId = GetUserId();
-            if (userId == null) return Unauthorized();
+            var storeCustomer = GetStoreCustomerContext();
+            if (storeCustomer == null) return Unauthorized();
+            if (storeCustomer.Value.StoreId != dto.StoreId) return Forbid();
 
             try
             {
-                var review = await _reviewService.CreateReviewAsync(userId.Value, dto);
+                var review = await _reviewService.CreateReviewAsync(storeCustomer.Value.StoreCustomerId, dto);
                 return Ok(review);
             }
             catch (Exception ex)
@@ -64,16 +65,16 @@ namespace onlineStore.Controllers
 
 
         [HttpPut("{reviewId}")]
-        [Authorize(Roles = "Customer")]
+        [Authorize(Policy = "StoreCustomerOnly")]
         public async Task<IActionResult> Update(Guid reviewId, [FromBody] UpdateReviewDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var userId = GetUserId();
-            if (userId == null) return Unauthorized();
+            var storeCustomer = GetStoreCustomerContext();
+            if (storeCustomer == null) return Unauthorized();
 
-            var review = await _reviewService.UpdateReviewAsync(userId.Value, reviewId, dto);
+            var review = await _reviewService.UpdateReviewAsync(storeCustomer.Value.StoreCustomerId, reviewId, dto);
 
             if (review == null)
                 return NotFound(new { message = "Review not found" });
@@ -83,13 +84,13 @@ namespace onlineStore.Controllers
 
 
         [HttpDelete("{reviewId}")]
-        [Authorize(Roles = "Customer")]
+        [Authorize(Policy = "StoreCustomerOnly")]
         public async Task<IActionResult> Delete(Guid reviewId)
         {
-            var userId = GetUserId();
-            if (userId == null) return Unauthorized();
+            var storeCustomer = GetStoreCustomerContext();
+            if (storeCustomer == null) return Unauthorized();
 
-            var result = await _reviewService.DeleteReviewAsync(userId.Value, reviewId);
+            var result = await _reviewService.DeleteReviewAsync(storeCustomer.Value.StoreCustomerId, reviewId);
 
             if (!result)
                 return NotFound(new { message = "Review not found" });
@@ -124,12 +125,13 @@ namespace onlineStore.Controllers
         }
 
 
-        private Guid? GetUserId()
+        private (Guid StoreCustomerId, Guid StoreId)? GetStoreCustomerContext()
         {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var storeCustomerId = User.GetStoreCustomerId();
+            var storeId = User.GetStoreCustomerStoreId();
 
-            return Guid.TryParse(userIdStr, out var userId)
-                ? userId
+            return storeCustomerId.HasValue && storeId.HasValue
+                ? (storeCustomerId.Value, storeId.Value)
                 : null;
         }
     }
