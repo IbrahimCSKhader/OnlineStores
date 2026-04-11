@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using onlineStore.Models.Identity;
+using onlineStore.Models.Offers;
+using onlineStore.Models.Subscriptions;
 
 namespace onlineStore.Models
 {
@@ -32,12 +34,14 @@ namespace onlineStore.Models
         [MaxLength(100000)]
         public string? StoreStory { get; set; }
 
-        [MaxLength(50)]
-        public string? ThemeTemplate { get; set; } = "default";
+        [Required, MaxLength(1)]
+        public string ThemeTemplate { get; set; } = StoreThemeTemplates.Default;
         public int VisitCount { get; set; } = 0;
         
         public ICollection<Category> Categories { get; set; } = new List<Category>();
         public ICollection<Section> Sections { get; set; } = new List<Section>();
         public ICollection<StoreContactAccount> ContactAccounts { get; set; } = new List<StoreContactAccount>();
+        public ICollection<StoreSubscription> StoreSubscriptions { get; set; } = new List<StoreSubscription>();
+        public ICollection<Offer> Offers { get; set; } = new List<Offer>();
     }
 }

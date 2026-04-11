@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using onlineStore.Models;
 
 namespace onlineStore.DTOs.SuperAdminDashboard
 {
@@ -37,6 +38,7 @@ namespace onlineStore.DTOs.SuperAdminDashboard
         public Guid Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty;
+        public string ThemeTemplate { get; set; } = StoreThemeTemplates.Default;
         public bool IsActive { get; set; }
         public string? StoreStory { get; set; }
         public string? WhatsAppNumber { get; set; }
@@ -81,6 +83,7 @@ namespace onlineStore.DTOs.SuperAdminDashboard
         public Guid Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty;
+        public string ThemeTemplate { get; set; } = StoreThemeTemplates.Default;
         public string? Description { get; set; }
         public string? BusinessType { get; set; }
         public bool IsActive { get; set; }

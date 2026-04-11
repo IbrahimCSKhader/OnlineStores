@@ -2,6 +2,7 @@
 using onlineStore.Data;
 using onlineStore.DTOs.Cart;
 using onlineStore.Models.CartModels;
+using onlineStore.Services.Pricing;
 
 namespace onlineStore.Services.Cart
 {
@@ -9,13 +10,16 @@ namespace onlineStore.Services.Cart
     {
         private readonly AppDbContext _context;
         private readonly ILogger<CartService> _logger;
+        private readonly ICartPricingService _cartPricingService;
 
         public CartService(
             AppDbContext context,
-            ILogger<CartService> logger)
+            ILogger<CartService> logger,
+            ICartPricingService cartPricingService)
         {
             _context = context;
             _logger = logger;
+            _cartPricingService = cartPricingService;
         }
 
         // ════════════════════════════════════════════════════
@@ -30,12 +34,14 @@ namespace onlineStore.Services.Cart
                     storeCustomerId, storeId);
 
                 var cart = await GetOrCreateCartAsync(storeCustomerId, storeId);
+                var detailedCart = await LoadCartWithDetailsAsync(cart.Id, asNoTracking: true)
+                    ?? throw new Exception("تعذر تحميل السلة");
 
                 _logger.LogInformation(
                     "GetCartAsync completed successfully. CartId: {CartId}, ItemsCount: {ItemsCount}",
-                    cart.Id, cart.Items?.Count ?? 0);
+                    detailedCart.Id, detailedCart.Items?.Count ?? 0);
 
-                return ToDto(cart);
+                return await ToDtoAsync(detailedCart);
             }
             catch (Exception ex)
             {
@@ -147,13 +153,14 @@ namespace onlineStore.Services.Cart
                     .FirstOrDefaultAsync(i =>
                         i.CartId == cart.Id &&
                         i.ProductId == dto.ProductId &&
-                        i.VariantId == dto.VariantId);
+                        i.VariantId == dto.VariantId &&
+                        !i.IsDeleted);
 
                 if (existingItem != null)
                 {
                     _logger.LogInformation(
-                        "Existing cart item found. CartItemId: {CartItemId}, CurrentQuantity: {CurrentQuantity}",
-                        existingItem.Id, existingItem.Quantity);
+                        "Existing cart item found. CartItemId: {CartItemId}, CurrentQuantity: {CurrentQuantity}, ExistingUnitPrice: {ExistingUnitPrice}, BasePrice: {BasePrice}",
+                        existingItem.Id, existingItem.Quantity, existingItem.UnitPrice, basePrice);
 
                     var newQuantity = existingItem.Quantity + dto.Quantity;
 
@@ -170,8 +177,8 @@ namespace onlineStore.Services.Cart
                     existingItem.UpdatedAt = DateTime.UtcNow;
 
                     _logger.LogInformation(
-                        "Existing cart item updated in memory. CartItemId: {CartItemId}, NewQuantity: {NewQuantity}",
-                        existingItem.Id, existingItem.Quantity);
+                        "Existing cart item updated in memory. CartItemId: {CartItemId}, NewQuantity: {NewQuantity}, UnitPricePreserved: {UnitPrice}",
+                        existingItem.Id, existingItem.Quantity, existingItem.UnitPrice);
                 }
                 else
                 {
@@ -223,13 +230,7 @@ namespace onlineStore.Services.Cart
                     cart.Id);
 
                 // 5) أعد تحميل الكارت بشكل نظيف بعد الحفظ
-                var refreshedCart = await _context.Carts
-                    .AsNoTracking()
-                    .Include(c => c.Items.Where(i => !i.IsDeleted))
-                    .ThenInclude(i => i.Product)
-                    .Include(c => c.Items.Where(i => !i.IsDeleted))
-                    .ThenInclude(i => i.Variant)
-                    .FirstOrDefaultAsync(c => c.Id == cart.Id);
+                var refreshedCart = await LoadCartWithDetailsAsync(cart.Id, asNoTracking: true);
 
                 if (refreshedCart == null)
                 {
@@ -244,7 +245,7 @@ namespace onlineStore.Services.Cart
                     "AddToCartAsync completed successfully. CartId: {CartId}, ItemsCount: {ItemsCount}",
                     refreshedCart.Id, refreshedCart.Items?.Count ?? 0);
 
-                return ToDto(refreshedCart);
+                return await ToDtoAsync(refreshedCart);
             }
             catch (Exception ex)
             {
@@ -279,23 +280,15 @@ namespace onlineStore.Services.Cart
                     throw new Exception("الكمية يجب أن تكون أكبر من صفر");
                 }
 
-                var cart = await _context.Carts
-                    .Include(c => c.Items)
-                        .ThenInclude(i => i.Product)
-                    .Include(c => c.Items)
-                        .ThenInclude(i => i.Variant)
-                    .FirstOrDefaultAsync(c => c.StoreCustomerId == storeCustomerId);
+                var item = await _context.CartItems
+                    .Include(i => i.Cart)
+                    .Include(i => i.Product)
+                    .Include(i => i.Variant)
+                    .FirstOrDefaultAsync(i =>
+                        i.Id == cartItemId &&
+                        !i.IsDeleted &&
+                        i.Cart.StoreCustomerId == storeCustomerId);
 
-                if (cart == null)
-                {
-                    _logger.LogWarning(
-                        "Cart not found in UpdateCartItemAsync. StoreCustomerId: {StoreCustomerId}",
-                        storeCustomerId);
-
-                    throw new Exception("الكارت غير موجود");
-                }
-
-                var item = cart.Items.FirstOrDefault(i => i.Id == cartItemId);
                 if (item == null)
                 {
                     _logger.LogWarning(
@@ -338,11 +331,14 @@ namespace onlineStore.Services.Cart
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation(
-                    "UpdateCartItemAsync completed successfully. CartItemId: {CartItemId}, NewQuantity: {NewQuantity}",
-                    cartItemId, item.Quantity);
+                var refreshedCart = await LoadCartWithDetailsAsync(item.CartId, asNoTracking: true)
+                    ?? throw new Exception("تعذر تحميل السلة بعد تحديث العنصر");
 
-                return ToDto(cart);
+                _logger.LogInformation(
+                    "UpdateCartItemAsync completed successfully. CartItemId: {CartItemId}, CartId: {CartId}, StoreId: {StoreId}, NewQuantity: {NewQuantity}",
+                    cartItemId, item.CartId, item.Cart.StoreId, item.Quantity);
+
+                return await ToDtoAsync(refreshedCart);
             }
             catch (Exception ex)
             {
@@ -368,23 +364,15 @@ namespace onlineStore.Services.Cart
                     "RemoveFromCartAsync started. StoreCustomerId: {StoreCustomerId}, CartItemId: {CartItemId}",
                     storeCustomerId, cartItemId);
 
-                var cart = await _context.Carts
-                    .Include(c => c.Items)
-                        .ThenInclude(i => i.Product)
-                    .Include(c => c.Items)
-                        .ThenInclude(i => i.Variant)
-                    .FirstOrDefaultAsync(c => c.StoreCustomerId == storeCustomerId);
+                var item = await _context.CartItems
+                    .Include(i => i.Cart)
+                    .Include(i => i.Product)
+                    .Include(i => i.Variant)
+                    .FirstOrDefaultAsync(i =>
+                        i.Id == cartItemId &&
+                        !i.IsDeleted &&
+                        i.Cart.StoreCustomerId == storeCustomerId);
 
-                if (cart == null)
-                {
-                    _logger.LogWarning(
-                        "Cart not found in RemoveFromCartAsync. StoreCustomerId: {StoreCustomerId}",
-                        storeCustomerId);
-
-                    throw new Exception("الكارت غير موجود");
-                }
-
-                var item = cart.Items.FirstOrDefault(i => i.Id == cartItemId);
                 if (item == null)
                 {
                     _logger.LogWarning(
@@ -394,15 +382,20 @@ namespace onlineStore.Services.Cart
                     throw new Exception("العنصر غير موجود في الكارت");
                 }
 
-                cart.Items.Remove(item);
+                var cartId = item.CartId;
+                var cartStoreId = item.Cart.StoreId;
+                _context.CartItems.Remove(item);
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation(
-                    "RemoveFromCartAsync completed successfully. StoreCustomerId: {StoreCustomerId}, CartItemId: {CartItemId}",
-                    storeCustomerId, cartItemId);
+                var refreshedCart = await LoadCartWithDetailsAsync(cartId, asNoTracking: true)
+                    ?? throw new Exception("تعذر تحميل السلة بعد حذف العنصر");
 
-                return ToDto(cart);
+                _logger.LogInformation(
+                    "RemoveFromCartAsync completed successfully. StoreCustomerId: {StoreCustomerId}, CartItemId: {CartItemId}, CartId: {CartId}, StoreId: {StoreId}",
+                    storeCustomerId, cartItemId, cartId, cartStoreId);
+
+                return await ToDtoAsync(refreshedCart);
             }
             catch (Exception ex)
             {
@@ -440,12 +433,13 @@ namespace onlineStore.Services.Cart
                     return false;
                 }
 
-                cart.Items.Clear();
+                var removedItemsCount = cart.Items.Count;
+                _context.CartItems.RemoveRange(cart.Items);
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation(
-                    "ClearCartAsync completed successfully. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
-                    storeCustomerId, storeId);
+                    "ClearCartAsync completed successfully. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, RemovedItemsCount: {RemovedItemsCount}",
+                    storeCustomerId, storeId, removedItemsCount);
 
                 return true;
             }
@@ -473,9 +467,32 @@ namespace onlineStore.Services.Cart
                     "GetOrCreateCartAsync started. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
                     storeCustomerId, storeId);
 
-                var cart = await _context.Carts
-                    .Include(c => c.Items)
-                    .FirstOrDefaultAsync(c => c.StoreCustomerId == storeCustomerId && c.StoreId == storeId);
+                var carts = await BuildCartQuery(asNoTracking: false)
+                    .Where(c => c.StoreCustomerId == storeCustomerId && c.StoreId == storeId)
+                    .OrderBy(c => c.CreatedAt)
+                    .ToListAsync();
+
+                if (carts.Count > 1)
+                {
+                    _logger.LogWarning(
+                        "Duplicate carts detected for StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, CartIds: {@CartIds}",
+                        storeCustomerId,
+                        storeId,
+                        carts.Select(c => c.Id).ToList());
+
+                    var consolidatedCart = await ConsolidateDuplicateCartsAsync(carts);
+
+                    _logger.LogInformation(
+                        "Duplicate carts consolidated. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, PrimaryCartId: {PrimaryCartId}, ItemsCount: {ItemsCount}",
+                        storeCustomerId,
+                        storeId,
+                        consolidatedCart.Id,
+                        consolidatedCart.Items.Count);
+
+                    return consolidatedCart;
+                }
+
+                var cart = carts.FirstOrDefault();
 
                 if (cart != null)
                 {
@@ -499,11 +516,14 @@ namespace onlineStore.Services.Cart
                 await _context.Carts.AddAsync(cart);
                 await _context.SaveChangesAsync();
 
+                var createdCart = await LoadCartWithDetailsAsync(cart.Id, asNoTracking: false)
+                    ?? cart;
+
                 _logger.LogInformation(
                     "New cart created successfully. CartId: {CartId}, StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
-                    cart.Id, storeCustomerId, storeId);
+                    createdCart.Id, storeCustomerId, storeId);
 
-                return cart;
+                return createdCart;
             }
             catch (Exception ex)
             {
@@ -617,13 +637,30 @@ namespace onlineStore.Services.Cart
         // ════════════════════════════════════════════════════
         // Helper — ToDto
         // ════════════════════════════════════════════════════
-        private static CartDto ToDto(ShoppingCart cart) => new()
+        private async Task<CartDto> ToDtoAsync(ShoppingCart cart)
         {
-            Id = cart.Id,
-            StoreCustomerId = cart.StoreCustomerId,
-            StoreId = cart.StoreId,
-            CreatedAt = cart.CreatedAt,
-            Items = cart.Items?.Select(i => new CartItemDto
+            _logger.LogInformation(
+                "CartService.ToDtoAsync started. CartId: {CartId}, StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, RawItemsCount: {ItemsCount}",
+                cart.Id,
+                cart.StoreCustomerId,
+                cart.StoreId,
+                cart.Items?.Count ?? 0);
+
+            _logger.LogDebug(
+                "CartService.ToDtoAsync item snapshot for CartId: {CartId} => {@Items}",
+                cart.Id,
+                cart.Items?.Select(i => new
+                {
+                    i.Id,
+                    i.ProductId,
+                    ProductName = i.Product?.Name,
+                    i.VariantId,
+                    VariantName = i.Variant?.Name,
+                    i.Quantity,
+                    i.UnitPrice
+                }).ToList());
+
+            var items = cart.Items?.Select(i => new CartItemDto
             {
                 Id = i.Id,
                 ProductId = i.ProductId,
@@ -636,11 +673,115 @@ namespace onlineStore.Services.Cart
                 AvailableStock = i.Variant != null
                     ? i.Variant.StockQuantity
                     : i.Product?.StockQuantity ?? 0
-            }).ToList() ?? new()
-        };
+            }).ToList() ?? new List<CartItemDto>();
+
+            var pricing = await _cartPricingService.CalculatePricingAsync(
+                cart.StoreId,
+                cart.Items?.ToList() ?? new List<CartItem>());
+
+            _logger.LogInformation(
+                "CartService.ToDtoAsync pricing calculated. CartId: {CartId}, Subtotal: {Subtotal}, Discount: {Discount}, FinalTotal: {FinalTotal}, AppliedOffersCount: {AppliedOffersCount}",
+                cart.Id,
+                pricing.Subtotal,
+                pricing.Discount,
+                pricing.FinalTotal,
+                pricing.AppliedOffers.Count);
+
+            return new CartDto
+            {
+                Id = cart.Id,
+                StoreCustomerId = cart.StoreCustomerId,
+                StoreId = cart.StoreId,
+                CreatedAt = cart.CreatedAt,
+                Items = items,
+                Subtotal = pricing.Subtotal,
+                Discount = pricing.Discount,
+                FinalTotal = pricing.FinalTotal,
+                AppliedOffers = pricing.AppliedOffers
+            };
+        }
+
+        private IQueryable<ShoppingCart> BuildCartQuery(bool asNoTracking)
+        {
+            var query = _context.Carts
+                .Include(c => c.Items.Where(i => !i.IsDeleted))
+                    .ThenInclude(i => i.Product)
+                .Include(c => c.Items.Where(i => !i.IsDeleted))
+                    .ThenInclude(i => i.Variant);
+
+            return asNoTracking ? query.AsNoTracking() : query;
+        }
+
+        private async Task<ShoppingCart?> LoadCartWithDetailsAsync(Guid cartId, bool asNoTracking)
+        {
+            return await BuildCartQuery(asNoTracking)
+                .FirstOrDefaultAsync(c => c.Id == cartId);
+        }
+
+        private async Task<ShoppingCart> ConsolidateDuplicateCartsAsync(List<ShoppingCart> carts)
+        {
+            var primaryCart = carts
+                .OrderBy(c => c.CreatedAt)
+                .First();
+
+            foreach (var duplicateCart in carts.Where(c => c.Id != primaryCart.Id))
+            {
+                foreach (var duplicateItem in duplicateCart.Items.ToList())
+                {
+                    var existingItem = primaryCart.Items.FirstOrDefault(i =>
+                        i.ProductId == duplicateItem.ProductId &&
+                        i.VariantId == duplicateItem.VariantId &&
+                        !i.IsDeleted);
+
+                    if (existingItem == null)
+                    {
+                        duplicateCart.Items.Remove(duplicateItem);
+                        duplicateItem.Cart = primaryCart;
+                        duplicateItem.CartId = primaryCart.Id;
+                        primaryCart.Items.Add(duplicateItem);
+
+                        _logger.LogWarning(
+                            "Moved cart item from duplicate cart. SourceCartId: {SourceCartId}, TargetCartId: {TargetCartId}, CartItemId: {CartItemId}, ProductId: {ProductId}, VariantId: {VariantId}, Quantity: {Quantity}",
+                            duplicateCart.Id,
+                            primaryCart.Id,
+                            duplicateItem.Id,
+                            duplicateItem.ProductId,
+                            duplicateItem.VariantId,
+                            duplicateItem.Quantity);
+                    }
+                    else
+                    {
+                        existingItem.Quantity += duplicateItem.Quantity;
+                        _context.CartItems.Remove(duplicateItem);
+
+                        _logger.LogWarning(
+                            "Merged duplicate cart item into primary cart. SourceCartId: {SourceCartId}, TargetCartId: {TargetCartId}, RemovedCartItemId: {RemovedCartItemId}, ExistingCartItemId: {ExistingCartItemId}, ProductId: {ProductId}, VariantId: {VariantId}, MergedQuantity: {MergedQuantity}",
+                            duplicateCart.Id,
+                            primaryCart.Id,
+                            duplicateItem.Id,
+                            existingItem.Id,
+                            duplicateItem.ProductId,
+                            duplicateItem.VariantId,
+                            duplicateItem.Quantity);
+                    }
+                }
+
+                _context.Carts.Remove(duplicateCart);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return await LoadCartWithDetailsAsync(primaryCart.Id, asNoTracking: false)
+                ?? primaryCart;
+        }
 
         private async Task EnsureActiveStoreCustomerAsync(Guid storeCustomerId, Guid storeId)
         {
+            _logger.LogInformation(
+                "CartService.EnsureActiveStoreCustomerAsync started. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                storeCustomerId,
+                storeId);
+
             var exists = await _context.StoreCustomers
                 .AsNoTracking()
                 .AnyAsync(c => c.Id == storeCustomerId
@@ -648,7 +789,18 @@ namespace onlineStore.Services.Cart
                             && c.IsActive);
 
             if (!exists)
+            {
+                _logger.LogWarning(
+                    "CartService.EnsureActiveStoreCustomerAsync failed. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                    storeCustomerId,
+                    storeId);
                 throw new UnauthorizedAccessException("العميل لا يملك صلاحية الوصول إلى هذا المتجر");
+            }
+
+            _logger.LogInformation(
+                "CartService.EnsureActiveStoreCustomerAsync succeeded. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                storeCustomerId,
+                storeId);
         }
     }
 }

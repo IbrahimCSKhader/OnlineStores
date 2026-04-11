@@ -7,6 +7,7 @@ namespace onlineStore.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "SuperAdmin,StoreOwner")]
     public class CustomerStoreController : ControllerBase
     {
         private readonly ICustomerStoreService _customerStoreService;

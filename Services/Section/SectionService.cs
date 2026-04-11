@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using onlineStore.Data;
 using onlineStore.DTOs.Section;
+using onlineStore.Security;
 
 namespace onlineStore.Services.Section
 {
@@ -8,13 +9,19 @@ namespace onlineStore.Services.Section
     {
         private readonly AppDbContext _context;
         private readonly ILogger<SectionService> _logger;
+        private readonly ICurrentUserService _currentUser;
+        private readonly IStoreAuthorizationService _storeAuthorizationService;
 
         public SectionService(
             AppDbContext context,
-            ILogger<SectionService> logger)
+            ILogger<SectionService> logger,
+            ICurrentUserService currentUser,
+            IStoreAuthorizationService storeAuthorizationService)
         {
             _context = context;
             _logger = logger;
+            _currentUser = currentUser;
+            _storeAuthorizationService = storeAuthorizationService;
         }
 
         public async Task<List<SectionDto>> GetStoreSectionsAsync(
@@ -45,6 +52,8 @@ namespace onlineStore.Services.Section
             CreateSectionDto dto,
             CancellationToken cancellationToken = default)
         {
+            await EnsureCanManageStoreAsync(dto.StoreId, cancellationToken);
+
             var storeExists = await _context.Stores
                 .AsNoTracking()
                 .AnyAsync(s => s.Id == dto.StoreId, cancellationToken);
@@ -98,6 +107,8 @@ namespace onlineStore.Services.Section
             if (section == null)
                 return null;
 
+            await EnsureCanManageStoreAsync(section.StoreId, cancellationToken);
+
             if (!string.IsNullOrWhiteSpace(dto.Name))
                 section.Name = dto.Name.Trim();
 
@@ -127,6 +138,8 @@ namespace onlineStore.Services.Section
             if (section == null)
                 return false;
 
+            await EnsureCanManageStoreAsync(section.StoreId, cancellationToken);
+
             section.IsDeleted = true;
             await _context.SaveChangesAsync(cancellationToken);
 
@@ -146,5 +159,26 @@ namespace onlineStore.Services.Section
             StoreId = s.StoreId,
             CreatedAt = s.CreatedAt
         };
+
+        private async Task EnsureCanManageStoreAsync(Guid storeId, CancellationToken cancellationToken)
+        {
+            if (!_currentUser.IsAuthenticated || !_currentUser.UserId.HasValue)
+                throw new UnauthorizedAccessException("غير مصرح لك بإدارة هذا المتجر");
+
+            var canManageStore = await _storeAuthorizationService.CanManageStoreAsync(
+                _currentUser.UserId.Value,
+                storeId,
+                cancellationToken);
+
+            if (!canManageStore)
+            {
+                _logger.LogWarning(
+                    "Unauthorized section management attempt. UserId: {UserId}, StoreId: {StoreId}",
+                    _currentUser.UserId,
+                    storeId);
+
+                throw new UnauthorizedAccessException("غير مصرح لك بإدارة هذا المورد");
+            }
+        }
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace onlineStore.DTOs.Store
+using onlineStore.Models;
+
+namespace onlineStore.DTOs.Store
 {
     public class StoreDto
     {
@@ -11,7 +13,7 @@
         public string? CoverImageUrl { get; set; }
         public string? WhatsAppNumber { get; set; }
         public string? StoreStory { get; set; }
-        public string? ThemeTemplate { get; set; }
+        public string ThemeTemplate { get; set; } = StoreThemeTemplates.Default;
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public int VisitCount { get; set; }

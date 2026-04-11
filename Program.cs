@@ -16,11 +16,14 @@ using onlineStore.Services.Coupon;
 using onlineStore.Services.CustomerStore;
 using onlineStore.Services.Email;
 using onlineStore.Services.Order;
+using onlineStore.Services.Offer;
+using onlineStore.Services.Pricing;
 using onlineStore.Services.Product;
 using onlineStore.Services.Review;
 using onlineStore.Services.Section;
 using onlineStore.Services.Store;
 using onlineStore.Services.StoreCustomerAuth;
+using onlineStore.Services.Subscription;
 using onlineStore.Services.SuperAdminDashboard;
 using onlineStore.Settings;
 using Scalar.AspNetCore;
@@ -55,9 +58,6 @@ static bool IsAllowedCorsOrigin(string origin, HashSet<string> allowedOrigins)
 }
 
 
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
-// 1ï¸ڈâƒ£ Controllers
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -66,9 +66,6 @@ builder.Services.AddControllers()
     });
 
 
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
-// 2ï¸ڈâƒ£ DbContext
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -83,14 +80,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IStoreOwnershipService, StoreOwnershipService>();
+builder.Services.AddScoped<IStoreAuthorizationService, StoreAuthorizationService>();
 builder.Services.AddScoped<IPasswordHasher<StoreCustomer>, PasswordHasher<StoreCustomer>>();
 builder.Services.Configure<EmailSettings>(
     builder.Configuration.GetSection(EmailSettings.SectionName));
 
 
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
-// 3ï¸ڈâƒ£ Identity
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 builder.Services.AddIdentity<AppUser, AppRole>(options =>
 {
     options.Password.RequireDigit = true;
@@ -117,6 +112,11 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim(
             StoreCustomerClaimTypes.AccountType,
             StoreCustomerClaimTypes.StoreCustomerAccountType);
+        policy.RequireAssertion(context =>
+            !string.Equals(
+                context.User.FindFirst(StoreCustomerClaimTypes.IsGuest)?.Value,
+                "true",
+                StringComparison.OrdinalIgnoreCase));
     });
 });
 
@@ -360,6 +360,11 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICouponService, CouponService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
+builder.Services.AddScoped<IStoreSubscriptionService, StoreSubscriptionService>();
+builder.Services.AddScoped<IOfferService, OfferService>();
+builder.Services.AddScoped<ICartPricingService, CartPricingService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
@@ -368,18 +373,36 @@ builder.Services.AddScoped<ICustomerStoreService, CustomerStoreService>();
 builder.Services.AddScoped<IStoreCustomerEmailWorkflowService, StoreCustomerEmailWorkflowService>();
 builder.Services.AddScoped<IStoreCustomerAuthService, StoreCustomerAuthService>();
 builder.Services.AddScoped<ISuperAdminDashboardService, SuperAdminDashboardService>();
+var configuredDataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+var dataProtectionKeysPath = configuredDataProtectionKeysPath;
+
+if (string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    dataProtectionKeysPath = builder.Environment.IsDevelopment()
+        ? Path.Combine(builder.Environment.ContentRootPath, "artifacts", "keys")
+        : @"D:\Sites\site58172\keys";
+}
+
+if (!Path.IsPathRooted(dataProtectionKeysPath))
+{
+    dataProtectionKeysPath = Path.Combine(builder.Environment.ContentRootPath, dataProtectionKeysPath);
+}
+
+Directory.CreateDirectory(dataProtectionKeysPath);
+
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(@"D:\Sites\site58172\keys"))
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
     .SetApplicationName("OnlineStoreApp");
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 var app = builder.Build();
 Console.WriteLine("ContentRootPath: " + app.Environment.ContentRootPath);
 Console.WriteLine("WebRootPath: " + app.Environment.WebRootPath);
+Console.WriteLine("DataProtectionKeysPath: " + dataProtectionKeysPath);
 var logger = app.Services.GetRequiredService<ILoggerFactory>()
     .CreateLogger("StartupPaths");
 
 logger.LogInformation("ContentRootPath: {Path}", app.Environment.ContentRootPath);
 logger.LogInformation("WebRootPath: {Path}", app.Environment.WebRootPath);
+logger.LogInformation("DataProtectionKeysPath: {Path}", dataProtectionKeysPath);
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(
@@ -387,124 +410,117 @@ app.UseStaticFiles(new StaticFileOptions
     ),
     RequestPath = ""
 });// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
-app.MapGet("/debug-static", (IWebHostEnvironment env) =>
+if (app.Environment.IsDevelopment())
 {
-    var webRoot = env.WebRootPath;
-    var testFile = Path.Combine(webRoot ?? "", "test.txt");
-
-    return Results.Ok(new
+    app.MapGet("/debug-static", (IWebHostEnvironment env) =>
     {
-        env.ContentRootPath,
-        env.WebRootPath,
-        testFile,
-        testFileExists = System.IO.File.Exists(testFile)
-    });
-});
-
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
-// ًں’‰ Diagnostic Endpoints
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
-app.MapGet("/api/diagnostics/auth", async (
-    UserManager<AppUser> userManager,
-    RoleManager<AppRole> roleManager,
-    IConfiguration config,
-    ILogger<Program> logger) =>
-{
-    try
-    {
-        logger.LogInformation("Diagnostics endpoint called");
-
-        // Check roles
-        var rolesExist = new Dictionary<string, bool>
-        {
-            ["SuperAdmin"] = await roleManager.RoleExistsAsync("SuperAdmin"),
-            ["StoreOwner"] = await roleManager.RoleExistsAsync("StoreOwner"),
-            ["Customer"] = await roleManager.RoleExistsAsync("Customer")
-        };
-
-        // Check Google settings (masked)
-        var googleClientId = config["Authentication:Google:ClientId"];
-        var googleClientSecret = config["Authentication:Google:ClientSecret"];
-
-        // Check JWT settings (masked)
-        var jwtSecret = config["JwtSettings:SecretKey"];
-        var jwtIssuer = config["JwtSettings:Issuer"];
-        var jwtAudience = config["JwtSettings:Audience"];
-
-        // Check Frontend settings
-        var frontendBaseUrl = config["FrontendSettings:BaseUrl"];
-        var successPath = config["FrontendSettings:GoogleAuthSuccessRedirectPath"];
-        var failurePath = config["FrontendSettings:GoogleAuthFailureRedirectPath"];
-
-        var result = new
-        {
-            Timestamp = DateTime.UtcNow,
-            Roles = rolesExist,
-            GoogleSettings = new
-            {
-                ClientIdConfigured = !string.IsNullOrWhiteSpace(googleClientId),
-                ClientIdLength = googleClientId?.Length ?? 0,
-                ClientSecretConfigured = !string.IsNullOrWhiteSpace(googleClientSecret),
-                ClientSecretLength = googleClientSecret?.Length ?? 0
-            },
-            JwtSettings = new
-            {
-                SecretKeyConfigured = !string.IsNullOrWhiteSpace(jwtSecret),
-                SecretKeyLength = jwtSecret?.Length ?? 0,
-                Issuer = jwtIssuer,
-                Audience = jwtAudience
-            },
-            FrontendSettings = new
-            {
-                BaseUrl = frontendBaseUrl,
-                SuccessPath = successPath,
-                FailurePath = failurePath,
-                AllConfigured = !string.IsNullOrWhiteSpace(frontendBaseUrl)
-                    && !string.IsNullOrWhiteSpace(successPath)
-                    && !string.IsNullOrWhiteSpace(failurePath)
-            }
-        };
-
-        logger.LogInformation("Diagnostics completed successfully");
-        return Results.Ok(result);
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "Diagnostics endpoint failed");
-        return Results.Problem($"Diagnostics failed: {ex.Message}");
-    }
-});
-
-app.MapGet("/api/diagnostics/test-auth-service", async (
-    IAuthService authService,
-    ILogger<Program> logger) =>
-{
-    try
-    {
-        logger.LogInformation("Testing AuthService injection");
-
-        // Test that we can resolve the service
-        var serviceType = authService?.GetType()?.FullName ?? "null";
+        var webRoot = env.WebRootPath;
+        var testFile = Path.Combine(webRoot ?? "", "test.txt");
 
         return Results.Ok(new
         {
-            ServiceResolved = authService != null,
-            ServiceType = serviceType,
-            Message = "AuthService resolved successfully"
+            env.ContentRootPath,
+            env.WebRootPath,
+            testFile,
+            testFileExists = System.IO.File.Exists(testFile)
         });
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "AuthService test failed");
-        return Results.Problem($"AuthService test failed: {ex.Message}");
-    }
-});
+    });
 
-app.MapGet("/api/diagnostics/exception-test", (ILogger<Program> logger) =>
-{
-    logger.LogInformation("Exception test endpoint called - will throw exception");
-    throw new InvalidOperationException("This is a test exception to verify error handling");
-});
+    app.MapGet("/api/diagnostics/auth", async (
+        UserManager<AppUser> userManager,
+        RoleManager<AppRole> roleManager,
+        IConfiguration config,
+        ILogger<Program> logger) =>
+    {
+        try
+        {
+            logger.LogInformation("Diagnostics endpoint called");
+
+            var rolesExist = new Dictionary<string, bool>
+            {
+                ["SuperAdmin"] = await roleManager.RoleExistsAsync("SuperAdmin"),
+                ["StoreOwner"] = await roleManager.RoleExistsAsync("StoreOwner"),
+                ["Customer"] = await roleManager.RoleExistsAsync("Customer")
+            };
+
+            var googleClientId = config["Authentication:Google:ClientId"];
+            var googleClientSecret = config["Authentication:Google:ClientSecret"];
+            var jwtSecret = config["JwtSettings:SecretKey"];
+            var jwtIssuer = config["JwtSettings:Issuer"];
+            var jwtAudience = config["JwtSettings:Audience"];
+            var frontendBaseUrl = config["FrontendSettings:BaseUrl"];
+            var successPath = config["FrontendSettings:GoogleAuthSuccessRedirectPath"];
+            var failurePath = config["FrontendSettings:GoogleAuthFailureRedirectPath"];
+
+            var result = new
+            {
+                Timestamp = DateTime.UtcNow,
+                Roles = rolesExist,
+                GoogleSettings = new
+                {
+                    ClientIdConfigured = !string.IsNullOrWhiteSpace(googleClientId),
+                    ClientIdLength = googleClientId?.Length ?? 0,
+                    ClientSecretConfigured = !string.IsNullOrWhiteSpace(googleClientSecret),
+                    ClientSecretLength = googleClientSecret?.Length ?? 0
+                },
+                JwtSettings = new
+                {
+                    SecretKeyConfigured = !string.IsNullOrWhiteSpace(jwtSecret),
+                    SecretKeyLength = jwtSecret?.Length ?? 0,
+                    Issuer = jwtIssuer,
+                    Audience = jwtAudience
+                },
+                FrontendSettings = new
+                {
+                    BaseUrl = frontendBaseUrl,
+                    SuccessPath = successPath,
+                    FailurePath = failurePath,
+                    AllConfigured = !string.IsNullOrWhiteSpace(frontendBaseUrl)
+                        && !string.IsNullOrWhiteSpace(successPath)
+                        && !string.IsNullOrWhiteSpace(failurePath)
+                }
+            };
+
+            logger.LogInformation("Diagnostics completed successfully");
+            return Results.Ok(result);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Diagnostics endpoint failed");
+            return Results.Problem($"Diagnostics failed: {ex.Message}");
+        }
+    });
+
+    app.MapGet("/api/diagnostics/test-auth-service", async (
+        IAuthService authService,
+        ILogger<Program> logger) =>
+    {
+        try
+        {
+            logger.LogInformation("Testing AuthService injection");
+
+            var serviceType = authService?.GetType()?.FullName ?? "null";
+
+            return Results.Ok(new
+            {
+                ServiceResolved = authService != null,
+                ServiceType = serviceType,
+                Message = "AuthService resolved successfully"
+            });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "AuthService test failed");
+            return Results.Problem($"AuthService test failed: {ex.Message}");
+        }
+    });
+
+    app.MapGet("/api/diagnostics/exception-test", (ILogger<Program> logger) =>
+    {
+        logger.LogInformation("Exception test endpoint called - will throw exception");
+        throw new InvalidOperationException("This is a test exception to verify error handling");
+    });
+}
 
 // â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 // 8ï¸ڈâƒ£ Middleware Pipeline
@@ -573,15 +589,16 @@ app.UseAuthorization();
 app.MapControllers();
 
 
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
-// 9ï¸ڈâƒ£ Seed Data
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider
         .GetRequiredService<AppDbContext>();
 
+    var subscriptionService = scope.ServiceProvider
+        .GetRequiredService<ISubscriptionService>();
+
     await context.Database.MigrateAsync();
+    await subscriptionService.EnsureDefaultPlansSeededAsync();
 
     var userManager = scope.ServiceProvider
         .GetRequiredService<UserManager<AppUser>>();
@@ -594,9 +611,7 @@ using (var scope = app.Services.CreateScope())
 app.Run();
 
 
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
-// ًںŒ± SeedRolesAndAdmin
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
+
 async Task SeedRolesAndAdmin(
     UserManager<AppUser> userManager,
     RoleManager<AppRole> roleManager)
@@ -637,9 +652,6 @@ async Task SeedRolesAndAdmin(
 }
 
 
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
-// ًں›،ï¸ڈ GlobalExceptionHandler
-// â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ
 public class GlobalExceptionHandler
 {
     private readonly RequestDelegate _next;

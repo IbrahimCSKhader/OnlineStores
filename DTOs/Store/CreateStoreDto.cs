@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
+using onlineStore.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace onlineStore.DTOs.Store
@@ -27,8 +28,8 @@ namespace onlineStore.DTOs.Store
         [MaxLength(100000)]
         public string? StoreStory { get; set; }
 
-        [MaxLength(50)]
-        public string? ThemeTemplate { get; set; } = "default";
+        [MaxLength(1)]
+        public string? ThemeTemplate { get; set; } = StoreThemeTemplates.Default;
 
         public List<StoreContactAccountInputDto>? ContactAccounts { get; set; }
 

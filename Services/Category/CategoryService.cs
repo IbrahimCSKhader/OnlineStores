@@ -9,17 +9,20 @@ namespace onlineStore.Services.Category
     public class CategoryService : ICategoryService
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<CategoryService> _logger;
         private readonly ICurrentUserService _currentUser;
-        private readonly IStoreOwnershipService _storeOwnershipService;
+        private readonly IStoreAuthorizationService _storeAuthorizationService;
 
         public CategoryService(
             AppDbContext context,
             ICurrentUserService currentUser,
-            IStoreOwnershipService storeOwnershipService)
+            IStoreAuthorizationService storeAuthorizationService,
+            ILogger<CategoryService> logger)
         {
             _context = context;
             _currentUser = currentUser;
-            _storeOwnershipService = storeOwnershipService;
+            _storeAuthorizationService = storeAuthorizationService;
+            _logger = logger;
         }
 
         public async Task<List<CategoryDto>> GetStoreCategoriesAsync(
@@ -142,17 +145,23 @@ namespace onlineStore.Services.Category
             Guid storeId,
             CancellationToken cancellationToken)
         {
-                return;
+            if (!_currentUser.IsAuthenticated || !_currentUser.UserId.HasValue)
+                throw new UnauthorizedAccessException("غير مصرح لك بإدارة هذا المتجر");
 
-        
-
-            var ownsStore = await _storeOwnershipService.UserOwnsStoreAsync(
-                storeId,
+            var canManageStore = await _storeAuthorizationService.CanManageStoreAsync(
                 _currentUser.UserId.Value,
+                storeId,
                 cancellationToken);
 
-            if (!ownsStore)
-                throw new KeyNotFoundException("Store not found.");
+            if (!canManageStore)
+            {
+                _logger.LogWarning(
+                    "Unauthorized category management attempt. UserId: {UserId}, StoreId: {StoreId}",
+                    _currentUser.UserId,
+                    storeId);
+
+                throw new UnauthorizedAccessException("غير مصرح لك بإدارة هذا المورد");
+            }
         }
 
         private static string NormalizeSlugSegment(string value)

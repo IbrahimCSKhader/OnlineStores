@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using onlineStore.DTOs.Store;
 using onlineStore.Services.Store;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace onlineStore.Controllers
 {
@@ -11,13 +13,18 @@ namespace onlineStore.Controllers
     public class StoreController : ControllerBase
     {
         private readonly IStoreService _storeService;
+        private readonly ILogger<StoreController> _logger;
 
-        public StoreController(IStoreService storeService)
+        public StoreController(
+            IStoreService storeService,
+            ILogger<StoreController> logger)
         {
             _storeService = storeService;
+            _logger = logger;
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
             var stores = await _storeService.GetAllStoresAsync();
@@ -25,7 +32,7 @@ namespace onlineStore.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "SuperAdmin,StoreOwner")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(Guid id)
         {
             var store = await _storeService.GetStoreByIdAsync(id);
@@ -54,15 +61,69 @@ namespace onlineStore.Controllers
         public async Task<IActionResult> Create([FromForm] CreateStoreDto dto)
         {
             if (!ModelState.IsValid)
+            {
+                _logger.LogWarning(
+                    "StoreController.Create rejected invalid model state. Keys: {ModelStateKeys}",
+                    ModelState.Keys.ToArray());
                 return BadRequest(ModelState);
+            }
+
+            await PopulateContactAccountsFromFormAsync(dto);
 
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var requestContactCount = dto.ContactAccounts?.Count ?? 0;
+
+            _logger.LogInformation(
+                "StoreController.Create started. RequestedOwnerId: {RequestedOwnerId}, AuthenticatedUserId: {AuthenticatedUserId}, Slug: {Slug}, ContactAccountsCount: {ContactAccountsCount}, HasLogo: {HasLogo}, HasCoverPage: {HasCoverPage}",
+                dto.OwnerId,
+                userId,
+                dto.Slug,
+                requestContactCount,
+                dto.Logo != null,
+                dto.CoverPage != null);
 
             if (string.IsNullOrWhiteSpace(userId))
+            {
+                _logger.LogWarning(
+                    "StoreController.Create failed authentication. RequestedOwnerId: {RequestedOwnerId}, Slug: {Slug}",
+                    dto.OwnerId,
+                    dto.Slug);
                 return Unauthorized(new { message = "User is not authenticated" });
+            }
 
-            var store = await _storeService.CreateStoreAsync(dto, userId);
-            return Ok(store);
+            try
+            {
+                var store = await _storeService.CreateStoreAsync(dto, userId);
+
+                _logger.LogInformation(
+                    "StoreController.Create succeeded. StoreId: {StoreId}, ContactAccountsCount: {ContactAccountsCount}",
+                    store.Id,
+                    store.ContactAccounts.Count);
+
+                return Ok(store);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "StoreController.Create rejected request. RequestedOwnerId: {RequestedOwnerId}, AuthenticatedUserId: {AuthenticatedUserId}, Slug: {Slug}, ContactAccountsCount: {ContactAccountsCount}",
+                    dto.OwnerId,
+                    userId,
+                    dto.Slug,
+                    requestContactCount);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "StoreController.Create failed unexpectedly. RequestedOwnerId: {RequestedOwnerId}, AuthenticatedUserId: {AuthenticatedUserId}, Slug: {Slug}, ContactAccountsCount: {ContactAccountsCount}",
+                    dto.OwnerId,
+                    userId,
+                    dto.Slug,
+                    requestContactCount);
+                throw;
+            }
         }
 
         [HttpPut("{id}")]
@@ -72,24 +133,42 @@ namespace onlineStore.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var store = await _storeService.UpdateStoreAsync(id, dto);
+            try
+            {
+                var store = await _storeService.UpdateStoreAsync(id, dto);
 
-            if (store == null)
-                return NotFound(new { message = "المتجر غير موجود" });
+                if (store == null)
+                    return NotFound(new { message = "المتجر غير موجود" });
 
-            return Ok(store);
+                return Ok(store);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = "SuperAdmin,StoreOwner")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var result = await _storeService.DeleteStoreAsync(id);
+            try
+            {
+                var result = await _storeService.DeleteStoreAsync(id);
 
-            if (!result)
-                return NotFound(new { message = "the store does not exist" });
+                if (!result)
+                    return NotFound(new { message = "the store does not exist" });
 
-            return Ok(new { message = "soft delete done" });
+                return Ok(new { message = "soft delete done" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
         [HttpPost("{id}/visit")]
@@ -123,6 +202,148 @@ namespace onlineStore.Controllers
                 storeId = id,
                 visitCount = visitCount.Value
             });
+        }
+
+        private async Task PopulateContactAccountsFromFormAsync(CreateStoreDto dto)
+        {
+            if (!Request.HasFormContentType)
+                return;
+
+            if (dto.ContactAccounts != null && dto.ContactAccounts.Count > 0)
+            {
+                _logger.LogInformation(
+                    "StoreController.Create received contact accounts from default form binding. Count: {Count}",
+                    dto.ContactAccounts.Count);
+                return;
+            }
+
+            var form = await Request.ReadFormAsync();
+            var parsedAccounts = TryParseContactAccountsFromJsonField(form)
+                ?? TryParseIndexedContactAccounts(form);
+
+            if (parsedAccounts == null || parsedAccounts.Count == 0)
+            {
+                var relevantKeys = form.Keys
+                    .Where(key => key.Contains("contact", StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+
+                _logger.LogWarning(
+                    "StoreController.Create did not bind any contact accounts from form data. RelevantFormKeys: {RelevantFormKeys}",
+                    relevantKeys);
+                return;
+            }
+
+            dto.ContactAccounts = parsedAccounts;
+
+            _logger.LogInformation(
+                "StoreController.Create restored contact accounts from raw form data. Count: {Count}, Accounts: {Accounts}",
+                parsedAccounts.Count,
+                string.Join(
+                    " | ",
+                    parsedAccounts.Select((account, index) =>
+                        $"#{index}:Platform={account.Platform},Username={account.Username},SortOrder={account.SortOrder},Label={account.Label ?? "<null>"}")));
+        }
+
+        private static List<StoreContactAccountInputDto>? TryParseContactAccountsFromJsonField(IFormCollection form)
+        {
+            var candidateKeys = new[]
+            {
+                "ContactAccounts",
+                "contactAccounts"
+            };
+
+            foreach (var key in candidateKeys)
+            {
+                if (!form.TryGetValue(key, out var values))
+                    continue;
+
+                var rawValue = values.FirstOrDefault();
+                if (string.IsNullOrWhiteSpace(rawValue))
+                    continue;
+
+                var trimmedValue = rawValue.Trim();
+                if (!trimmedValue.StartsWith("["))
+                    continue;
+
+                try
+                {
+                    var parsedList = JsonSerializer.Deserialize<List<StoreContactAccountInputDto>>(
+                        trimmedValue,
+                        new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+
+                    if (parsedList != null && parsedList.Count > 0)
+                        return parsedList;
+                }
+                catch (JsonException)
+                {
+                    // Ignore and fall back to indexed form parsing.
+                }
+            }
+
+            return null;
+        }
+
+        private static List<StoreContactAccountInputDto>? TryParseIndexedContactAccounts(IFormCollection form)
+        {
+            var accountsByIndex = new Dictionary<int, StoreContactAccountInputDto>();
+            var patterns = new[]
+            {
+                new Regex(@"^(?:ContactAccounts|contactAccounts)\[(\d+)\]\.(Platform|Username|Label|SortOrder)$", RegexOptions.IgnoreCase),
+                new Regex(@"^(?:ContactAccounts|contactAccounts)\[(\d+)\]\[(Platform|Username|Label|SortOrder)\]$", RegexOptions.IgnoreCase)
+            };
+
+            foreach (var key in form.Keys)
+            {
+                Match? match = null;
+
+                foreach (var pattern in patterns)
+                {
+                    match = pattern.Match(key);
+                    if (match.Success)
+                        break;
+                }
+
+                if (match == null || !match.Success)
+                    continue;
+
+                var index = int.Parse(match.Groups[1].Value);
+                var propertyName = match.Groups[2].Value;
+                var value = form[key].FirstOrDefault();
+
+                if (!accountsByIndex.TryGetValue(index, out var account))
+                {
+                    account = new StoreContactAccountInputDto();
+                    accountsByIndex[index] = account;
+                }
+
+                switch (propertyName.ToLowerInvariant())
+                {
+                    case "platform":
+                        account.Platform = value ?? string.Empty;
+                        break;
+                    case "username":
+                        account.Username = value ?? string.Empty;
+                        break;
+                    case "label":
+                        account.Label = value;
+                        break;
+                    case "sortorder":
+                        if (int.TryParse(value, out var sortOrder))
+                            account.SortOrder = sortOrder;
+                        break;
+                }
+            }
+
+            if (accountsByIndex.Count == 0)
+                return null;
+
+            return accountsByIndex
+                .OrderBy(x => x.Key)
+                .Select(x => x.Value)
+                .ToList();
         }
     }
 }

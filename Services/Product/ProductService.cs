@@ -6,6 +6,7 @@ using onlineStore.DTOs.Product;
 using onlineStore.Models;
 using onlineStore.Models.Enums;
 using onlineStore.Security;
+using onlineStore.Services.Subscription;
 using System.Text.RegularExpressions;
 
 namespace onlineStore.Services.Product
@@ -15,20 +16,23 @@ namespace onlineStore.Services.Product
         private readonly AppDbContext _context;
         private readonly ILogger<ProductService> _logger;
         private readonly ICurrentUserService _currentUser;
-        private readonly IStoreOwnershipService _storeOwnershipService;
+        private readonly IStoreAuthorizationService _storeAuthorizationService;
+        private readonly ISubscriptionService _subscriptionService;
         private readonly IWebHostEnvironment _environment;
 
         public ProductService(
             AppDbContext context,
             ILogger<ProductService> logger,
             ICurrentUserService currentUser,
-            IStoreOwnershipService storeOwnershipService,
+            IStoreAuthorizationService storeAuthorizationService,
+            ISubscriptionService subscriptionService,
             IWebHostEnvironment environment)
         {
             _context = context;
             _logger = logger;
             _currentUser = currentUser;
-            _storeOwnershipService = storeOwnershipService;
+            _storeAuthorizationService = storeAuthorizationService;
+            _subscriptionService = subscriptionService;
             _environment = environment;
         }
 
@@ -51,7 +55,7 @@ namespace onlineStore.Services.Product
                 .Include(p => p.AttributeValues)
                     .ThenInclude(av => av.Attribute);
 
-            var canManageStore =true ;
+            var canManageStore = await CanCurrentUserManageStoreAsync(storeId);
 
            
             
@@ -206,6 +210,21 @@ namespace onlineStore.Services.Product
         public async Task<ProductDto> CreateProductAsync(CreateProductDto dto)
         {
             await EnsureCanManageStoreAsync(dto.StoreId);
+
+            var canCreateProduct = await _subscriptionService.CanStoreCreateProductAsync(dto.StoreId);
+            if (!canCreateProduct)
+            {
+                throw new Exception("لقد وصلت للحد الأقصى من المنتجات");
+            }
+
+            var activeSubscription = await _subscriptionService.GetActiveSubscriptionAsync(dto.StoreId);
+            var maxImagesPerProduct = activeSubscription?.MaxImagesPerProduct;
+            if (maxImagesPerProduct.HasValue &&
+                dto.Images != null &&
+                dto.Images.Count > maxImagesPerProduct.Value)
+            {
+                throw new Exception("وصلت الحد الأقصى للصور");
+            }
 
             var store = await _context.Stores
                 .AsNoTracking()
@@ -521,6 +540,12 @@ namespace onlineStore.Services.Product
 
             await EnsureCanManageStoreAsync(product.StoreId);
 
+            var canAddImage = await _subscriptionService.CanStoreAddImageAsync(dto.ProductId);
+            if (!canAddImage)
+            {
+                throw new Exception("وصلت الحد الأقصى للصور");
+            }
+
             if (dto.Image == null || dto.Image.Length == 0)
                 throw new Exception("Invalid image");
 
@@ -823,18 +848,34 @@ namespace onlineStore.Services.Product
         // ════════════════════════════════════════════════════
         private async Task EnsureCanManageStoreAsync(Guid storeId, CancellationToken cancellationToken = default)
         {
-                return;
-
             if (!_currentUser.UserId.HasValue)
-                throw new UnauthorizedAccessException("User is not authenticated.");
+                throw new UnauthorizedAccessException("غير مصرح لك بإدارة هذا المتجر");
 
-            var ownsStore = await _storeOwnershipService.UserOwnsStoreAsync(
-                storeId,
+            var canManageStore = await _storeAuthorizationService.CanManageStoreAsync(
                 _currentUser.UserId.Value,
+                storeId,
                 cancellationToken);
 
-            if (!ownsStore)
-                throw new KeyNotFoundException("Store not found.");
+            if (!canManageStore)
+            {
+                _logger.LogWarning(
+                    "Unauthorized store management attempt. UserId: {UserId}, StoreId: {StoreId}",
+                    _currentUser.UserId,
+                    storeId);
+
+                throw new UnauthorizedAccessException("غير مصرح لك بإدارة هذا المورد");
+            }
+        }
+
+        private async Task<bool> CanCurrentUserManageStoreAsync(Guid storeId, CancellationToken cancellationToken = default)
+        {
+            if (!_currentUser.UserId.HasValue)
+                return false;
+
+            return await _storeAuthorizationService.CanManageStoreAsync(
+                _currentUser.UserId.Value,
+                storeId,
+                cancellationToken);
         }
 
         private async Task EnsureCategoryAndSectionBelongToStoreAsync(

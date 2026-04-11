@@ -5,10 +5,13 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using onlineStore.Models;
 using onlineStore.Models.CartModels;
 using onlineStore.Models.Discounts;
+using onlineStore.Models.Offers;
 using onlineStore.Models.Identity;
 using onlineStore.Models.Notifications;
 using onlineStore.Models.Orders;
 using onlineStore.Models.Reviews;
+using onlineStore.Models.Subscriptions;
+using System.Reflection;
 namespace onlineStore.Data
 {
     public class AppDbContext : IdentityDbContext<AppUser , AppRole , Guid>
@@ -37,6 +40,11 @@ namespace onlineStore.Data
         public DbSet<Coupon> Coupons => Set<Coupon>();
 
         public DbSet<Review> Reviews => Set<Review>();
+
+        public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
+        public DbSet<StoreSubscription> StoreSubscriptions => Set<StoreSubscription>();
+        public DbSet<Offer> Offers => Set<Offer>();
+        public DbSet<OfferItem> OfferItems => Set<OfferItem>();
 
      
         public DbSet<Notification> Notifications => Set<Notification>();
@@ -161,6 +169,19 @@ namespace onlineStore.Data
 .HasForeignKey(s => s.OwnerId)
 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<Store>(entity =>
+            {
+                entity.Property(x => x.ThemeTemplate)
+                    .HasMaxLength(1)
+                    .IsRequired()
+                    .HasDefaultValue(StoreThemeTemplates.Default);
+
+                entity.ToTable(t =>
+                    t.HasCheckConstraint(
+                        "CK_Stores_ThemeTemplate",
+                        "[ThemeTemplate] IN ('D', 'L', 'F')"));
+            });
+
             builder.Entity<StoreContactAccount>()
                 .HasOne(sca => sca.Store)
                 .WithMany(s => s.ContactAccounts)
@@ -185,6 +206,10 @@ namespace onlineStore.Data
             builder.Entity<Coupon>().HasQueryFilter(x => !x.IsDeleted);
             builder.Entity<Notification>().HasQueryFilter(x => !x.IsDeleted);
             builder.Entity<StoreContactAccount>().HasQueryFilter(x => !x.IsDeleted);
+            builder.Entity<SubscriptionPlan>().HasQueryFilter(x => !x.IsDeleted);
+            builder.Entity<StoreSubscription>().HasQueryFilter(x => !x.IsDeleted);
+            builder.Entity<Offer>().HasQueryFilter(x => !x.IsDeleted);
+            builder.Entity<OfferItem>().HasQueryFilter(x => !x.IsDeleted);
 
 
         
@@ -218,6 +243,23 @@ namespace onlineStore.Data
                 e.Property(c => c.DiscountValue).HasColumnType("decimal(18,2)");
                 e.Property(c => c.MinOrderAmount).HasColumnType("decimal(18,2)");
                 e.Property(c => c.MaxDiscountAmount).HasColumnType("decimal(18,2)");
+            });
+
+            builder.Entity<SubscriptionPlan>(e =>
+            {
+                e.Property(x => x.Price).HasColumnType("decimal(18,2)");
+            });
+
+            builder.Entity<StoreSubscription>(e =>
+            {
+                e.Property(x => x.PaidAmount).HasColumnType("decimal(18,2)");
+            });
+
+            builder.Entity<Offer>(e =>
+            {
+                e.Property(x => x.BundlePrice).HasColumnType("decimal(18,2)");
+                e.Property(x => x.DiscountPercentage).HasColumnType("decimal(5,2)");
+                e.Property(x => x.DiscountAmount).HasColumnType("decimal(18,2)");
             });
 
 
@@ -272,7 +314,7 @@ namespace onlineStore.Data
             // ⚡ PERFORMANCE: تطبيق كل الـ Configurations
             // من ملفات منفصلة لو استخدمت IEntityTypeConfiguration
             // ────────────────────────────────────────────────────
-            // builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+            builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         }
 
 

@@ -36,56 +36,6 @@ namespace onlineStore.Services.StoreCustomerAuth
             _logger = logger;
         }
 
-        public async Task<StoreCustomerAuthResponseDto> CreateGuestSessionAsync(StoreCustomerGuestSessionDto dto)
-        {
-            try
-            {
-                var store = await _context.Stores
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(s => s.Id == dto.StoreId);
-
-                if (store == null || !store.IsActive)
-                    return Fail("The selected store is not available.");
-
-                var customer = new StoreCustomer
-                {
-                    StoreId = dto.StoreId,
-                    FirstName = "Guest",
-                    LastName = "Customer",
-                    Email = GenerateGuestEmail(),
-                    EmailConfirmed = true,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                customer.PasswordHash = _passwordHasher.HashPassword(
-                    customer,
-                    $"guest:{Guid.NewGuid():N}");
-
-                _context.StoreCustomers.Add(customer);
-                await _context.SaveChangesAsync();
-
-                var token = GenerateJwtToken(customer, isGuest: true);
-
-                _logger.LogInformation(
-                    "Guest store customer session created. StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}",
-                    customer.StoreId,
-                    customer.Id);
-
-                return Success(
-                    customer,
-                    token.Token,
-                    token.ExpiresAt,
-                    "Guest session created successfully.",
-                    isGuest: true);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while creating guest session for store {StoreId}", dto.StoreId);
-                return Fail("An unexpected error occurred while creating the guest session.");
-            }
-        }
-
         public async Task<StoreCustomerAuthResponseDto> RegisterAsync(StoreCustomerRegisterDto dto)
         {
             try
@@ -333,6 +283,63 @@ namespace onlineStore.Services.StoreCustomerAuth
             }
         }
 
+        public async Task<(bool Success, string Message)> SetPasswordAsync(
+            Guid storeCustomerId,
+            Guid storeId,
+            StoreCustomerSetPasswordDto dto)
+        {
+            try
+            {
+                if (dto.NewPassword != dto.ConfirmPassword)
+                    return (false, "Password confirmation does not match.");
+
+                var customer = await _context.StoreCustomers
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(c => c.Id == storeCustomerId && c.StoreId == storeId);
+
+                return await SetPasswordInternalAsync(customer, dto.NewPassword, "store customer set password");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error while setting password for store customer. StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}",
+                    storeId,
+                    storeCustomerId);
+
+                return (false, "An unexpected error occurred while setting the password.");
+            }
+        }
+
+        public async Task<(bool Success, string Message)> SetPasswordByEmailAsync(
+            string email,
+            Guid storeId,
+            StoreCustomerSetPasswordDto dto)
+        {
+            try
+            {
+                if (dto.NewPassword != dto.ConfirmPassword)
+                    return (false, "Password confirmation does not match.");
+
+                var normalizedEmail = NormalizeEmail(email);
+                var customer = await _context.StoreCustomers
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(c => c.StoreId == storeId && c.Email == normalizedEmail);
+
+                return await SetPasswordInternalAsync(customer, dto.NewPassword, "store customer set password from auth user");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error while setting password by email for store customer. StoreId: {StoreId}, Email: {Email}",
+                    storeId,
+                    email);
+
+                return (false, "An unexpected error occurred while setting the password.");
+            }
+        }
+
         private (string Token, DateTime ExpiresAt) GenerateJwtToken(StoreCustomer customer, bool isGuest = false)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
@@ -376,6 +383,34 @@ namespace onlineStore.Services.StoreCustomerAuth
             await _context.StoreCustomers
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(c => c.StoreId == storeId && c.Email == NormalizeEmail(email));
+
+        private async Task<(bool Success, string Message)> SetPasswordInternalAsync(
+            StoreCustomer? customer,
+            string newPassword,
+            string source)
+        {
+            if (customer == null || customer.IsDeleted)
+                return (false, "Store customer account was not found.");
+
+            if (!customer.IsActive)
+                return (false, "This account is inactive.");
+
+            customer.PasswordHash = _passwordHasher.HashPassword(customer, newPassword);
+            _emailWorkflowService.ClearPasswordReset(customer);
+
+            await _context.SaveChangesAsync();
+
+            await _emailWorkflowService.SendPasswordResetConfirmationAsync(customer, source);
+
+            _logger.LogInformation(
+                "Store customer password was set successfully. StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}, Email: {Email}, Source: {Source}",
+                customer.StoreId,
+                customer.Id,
+                customer.Email,
+                source);
+
+            return (true, "Password set successfully.");
+        }
 
         private static StoreCustomerAuthResponseDto Success(
             StoreCustomer customer,
@@ -440,9 +475,6 @@ namespace onlineStore.Services.StoreCustomerAuth
 
         private static string NormalizeValue(string value) =>
             value.Trim();
-
-        private static string GenerateGuestEmail() =>
-            $"guest-{Guid.NewGuid():N}@guest.example";
 
         private static string? NormalizeOptionalValue(string? value)
         {

@@ -40,8 +40,16 @@ public class SectionController : ControllerBase
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
-        var section = await _sectionService.CreateSectionAsync(dto);
-        return Ok(section);
+
+        try
+        {
+            var section = await _sectionService.CreateSectionAsync(dto);
+            return Ok(section);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
     }
 
     [HttpPut("{id}")]
@@ -51,19 +59,34 @@ public class SectionController : ControllerBase
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
-        var section = await _sectionService.UpdateSectionAsync(id, dto);
-        if (section == null)
-            return NotFound(new { message = "section not found" });
-        return Ok(section);
+
+        try
+        {
+            var section = await _sectionService.UpdateSectionAsync(id, dto);
+            if (section == null)
+                return NotFound(new { message = "section not found" });
+            return Ok(section);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
     }
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "SuperAdmin,StoreOwner")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var result = await _sectionService.DeleteSectionAsync(id);
-        if (!result)
-            return NotFound(new { message = "section does not exist" });
-        return Ok(new { message = "section deleted done" });
+        try
+        {
+            var result = await _sectionService.DeleteSectionAsync(id);
+            if (!result)
+                return NotFound(new { message = "section does not exist" });
+            return Ok(new { message = "section deleted done" });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
     }
 }

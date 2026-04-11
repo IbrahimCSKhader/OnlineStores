@@ -1,5 +1,6 @@
 ﻿// Models/Product.cs
 using Microsoft.EntityFrameworkCore;
+using onlineStore.Models.Offers;
 using onlineStore.Models.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -68,5 +69,6 @@ namespace onlineStore.Models
         public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
         public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
         public ICollection<ProductAttributeValue> AttributeValues { get; set; } = new List<ProductAttributeValue>();
+        public ICollection<OfferItem> OfferItems { get; set; } = new List<OfferItem>();
     }
 }

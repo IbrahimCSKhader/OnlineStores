@@ -8,6 +8,7 @@ namespace onlineStore.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "SuperAdmin,StoreOwner")]
     public class EmailController : ControllerBase
     {
         private const string TestRecipientEmail = "ik2907951@gmail.com";

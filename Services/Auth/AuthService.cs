@@ -5,6 +5,7 @@ using onlineStore.Data;
 using onlineStore.DTOs.Auth;
 using onlineStore.Models;
 using onlineStore.Models.Identity;
+using onlineStore.Security;
 using onlineStore.Services.Email;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -22,8 +23,6 @@ namespace onlineStore.Services.AuthServices
 
         private const string StoreCustomerLoginMessage =
             "هذا الحساب مخصص لعملاء المتاجر. استخدم /api/store-customer-auth/login";
-
-        private const string DefaultCustomerRole = "Customer";
 
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
@@ -285,153 +284,6 @@ namespace onlineStore.Services.AuthServices
                 _logger.LogDebug("[GoogleLogin] Normalized data - Email: {Email}, FirstName: {FirstNameExists}, LastName: {LastNameExists}",
                     normalizedEmail, !string.IsNullOrWhiteSpace(normalizedFirstName), !string.IsNullOrWhiteSpace(normalizedLastName));
 
-                var user = await FindPlatformUserByEmailAsync(normalizedEmail);
-
-                if (user == null)
-                {
-                    _logger.LogInformation("[GoogleLogin] User not found, creating new account for: {Email}", normalizedEmail);
-
-                    user = new AppUser
-                    {
-                        Email = normalizedEmail,
-                        UserName = normalizedEmail,
-                        FirstName = normalizedFirstName,
-                        LastName = normalizedLastName,
-                        EmailConfirmed = true,
-                        IsActive = true,
-                        CreatedAt = DateTime.UtcNow
-                    };
-
-                    _logger.LogDebug("[GoogleLogin] Calling CreateAsync for new user: {Email}", normalizedEmail);
-                    var createResult = await _userManager.CreateAsync(user);
-
-                    if (!createResult.Succeeded)
-                    {
-                        var errors = GetIdentityErrors(createResult);
-                        _logger.LogWarning("[GoogleLogin] Failed to create user {Email}. Errors: {Errors}",
-                            normalizedEmail, errors);
-                        return Fail("تعذر إكمال تسجيل الدخول عبر Google - فشل في إنشاء الحساب");
-                    }
-
-                    _logger.LogInformation("[GoogleLogin] User {Email} created successfully. Now assigning role: {Role}",
-                        normalizedEmail, DefaultCustomerRole);
-
-                    var addRoleResult = await _userManager.AddToRoleAsync(user, DefaultCustomerRole);
-
-                    if (!addRoleResult.Succeeded)
-                    {
-                        var errors = GetIdentityErrors(addRoleResult);
-                        _logger.LogError("[GoogleLogin] CRITICAL: Failed to assign role {Role} to user {Email}. Errors: {Errors}. User exists but has no role!",
-                            DefaultCustomerRole, normalizedEmail, errors);
-
-                        // Attempt to delete the orphaned user
-                        try
-                        {
-                            await _userManager.DeleteAsync(user);
-                            _logger.LogInformation("[GoogleLogin] Rolled back user creation for {Email} due to role assignment failure", normalizedEmail);
-                        }
-                        catch (Exception deleteEx)
-                        {
-                            _logger.LogError(deleteEx, "[GoogleLogin] Failed to roll back user creation for {Email}. Manual cleanup required.", normalizedEmail);
-                        }
-
-                        return Fail("تعذر إكمال تسجيل الدخول عبر Google - خطأ في إعدادات النظام");
-                    }
-
-                    _logger.LogInformation("[GoogleLogin] Successfully created new customer account via Google for {Email}", normalizedEmail);
-                }
-                else
-                {
-                    _logger.LogInformation("[GoogleLogin] Existing user found: {Email}, UserId: {UserId}", normalizedEmail, user.Id);
-                }
-
-                _logger.LogDebug("[GoogleLogin] Retrieving roles for user: {Email}", normalizedEmail);
-                var roles = await _userManager.GetRolesAsync(user);
-                _logger.LogDebug("[GoogleLogin] User {Email} has roles: {@Roles}", normalizedEmail, roles);
-
-                if (!roles.Contains(DefaultCustomerRole))
-                {
-                    _logger.LogInformation("[GoogleLogin] Ensuring role {Role} exists for user {Email}", DefaultCustomerRole, normalizedEmail);
-
-                    var ensureRoleResult = await _userManager.AddToRoleAsync(user, DefaultCustomerRole);
-                    if (!ensureRoleResult.Succeeded)
-                    {
-                        _logger.LogError("[GoogleLogin] Failed to ensure role {Role} for user {Email}. Errors: {Errors}",
-                            DefaultCustomerRole,
-                            normalizedEmail,
-                            GetIdentityErrors(ensureRoleResult));
-                        return Fail("تعذر إكمال تسجيل الدخول عبر Google - خطأ في صلاحيات المستخدم");
-                    }
-
-                    roles = await _userManager.GetRolesAsync(user);
-                }
-
-                if (!user.IsActive)
-                {
-                    _logger.LogWarning("[GoogleLogin] Login attempt for inactive account: {Email}", normalizedEmail);
-                    return Fail("الحساب موقوف، تواصل مع الدعم");
-                }
-
-                if (!user.EmailConfirmed)
-                {
-                    _logger.LogInformation("[GoogleLogin] Confirming email for user: {Email}", normalizedEmail);
-                    user.EmailConfirmed = true;
-                    var updateResult = await _userManager.UpdateAsync(user);
-
-                    if (!updateResult.Succeeded)
-                    {
-                        _logger.LogWarning("[GoogleLogin] Failed to confirm email for {Email}. Errors: {Errors}",
-                            normalizedEmail, GetIdentityErrors(updateResult));
-                        // Continue anyway, not critical
-                    }
-                }
-
-                var shouldUpdateUser = false;
-
-                if (string.IsNullOrWhiteSpace(user.FirstName) && !string.IsNullOrWhiteSpace(normalizedFirstName))
-                {
-                    user.FirstName = normalizedFirstName;
-                    shouldUpdateUser = true;
-                }
-
-                if (string.IsNullOrWhiteSpace(user.LastName) && !string.IsNullOrWhiteSpace(normalizedLastName))
-                {
-                    user.LastName = normalizedLastName;
-                    shouldUpdateUser = true;
-                }
-
-                if (shouldUpdateUser)
-                {
-                    _logger.LogDebug("[GoogleLogin] Updating user profile with name info: {Email}", normalizedEmail);
-                    var updateResult = await _userManager.UpdateAsync(user);
-
-                    if (!updateResult.Succeeded)
-                    {
-                        _logger.LogWarning("[GoogleLogin] Failed to update user name for {Email}. Errors: {Errors}",
-                            normalizedEmail, GetIdentityErrors(updateResult));
-                        // Continue anyway, not critical
-                    }
-                }
-
-                if (!roles.Any())
-                {
-                    _logger.LogWarning("[GoogleLogin] User {Email} has no roles. Attempting to assign fallback role: {Role}",
-                        normalizedEmail, DefaultCustomerRole);
-
-                    var fallbackRoleResult = await _userManager.AddToRoleAsync(user, DefaultCustomerRole);
-
-                    if (!fallbackRoleResult.Succeeded)
-                    {
-                        _logger.LogError("[GoogleLogin] Failed to assign fallback role {Role} to user {Email}. Errors: {Errors}",
-                            DefaultCustomerRole, normalizedEmail, GetIdentityErrors(fallbackRoleResult));
-                        return Fail("تعذر إكمال تسجيل الدخول عبر Google - خطأ في صلاحيات المستخدم");
-                    }
-
-                    roles = await _userManager.GetRolesAsync(user);
-                    _logger.LogInformation("[GoogleLogin] Fallback role assigned successfully. User {Email} now has roles: {@Roles}",
-                        normalizedEmail, roles);
-                }
-
                 var store = await ResolveGoogleStoreAsync(dto.StoreId, dto.StoreSlug);
                 if (store == null)
                 {
@@ -443,21 +295,40 @@ namespace onlineStore.Services.AuthServices
                     return Fail("store_invalid_or_missing");
                 }
 
-                await EnsureCustomerStoreLinkAsync(store, normalizedEmail, normalizedFirstName, normalizedLastName);
+                _logger.LogInformation(
+                    "[GoogleLogin] Store context resolved. StoreId: {StoreId}, Email: {Email}. Customer accounts are persisted only in StoreCustomers.",
+                    store.Id,
+                    normalizedEmail);
 
-                _logger.LogDebug("[GoogleLogin] Generating JWT token for user: {Email}", normalizedEmail);
-                var token = await GenerateJwtToken(user);
-                _logger.LogDebug("[GoogleLogin] JWT token generated successfully for: {Email}, Expires: {ExpiresAt}",
-                    normalizedEmail, token.ExpiresAt);
+                var storeCustomer = await EnsureCustomerStoreLinkAsync(
+                    store,
+                    normalizedEmail,
+                    normalizedFirstName,
+                    normalizedLastName);
 
-                _logger.LogInformation("[GoogleLogin] User logged in successfully via Google: {Email}, Roles: {@Roles}",
-                    normalizedEmail, roles);
+                _logger.LogDebug(
+                    "[GoogleLogin] Generating StoreCustomer JWT token for email: {Email}, StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                    normalizedEmail,
+                    storeCustomer.Id,
+                    storeCustomer.StoreId);
+                var token = GenerateStoreCustomerJwtToken(storeCustomer);
+                _logger.LogDebug(
+                    "[GoogleLogin] StoreCustomer JWT token generated successfully for: {Email}, StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, Expires: {ExpiresAt}",
+                    normalizedEmail,
+                    storeCustomer.Id,
+                    storeCustomer.StoreId,
+                    token.ExpiresAt);
 
-                return CreateAuthenticatedResponse(
-                    user,
+                _logger.LogInformation(
+                    "[GoogleLogin] User logged in successfully via Google as StoreCustomer. Email: {Email}, StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                    normalizedEmail,
+                    storeCustomer.Id,
+                    storeCustomer.StoreId);
+
+                return CreateStoreCustomerAuthenticatedResponse(
+                    storeCustomer,
                     token.Token,
-                    token.ExpiresAt,
-                    roles);
+                    token.ExpiresAt);
             }
             catch (Exception ex)
             {
@@ -600,6 +471,47 @@ namespace onlineStore.Services.AuthServices
             }
         }
 
+        private (string Token, DateTime ExpiresAt) GenerateStoreCustomerJwtToken(StoreCustomer customer)
+        {
+            var jwtSettings = _configuration.GetSection("JwtSettings");
+            var secretKey = jwtSettings["SecretKey"];
+
+            if (string.IsNullOrWhiteSpace(secretKey))
+                throw new InvalidOperationException("JWT SecretKey is not configured");
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var expiresAt = DateTime.UtcNow.AddDays(int.Parse(jwtSettings["ExpiryInDays"] ?? "7"));
+
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, customer.Id.ToString()),
+                new(StoreCustomerClaimTypes.StoreCustomerId, customer.Id.ToString()),
+                new(StoreCustomerClaimTypes.StoreId, customer.StoreId.ToString()),
+                new(StoreCustomerClaimTypes.AccountType, StoreCustomerClaimTypes.StoreCustomerAccountType),
+                new(StoreCustomerClaimTypes.IsGuest, "false"),
+                new(ClaimTypes.Role, StoreCustomerClaimTypes.StoreCustomerAccountType),
+                new(ClaimTypes.Email, customer.Email),
+                new(ClaimTypes.GivenName, customer.FirstName),
+                new(ClaimTypes.Surname, customer.LastName),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new(
+                    JwtRegisteredClaimNames.Iat,
+                    DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
+                    ClaimValueTypes.Integer64)
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: jwtSettings["Issuer"],
+                audience: jwtSettings["Audience"],
+                claims: claims,
+                notBefore: DateTime.UtcNow,
+                expires: expiresAt,
+                signingCredentials: credentials);
+
+            return (new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
+        }
+
         private async Task<bool> TrySendEmailVerificationCodeAsync(AppUser user, string source)
         {
             if (string.IsNullOrWhiteSpace(user.Email))
@@ -701,6 +613,23 @@ namespace onlineStore.Services.AuthServices
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Roles = roles,
+                ExpiresAt = expiresAt
+            };
+
+        private static AuthResponseDto CreateStoreCustomerAuthenticatedResponse(
+            StoreCustomer customer,
+            string token,
+            DateTime expiresAt,
+            string? message = null) => new()
+            {
+                Success = true,
+                RequiresEmailVerification = false,
+                Message = message,
+                Token = token,
+                Email = customer.Email,
+                FirstName = customer.FirstName,
+                LastName = customer.LastName,
+                Roles = [StoreCustomerClaimTypes.StoreCustomerAccountType],
                 ExpiresAt = expiresAt
             };
 
@@ -814,7 +743,7 @@ namespace onlineStore.Services.AuthServices
                 .FirstOrDefaultAsync(x => x.Slug == normalizedSlug && x.IsActive);
         }
 
-        private async Task EnsureCustomerStoreLinkAsync(
+        private async Task<StoreCustomer> EnsureCustomerStoreLinkAsync(
             onlineStore.Models.Store store,
             string normalizedEmail,
             string normalizedFirstName,
@@ -861,7 +790,7 @@ namespace onlineStore.Services.AuthServices
                 if (shouldUpdate)
                     await _context.SaveChangesAsync();
 
-                return;
+                return existingCustomer;
             }
 
             var customer = new StoreCustomer
@@ -885,6 +814,8 @@ namespace onlineStore.Services.AuthServices
                 store.Id,
                 customer.Id,
                 normalizedEmail);
+
+            return customer;
         }
     }
 }

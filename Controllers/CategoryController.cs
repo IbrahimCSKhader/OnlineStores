@@ -64,6 +64,14 @@ public class CategoryController : ControllerBase
 
             return Ok(category);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex,
+                "Unauthorized create attempt for category in store {StoreId}",
+                dto.StoreId);
+
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex,
@@ -102,7 +110,7 @@ public class CategoryController : ControllerBase
                 "Unauthorized update attempt for category {CategoryId}",
                 id);
 
-            return Forbid();
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
         catch (KeyNotFoundException ex)
         {
@@ -146,6 +154,14 @@ public class CategoryController : ControllerBase
                 return NotFound(new { message = "this category does not exist" });
 
             return Ok(new { message = "soft delete done" });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex,
+                "Unauthorized delete attempt for category {CategoryId}",
+                id);
+
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
         catch (Exception ex)
         {

@@ -94,8 +94,15 @@ namespace onlineStore.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var product = await _productService.CreateProductAsync(dto);
-            return Ok(product);
+            try
+            {
+                var product = await _productService.CreateProductAsync(dto);
+                return Ok(product);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
         // PUT api/product/{id}
@@ -107,12 +114,19 @@ namespace onlineStore.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var product = await _productService.UpdateProductAsync(id, dto);
+            try
+            {
+                var product = await _productService.UpdateProductAsync(id, dto);
 
-            if (product == null)
-                return NotFound(new { message = "المنتج غير موجود" });
+                if (product == null)
+                    return NotFound(new { message = "المنتج غير موجود" });
 
-            return Ok(product);
+                return Ok(product);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
         // DELETE api/product/{id}
@@ -120,12 +134,19 @@ namespace onlineStore.Controllers
         [Authorize(Roles = "SuperAdmin,StoreOwner")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var result = await _productService.DeleteProductAsync(id);
+            try
+            {
+                var result = await _productService.DeleteProductAsync(id);
 
-            if (!result)
-                return NotFound(new { message = "المنتج غير موجود" });
+                if (!result)
+                    return NotFound(new { message = "المنتج غير موجود" });
 
-            return Ok(new { message = "تم حذف المنتج بنجاح" });
+                return Ok(new { message = "تم حذف المنتج بنجاح" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
         // POST api/product/image
@@ -137,8 +158,15 @@ namespace onlineStore.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var image = await _productService.AddImageAsync(dto);
-            return Ok(image);
+            try
+            {
+                var image = await _productService.AddImageAsync(dto);
+                return Ok(image);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
         // DELETE api/product/image/{imageId}
@@ -146,12 +174,19 @@ namespace onlineStore.Controllers
         [Authorize(Roles = "SuperAdmin,StoreOwner")]
         public async Task<IActionResult> DeleteImage(Guid imageId)
         {
-            var result = await _productService.DeleteImageAsync(imageId);
+            try
+            {
+                var result = await _productService.DeleteImageAsync(imageId);
 
-            if (!result)
-                return NotFound(new { message = "الصورة غير موجودة" });
+                if (!result)
+                    return NotFound(new { message = "الصورة غير موجودة" });
 
-            return Ok(new { message = "تم حذف الصورة بنجاح" });
+                return Ok(new { message = "تم حذف الصورة بنجاح" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
         // POST api/product/{productId}/variant
@@ -162,8 +197,15 @@ namespace onlineStore.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var variant = await _productService.AddVariantAsync(productId, dto);
-            return Ok(variant);
+            try
+            {
+                var variant = await _productService.AddVariantAsync(productId, dto);
+                return Ok(variant);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
         // DELETE api/product/variant/{variantId}
@@ -171,12 +213,19 @@ namespace onlineStore.Controllers
         [Authorize(Roles = "SuperAdmin,StoreOwner")]
         public async Task<IActionResult> DeleteVariant(Guid variantId)
         {
-            var result = await _productService.DeleteVariantAsync(variantId);
+            try
+            {
+                var result = await _productService.DeleteVariantAsync(variantId);
 
-            if (!result)
-                return NotFound(new { message = "النسخة غير موجودة" });
+                if (!result)
+                    return NotFound(new { message = "النسخة غير موجودة" });
 
-            return Ok(new { message = "تم حذف النسخة بنجاح" });
+                return Ok(new { message = "تم حذف النسخة بنجاح" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
         // POST api/product/{productId}/visit
@@ -194,15 +243,22 @@ namespace onlineStore.Controllers
 
         // GET api/product/{productId}/visit-count
         [HttpGet("{productId}/visit-count")]
-        [Authorize(Roles = "SuperAdmin,StoreOwner")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetVisitCount(Guid productId)
         {
-            var count = await _productService.GetProductVisitCountAsync(productId);
+            try
+            {
+                var count = await _productService.GetProductVisitCountAsync(productId);
 
-            if (count == null)
-                return NotFound(new { message = "المنتج غير موجود" });
+                if (count == null)
+                    return NotFound(new { message = "المنتج غير موجود" });
 
-            return Ok(new { visitCount = count });
+                return Ok(new { visitCount = count });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
         private Guid? GetUserIdOrNull()

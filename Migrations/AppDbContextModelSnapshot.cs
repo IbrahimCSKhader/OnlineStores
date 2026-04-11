@@ -475,6 +475,107 @@ namespace onlineStore.Migrations
                     b.ToTable("Notifications");
                 });
 
+            modelBuilder.Entity("onlineStore.Models.Offers.Offer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("AppliesToAllProducts")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("BundlePrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<decimal?>("DiscountAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("DiscountPercentage")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(180)
+                        .HasColumnType("nvarchar(180)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Type");
+
+                    b.HasIndex("StoreId", "IsActive");
+
+                    b.HasIndex("StoreId", "StartDate", "EndDate");
+
+                    b.ToTable("Offers");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.Offers.OfferItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("OfferId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("RequiredQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("OfferId", "ProductId")
+                        .IsUnique();
+
+                    b.ToTable("OfferItems");
+                });
+
             modelBuilder.Entity("onlineStore.Models.Orders.Order", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1007,8 +1108,11 @@ namespace onlineStore.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ThemeTemplate")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1)
+                        .HasColumnType("nvarchar(1)")
+                        .HasDefaultValue("D");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1027,7 +1131,10 @@ namespace onlineStore.Migrations
                     b.HasIndex("Slug")
                         .IsUnique();
 
-                    b.ToTable("Stores");
+                    b.ToTable("Stores", t =>
+                        {
+                            t.HasCheckConstraint("CK_Stores_ThemeTemplate", "[ThemeTemplate] IN ('D', 'L', 'F')");
+                        });
                 });
 
             modelBuilder.Entity("onlineStore.Models.StoreContactAccount", b =>
@@ -1144,6 +1251,138 @@ namespace onlineStore.Migrations
                         .IsUnique();
 
                     b.ToTable("CustomerStores", (string)null);
+                });
+
+            modelBuilder.Entity("onlineStore.Models.Subscriptions.StoreSubscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsAutoRenew")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<decimal>("PaidAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SubscriptionPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriptionPlanId");
+
+                    b.HasIndex("StoreId", "Status");
+
+                    b.HasIndex("StoreId", "StartDate", "EndDate");
+
+                    b.ToTable("StoreSubscriptions");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.Subscriptions.SubscriptionPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("CanUseAdvancedOffers")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanUseAnalytics")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanUseCoupons")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanUseCustomDomain")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanUseOffers")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(600)
+                        .HasColumnType("nvarchar(600)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("MaxImagesPerProduct")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaxProducts")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("SortOrder");
+
+                    b.ToTable("SubscriptionPlans");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -1278,6 +1517,36 @@ namespace onlineStore.Migrations
                     b.Navigation("Store");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.Offers.Offer", b =>
+                {
+                    b.HasOne("onlineStore.Models.Store", "Store")
+                        .WithMany("Offers")
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Store");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.Offers.OfferItem", b =>
+                {
+                    b.HasOne("onlineStore.Models.Offers.Offer", "Offer")
+                        .WithMany("Items")
+                        .HasForeignKey("OfferId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("onlineStore.Models.Product", "Product")
+                        .WithMany("OfferItems")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Offer");
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("onlineStore.Models.Orders.Order", b =>
@@ -1481,6 +1750,25 @@ namespace onlineStore.Migrations
                     b.Navigation("Store");
                 });
 
+            modelBuilder.Entity("onlineStore.Models.Subscriptions.StoreSubscription", b =>
+                {
+                    b.HasOne("onlineStore.Models.Store", "Store")
+                        .WithMany("StoreSubscriptions")
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("onlineStore.Models.Subscriptions.SubscriptionPlan", "SubscriptionPlan")
+                        .WithMany("StoreSubscriptions")
+                        .HasForeignKey("SubscriptionPlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Store");
+
+                    b.Navigation("SubscriptionPlan");
+                });
+
             modelBuilder.Entity("onlineStore.Models.CartModels.ShoppingCart", b =>
                 {
                     b.Navigation("Items");
@@ -1496,6 +1784,11 @@ namespace onlineStore.Migrations
                     b.Navigation("Orders");
                 });
 
+            modelBuilder.Entity("onlineStore.Models.Offers.Offer", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("onlineStore.Models.Orders.Order", b =>
                 {
                     b.Navigation("Items");
@@ -1506,6 +1799,8 @@ namespace onlineStore.Migrations
                     b.Navigation("AttributeValues");
 
                     b.Navigation("Images");
+
+                    b.Navigation("OfferItems");
 
                     b.Navigation("Variants");
                 });
@@ -1526,7 +1821,11 @@ namespace onlineStore.Migrations
 
                     b.Navigation("ContactAccounts");
 
+                    b.Navigation("Offers");
+
                     b.Navigation("Sections");
+
+                    b.Navigation("StoreSubscriptions");
                 });
 
             modelBuilder.Entity("onlineStore.Models.StoreCustomer", b =>
@@ -1536,6 +1835,11 @@ namespace onlineStore.Migrations
                     b.Navigation("Orders");
 
                     b.Navigation("Reviews");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.Subscriptions.SubscriptionPlan", b =>
+                {
+                    b.Navigation("StoreSubscriptions");
                 });
 #pragma warning restore 612, 618
         }

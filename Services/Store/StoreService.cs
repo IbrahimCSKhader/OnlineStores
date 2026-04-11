@@ -2,7 +2,9 @@
 using onlineStore.Data;
 using onlineStore.DTOs.Store;
 using onlineStore.Models;
+using onlineStore.Models.Subscriptions;
 using onlineStore.Security;
+using onlineStore.Services.Subscription;
 
 namespace onlineStore.Services.Store
 {
@@ -11,41 +13,73 @@ namespace onlineStore.Services.Store
         private readonly AppDbContext _context;
         private readonly ILogger<StoreService> _logger;
         private readonly ICurrentUserService _currentUser;
+        private readonly IStoreAuthorizationService _storeAuthorizationService;
+        private readonly ISubscriptionService _subscriptionService;
         private readonly IWebHostEnvironment _environment;
 
         public StoreService(
             AppDbContext context,
             ILogger<StoreService> logger,
             ICurrentUserService currentUser,
+            IStoreAuthorizationService storeAuthorizationService,
+            ISubscriptionService subscriptionService,
             IWebHostEnvironment environment)
         {
             _context = context;
             _logger = logger;
             _currentUser = currentUser;
+            _storeAuthorizationService = storeAuthorizationService;
+            _subscriptionService = subscriptionService;
             _environment = environment;
         }
 
         public async Task<List<StoreDto>> GetAllStoresAsync()
         {
-                var stores = await GetStoresWithContacts(asNoTracking: true)
-                    .ToListAsync();
+            var query = GetStoresWithContacts(asNoTracking: true);
 
-                return stores
-                    .Select(ToDto)
-                    .ToList();
+            if (_currentUser.IsSuperAdmin)
+            {
+                // Super admin can view all stores.
+            }
+            else if (_currentUser.IsStoreOwner && _currentUser.UserId.HasValue)
+            {
+                var currentOwnerId = _currentUser.UserId.Value;
+                query = query.Where(s => s.IsActive || s.OwnerId == currentOwnerId);
+            }
+            else
+            {
+                query = query.Where(s => s.IsActive);
+            }
+
+            var stores = await query.ToListAsync();
+
+            return stores
+                .Select(ToDto)
+                .ToList();
 
 
         }
 
         public async Task<StoreDto?> GetStoreByIdAsync(Guid id)
         {
-            var store = await _context.Stores
-                .Include(s => s.ContactAccounts)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s =>
-                    s.Id == id &&
-                    (_currentUser.IsSuperAdmin ||
-                     s.OwnerId == _currentUser.UserId));
+            IQueryable<Models.Store> query = GetStoresWithContacts(asNoTracking: true)
+                .Where(s => s.Id == id);
+
+            if (_currentUser.IsSuperAdmin)
+            {
+                // Super admin can view any store.
+            }
+            else if (_currentUser.IsStoreOwner && _currentUser.UserId.HasValue)
+            {
+                var currentOwnerId = _currentUser.UserId.Value;
+                query = query.Where(s => s.IsActive || s.OwnerId == currentOwnerId);
+            }
+            else
+            {
+                query = query.Where(s => s.IsActive);
+            }
+
+            var store = await query.FirstOrDefaultAsync();
 
             return store == null ? null : ToDto(store);
         }
@@ -54,10 +88,24 @@ namespace onlineStore.Services.Store
         {
             var normalizedSlug = slug.Trim().ToLower();
 
-            var store = await _context.Stores
-                .Include(s => s.ContactAccounts)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.Slug == normalizedSlug);
+            IQueryable<Models.Store> query = GetStoresWithContacts(asNoTracking: true)
+                .Where(s => s.Slug == normalizedSlug);
+
+            if (_currentUser.IsSuperAdmin)
+            {
+                // Super admin can view any store.
+            }
+            else if (_currentUser.IsStoreOwner && _currentUser.UserId.HasValue)
+            {
+                var currentOwnerId = _currentUser.UserId.Value;
+                query = query.Where(s => s.IsActive || s.OwnerId == currentOwnerId);
+            }
+            else
+            {
+                query = query.Where(s => s.IsActive);
+            }
+
+            var store = await query.FirstOrDefaultAsync();
 
             return store == null ? null : ToDto(store);
         }
@@ -128,13 +176,12 @@ namespace onlineStore.Services.Store
         {
             var store = await _context.Stores
                 .Include(s => s.ContactAccounts)
-                .FirstOrDefaultAsync(s =>
-                    s.Id == id &&
-                    (_currentUser.IsSuperAdmin ||
-                     s.OwnerId == _currentUser.UserId));
+                .FirstOrDefaultAsync(s => s.Id == id);
 
             if (store == null)
                 return null;
+
+            await EnsureCanManageStoreAsync(id);
 
             if (dto.Name != null)
                 store.Name = dto.Name.Trim();
@@ -158,9 +205,9 @@ namespace onlineStore.Services.Store
                 store.StoreStory = NormalizeOptional(dto.StoreStory);
 
             if (dto.ThemeTemplate != null)
-                store.ThemeTemplate = string.IsNullOrWhiteSpace(dto.ThemeTemplate)
-                    ? "default"
-                    : dto.ThemeTemplate.Trim();
+                store.ThemeTemplate = StoreThemeTemplates.NormalizeOrThrow(
+                    dto.ThemeTemplate,
+                    nameof(dto.ThemeTemplate));
 
             if (dto.IsActive != null)
                 store.IsActive = dto.IsActive.Value;
@@ -179,13 +226,12 @@ namespace onlineStore.Services.Store
         public async Task<bool> DeleteStoreAsync(Guid id)
         {
             var store = await _context.Stores
-                .FirstOrDefaultAsync(s =>
-                    s.Id == id &&
-                    (_currentUser.IsSuperAdmin ||
-                     s.OwnerId == _currentUser.UserId));
+                .FirstOrDefaultAsync(s => s.Id == id);
 
             if (store == null)
                 return false;
+
+            await EnsureCanManageStoreAsync(id);
 
             store.IsDeleted = true;
             await _context.SaveChangesAsync();
@@ -209,7 +255,7 @@ namespace onlineStore.Services.Store
             VisitCount = s.VisitCount,
             WhatsAppNumber = s.WhatsAppNumber,
             StoreStory = s.StoreStory,
-            ThemeTemplate = s.ThemeTemplate,
+            ThemeTemplate = StoreThemeTemplates.NormalizeOrDefault(s.ThemeTemplate),
             ContactAccounts = s.ContactAccounts
                 .Where(c => !c.IsDeleted)
                 .OrderBy(c => c.SortOrder)
@@ -255,24 +301,54 @@ namespace onlineStore.Services.Store
                 .FirstOrDefaultAsync();
         }
         private async Task<string> SaveBrandingImageAsync(
-     IFormFile file,
-     Guid storeId,
-     string fileBaseName)
+            IFormFile file,
+            Guid storeId,
+            string fileBaseName)
         {
             if (file == null || file.Length == 0)
+            {
+                _logger.LogWarning(
+                    "SaveBrandingImageAsync rejected empty file. StoreId: {StoreId}, FileBaseName: {FileBaseName}",
+                    storeId,
+                    fileBaseName);
                 throw new Exception("Invalid image file");
+            }
 
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
             if (string.IsNullOrWhiteSpace(extension) || !allowedExtensions.Contains(extension))
+            {
+                _logger.LogWarning(
+                    "SaveBrandingImageAsync rejected file extension. StoreId: {StoreId}, FileBaseName: {FileBaseName}, FileName: {FileName}, Extension: {Extension}",
+                    storeId,
+                    fileBaseName,
+                    file.FileName,
+                    extension);
                 throw new Exception("Only .jpg, .jpeg, .png, .webp files are allowed");
+            }
 
             const long maxFileSize = 5 * 1024 * 1024;
             if (file.Length > maxFileSize)
+            {
+                _logger.LogWarning(
+                    "SaveBrandingImageAsync rejected oversized file. StoreId: {StoreId}, FileBaseName: {FileBaseName}, FileName: {FileName}, FileSize: {FileSize}",
+                    storeId,
+                    fileBaseName,
+                    file.FileName,
+                    file.Length);
                 throw new Exception("Image size must not exceed 5 MB");
+            }
 
             var brandingPath = GetBrandingFolderPath(storeId);
+
+            _logger.LogInformation(
+                "SaveBrandingImageAsync started. StoreId: {StoreId}, FileBaseName: {FileBaseName}, FileName: {FileName}, FileSize: {FileSize}, BrandingPath: {BrandingPath}",
+                storeId,
+                fileBaseName,
+                file.FileName,
+                file.Length,
+                brandingPath);
 
             if (!Directory.Exists(brandingPath))
                 Directory.CreateDirectory(brandingPath);
@@ -284,6 +360,12 @@ namespace onlineStore.Services.Store
 
             using var stream = new FileStream(fullPath, FileMode.Create);
             await file.CopyToAsync(stream);
+
+            _logger.LogInformation(
+                "SaveBrandingImageAsync completed. StoreId: {StoreId}, FileBaseName: {FileBaseName}, SavedPath: {SavedPath}",
+                storeId,
+                fileBaseName,
+                fullPath);
 
             return GetBrandingFileRelativeUrl(storeId, fileName);
         }
@@ -344,58 +426,216 @@ namespace onlineStore.Services.Store
         }
 
         public async Task<StoreDto> CreateStoreAsync(CreateStoreDto dto, string userId)
-{
-    var normalizedSlug = dto.Slug.Trim().ToLower();
+        {
+            var requestedContactCount = dto.ContactAccounts?.Count ?? 0;
 
-    var slugExists = await _context.Stores
-        .AsNoTracking()
-        .AnyAsync(s => s.Slug == normalizedSlug);
+            using var scope = _logger.BeginScope(new Dictionary<string, object?>
+            {
+                ["RequestedOwnerId"] = dto.OwnerId,
+                ["AuthenticatedUserId"] = userId,
+                ["RequestedSlug"] = dto.Slug,
+                ["RequestedContactAccountsCount"] = requestedContactCount
+            });
 
-    if (slugExists)
-        throw new Exception("sorry this link is used already");
+            _logger.LogInformation(
+                "StoreService.CreateStoreAsync started. Name: {StoreName}, RequestedOwnerId: {RequestedOwnerId}, HasLogo: {HasLogo}, HasCoverPage: {HasCoverPage}, ThemeTemplate: {ThemeTemplate}",
+                dto.Name,
+                dto.OwnerId,
+                dto.Logo != null,
+                dto.CoverPage != null,
+                dto.ThemeTemplate);
 
-    var store = new Models.Store
-    {
-        Name = dto.Name.Trim(),
-        Slug = normalizedSlug,
-        Description = NormalizeOptional(dto.Description),
-        BusinessType = NormalizeOptional(dto.BusinessType),
-        WhatsAppNumber = NormalizeOptional(dto.WhatsAppNumber),
-        StoreStory = NormalizeOptional(dto.StoreStory),
-        ThemeTemplate = string.IsNullOrWhiteSpace(dto.ThemeTemplate)
-            ? "default"
-            : dto.ThemeTemplate.Trim(),
-        OwnerId = Guid.Parse(userId), // 🔥 هون الفرق
-        IsActive = true,
-        CreatedAt = DateTime.UtcNow,
-        ContactAccounts = BuildContactAccounts(dto.ContactAccounts)
-    };
+            if (!Guid.TryParse(userId, out var authenticatedOwnerId))
+            {
+                _logger.LogError(
+                    "StoreService.CreateStoreAsync received invalid authenticated user id. UserId: {UserId}",
+                    userId);
+                throw new ArgumentException("Authenticated user id is invalid.");
+            }
 
-    _context.Stores.Add(store);
-    await _context.SaveChangesAsync();
+            var normalizedSlug = dto.Slug.Trim().ToLower();
 
-    CreateStoreFolders(store.Id);
+            _logger.LogInformation(
+                "StoreService.CreateStoreAsync normalized identifiers. NormalizedSlug: {NormalizedSlug}, AuthenticatedOwnerId: {AuthenticatedOwnerId}",
+                normalizedSlug,
+                authenticatedOwnerId);
 
-    if (dto.Logo != null)
-    {
-        var logoUrl = await SaveBrandingImageAsync(dto.Logo, store.Id, "Logo");
-        store.LogoUrl = logoUrl;
-    }
+            var slugExists = await _context.Stores
+                .AsNoTracking()
+                .AnyAsync(s => s.Slug == normalizedSlug);
 
-    if (dto.CoverPage != null)
-    {
-        var coverUrl = await SaveBrandingImageAsync(dto.CoverPage, store.Id, "CoverPage");
-        store.CoverImageUrl = coverUrl;
-    }
+            if (slugExists)
+            {
+                _logger.LogWarning(
+                    "StoreService.CreateStoreAsync found duplicate slug. NormalizedSlug: {NormalizedSlug}",
+                    normalizedSlug);
+                throw new ArgumentException("sorry this link is used already");
+            }
 
-    await _context.SaveChangesAsync();
+            List<StoreContactAccount> normalizedContactAccounts;
+            try
+            {
+                normalizedContactAccounts = BuildContactAccounts(dto.ContactAccounts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "StoreService.CreateStoreAsync failed while preparing contact accounts. RequestedContacts: {RequestedContacts}",
+                    DescribeRequestedContactAccounts(dto.ContactAccounts));
+                throw;
+            }
 
-    _logger.LogInformation(
-        "Store created: {StoreName}, OwnerId: {OwnerId}",
-        store.Name, store.OwnerId);
+            var store = new Models.Store
+            {
+                Name = dto.Name.Trim(),
+                Slug = normalizedSlug,
+                Description = NormalizeOptional(dto.Description),
+                BusinessType = NormalizeOptional(dto.BusinessType),
+                WhatsAppNumber = NormalizeOptional(dto.WhatsAppNumber),
+                StoreStory = NormalizeOptional(dto.StoreStory),
+                ThemeTemplate = StoreThemeTemplates.NormalizeOrThrow(
+                    dto.ThemeTemplate,
+                    nameof(dto.ThemeTemplate)),
+                OwnerId = authenticatedOwnerId,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                ContactAccounts = normalizedContactAccounts
+            };
 
-    return ToDto(store);
-}
+            _logger.LogInformation(
+                "StoreService.CreateStoreAsync prepared store entity. StoreName: {StoreName}, Slug: {Slug}, NormalizedContactAccountsCount: {NormalizedContactAccountsCount}, ContactAccounts: {ContactAccounts}",
+                store.Name,
+                store.Slug,
+                normalizedContactAccounts.Count,
+                DescribeNormalizedContactAccounts(normalizedContactAccounts));
+
+            _context.Stores.Add(store);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "StoreService.CreateStoreAsync failed during initial store save. StoreName: {StoreName}, Slug: {Slug}, ContactAccounts: {ContactAccounts}",
+                    store.Name,
+                    store.Slug,
+                    DescribeNormalizedContactAccounts(normalizedContactAccounts));
+                throw;
+            }
+
+            _logger.LogInformation(
+                "StoreService.CreateStoreAsync initial save completed. StoreId: {StoreId}, ContactAccountsCount: {ContactAccountsCount}",
+                store.Id,
+                normalizedContactAccounts.Count);
+
+            try
+            {
+                CreateStoreFolders(store.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "StoreService.CreateStoreAsync failed while creating store folders. StoreId: {StoreId}",
+                    store.Id);
+                throw;
+            }
+
+            if (dto.Logo != null)
+            {
+                _logger.LogInformation(
+                    "StoreService.CreateStoreAsync saving logo. StoreId: {StoreId}, FileName: {FileName}, FileSize: {FileSize}",
+                    store.Id,
+                    dto.Logo.FileName,
+                    dto.Logo.Length);
+
+                var logoUrl = await SaveBrandingImageAsync(dto.Logo, store.Id, "Logo");
+                store.LogoUrl = logoUrl;
+            }
+
+            if (dto.CoverPage != null)
+            {
+                _logger.LogInformation(
+                    "StoreService.CreateStoreAsync saving cover page. StoreId: {StoreId}, FileName: {FileName}, FileSize: {FileSize}",
+                    store.Id,
+                    dto.CoverPage.FileName,
+                    dto.CoverPage.Length);
+
+                var coverUrl = await SaveBrandingImageAsync(dto.CoverPage, store.Id, "CoverPage");
+                store.CoverImageUrl = coverUrl;
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "StoreService.CreateStoreAsync failed during branding save. StoreId: {StoreId}, LogoUrl: {LogoUrl}, CoverImageUrl: {CoverImageUrl}",
+                    store.Id,
+                    store.LogoUrl,
+                    store.CoverImageUrl);
+                throw;
+            }
+
+            _logger.LogInformation(
+                "StoreService.CreateStoreAsync branding save completed. StoreId: {StoreId}, LogoUrl: {LogoUrl}, CoverImageUrl: {CoverImageUrl}",
+                store.Id,
+                store.LogoUrl,
+                store.CoverImageUrl);
+
+            var plans = await _subscriptionService.GetAllPlansAsync();
+            var defaultPlan = plans.FirstOrDefault(p => string.Equals(
+                p.Code,
+                SubscriptionPlanCodes.DefaultStorePlan,
+                StringComparison.OrdinalIgnoreCase));
+
+            _logger.LogInformation(
+                "StoreService.CreateStoreAsync loaded subscription plans. StoreId: {StoreId}, PlansCount: {PlansCount}, DefaultPlanFound: {DefaultPlanFound}",
+                store.Id,
+                plans.Count,
+                defaultPlan != null);
+
+            if (defaultPlan == null)
+            {
+                _logger.LogError(
+                    "StoreService.CreateStoreAsync could not find default subscription plan. StoreId: {StoreId}, ExpectedPlanCode: {ExpectedPlanCode}",
+                    store.Id,
+                    SubscriptionPlanCodes.DefaultStorePlan);
+                throw new InvalidOperationException($"{SubscriptionPlanCodes.DefaultStorePlan} plan is not configured");
+            }
+
+            try
+            {
+                await _subscriptionService.AssignPlanToStoreAsync(store.Id, defaultPlan.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "StoreService.CreateStoreAsync failed while assigning default plan. StoreId: {StoreId}, PlanId: {PlanId}, PlanCode: {PlanCode}",
+                    store.Id,
+                    defaultPlan.Id,
+                    defaultPlan.Code);
+                throw;
+            }
+
+            _logger.LogInformation(
+                "StoreService.CreateStoreAsync completed successfully. StoreId: {StoreId}, StoreName: {StoreName}, OwnerId: {OwnerId}, ContactAccountsCount: {ContactAccountsCount}, DefaultPlanId: {DefaultPlanId}",
+                store.Id,
+                store.Name,
+                store.OwnerId,
+                normalizedContactAccounts.Count,
+                defaultPlan.Id);
+
+            return ToDto(store);
+        }
 
         private IQueryable<Models.Store> GetStoresWithContacts(bool asNoTracking = false)
         {
@@ -406,33 +646,106 @@ namespace onlineStore.Services.Store
             return asNoTracking ? query.AsNoTracking() : query;
         }
 
-        private static List<StoreContactAccount> BuildContactAccounts(
+        private List<StoreContactAccount> BuildContactAccounts(
             IEnumerable<StoreContactAccountInputDto>? contactAccounts)
         {
             if (contactAccounts == null)
+            {
+                _logger.LogInformation(
+                    "StoreService.BuildContactAccounts skipped because request contains no contact accounts.");
                 return new List<StoreContactAccount>();
+            }
 
-            return contactAccounts
-                .Where(c => !string.IsNullOrWhiteSpace(c.Platform) && !string.IsNullOrWhiteSpace(c.Username))
-                .Select(c => new StoreContactAccount
+            var requestedAccounts = contactAccounts.ToList();
+            var normalizedAccounts = new List<StoreContactAccount>();
+
+            _logger.LogInformation(
+                "StoreService.BuildContactAccounts started. RequestedCount: {RequestedCount}",
+                requestedAccounts.Count);
+
+            for (var index = 0; index < requestedAccounts.Count; index++)
+            {
+                var account = requestedAccounts[index];
+
+                if (string.IsNullOrWhiteSpace(account.Platform) || string.IsNullOrWhiteSpace(account.Username))
                 {
-                    Platform = StoreContactPlatforms.NormalizePlatform(c.Platform),
-                    Username = StoreContactPlatforms.NormalizeUsername(c.Platform, c.Username),
-                    Label = NormalizeOptional(c.Label),
-                    SortOrder = c.SortOrder
-                })
-                .ToList();
+                    _logger.LogWarning(
+                        "StoreService.BuildContactAccounts skipped invalid raw account. Index: {Index}, Platform: {Platform}, Username: {Username}, SortOrder: {SortOrder}",
+                        index,
+                        account.Platform,
+                        account.Username,
+                        account.SortOrder);
+                    continue;
+                }
+
+                try
+                {
+                    var normalizedPlatform = StoreContactPlatforms.NormalizePlatform(account.Platform);
+                    var normalizedUsername = StoreContactPlatforms.NormalizeUsername(normalizedPlatform, account.Username);
+                    var normalizedLabel = NormalizeOptional(account.Label);
+
+                    normalizedAccounts.Add(new StoreContactAccount
+                    {
+                        Platform = normalizedPlatform,
+                        Username = normalizedUsername,
+                        Label = normalizedLabel,
+                        SortOrder = account.SortOrder
+                    });
+
+                    _logger.LogInformation(
+                        "StoreService.BuildContactAccounts normalized account. Index: {Index}, Platform: {Platform}, Username: {Username}, SortOrder: {SortOrder}, HasLabel: {HasLabel}",
+                        index,
+                        normalizedPlatform,
+                        normalizedUsername,
+                        account.SortOrder,
+                        normalizedLabel != null);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "StoreService.BuildContactAccounts failed to normalize account. Index: {Index}, Platform: {Platform}, Username: {Username}, Label: {Label}, SortOrder: {SortOrder}",
+                        index,
+                        account.Platform,
+                        account.Username,
+                        account.Label,
+                        account.SortOrder);
+                    throw;
+                }
+            }
+
+            _logger.LogInformation(
+                "StoreService.BuildContactAccounts completed. AcceptedCount: {AcceptedCount}, SkippedCount: {SkippedCount}, Accounts: {Accounts}",
+                normalizedAccounts.Count,
+                requestedAccounts.Count - normalizedAccounts.Count,
+                DescribeNormalizedContactAccounts(normalizedAccounts));
+
+            return normalizedAccounts;
         }
 
-        private static void ReplaceContactAccounts(
+        private void ReplaceContactAccounts(
             Models.Store store,
             IEnumerable<StoreContactAccountInputDto> contactAccounts)
         {
-            foreach (var existingContact in store.ContactAccounts.Where(c => !c.IsDeleted))
+            var activeContacts = store.ContactAccounts
+                .Where(c => !c.IsDeleted)
+                .ToList();
+
+            _logger.LogInformation(
+                "StoreService.ReplaceContactAccounts started. StoreId: {StoreId}, ExistingActiveCount: {ExistingActiveCount}",
+                store.Id,
+                activeContacts.Count);
+
+            foreach (var existingContact in activeContacts)
                 existingContact.IsDeleted = true;
 
             foreach (var contactAccount in BuildContactAccounts(contactAccounts))
                 store.ContactAccounts.Add(contactAccount);
+
+            _logger.LogInformation(
+                "StoreService.ReplaceContactAccounts completed. StoreId: {StoreId}, NewActiveCount: {NewActiveCount}",
+                store.Id,
+                store.ContactAccounts.Count(c => !c.IsDeleted));
         }
 
         private static string? NormalizeOptional(string? value)
@@ -442,6 +755,56 @@ namespace onlineStore.Services.Store
 
             var trimmedValue = value.Trim();
             return string.IsNullOrWhiteSpace(trimmedValue) ? null : trimmedValue;
+        }
+
+        private static string DescribeRequestedContactAccounts(
+            IEnumerable<StoreContactAccountInputDto>? contactAccounts)
+        {
+            if (contactAccounts == null)
+                return "[]";
+
+            var accounts = contactAccounts.ToList();
+            if (accounts.Count == 0)
+                return "[]";
+
+            return string.Join(
+                " | ",
+                accounts.Select((account, index) =>
+                    $"#{index}:Platform={account.Platform ?? "<null>"},Username={account.Username ?? "<null>"},SortOrder={account.SortOrder},Label={account.Label ?? "<null>"}"));
+        }
+
+        private static string DescribeNormalizedContactAccounts(
+            IEnumerable<StoreContactAccount> contactAccounts)
+        {
+            var accounts = contactAccounts.ToList();
+            if (accounts.Count == 0)
+                return "[]";
+
+            return string.Join(
+                " | ",
+                accounts.Select((account, index) =>
+                    $"#{index}:Platform={account.Platform},Username={account.Username},SortOrder={account.SortOrder},Label={account.Label ?? "<null>"}"));
+        }
+
+        private async Task EnsureCanManageStoreAsync(Guid storeId, CancellationToken cancellationToken = default)
+        {
+            if (!_currentUser.IsAuthenticated || !_currentUser.UserId.HasValue)
+                throw new UnauthorizedAccessException("غير مصرح لك بإدارة هذا المتجر");
+
+            var canManageStore = await _storeAuthorizationService.CanManageStoreAsync(
+                _currentUser.UserId.Value,
+                storeId,
+                cancellationToken);
+
+            if (!canManageStore)
+            {
+                _logger.LogWarning(
+                    "Unauthorized store management attempt. UserId: {UserId}, StoreId: {StoreId}",
+                    _currentUser.UserId,
+                    storeId);
+
+                throw new UnauthorizedAccessException("غير مصرح لك بإدارة هذا المتجر");
+            }
         }
     }
 }
