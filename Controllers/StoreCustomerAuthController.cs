@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using onlineStore.DTOs.Auth;
 using onlineStore.DTOs.StoreCustomerAuth;
 using onlineStore.Security;
+using onlineStore.Services.AuthServices;
 using onlineStore.Services.StoreCustomerAuth;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace onlineStore.Controllers
@@ -12,10 +15,17 @@ namespace onlineStore.Controllers
     public class StoreCustomerAuthController : ControllerBase
     {
         private readonly IStoreCustomerAuthService _storeCustomerAuthService;
+        private readonly IAuthService _authService;
+        private readonly IStoreAuthorizationService _storeAuthorizationService;
 
-        public StoreCustomerAuthController(IStoreCustomerAuthService storeCustomerAuthService)
+        public StoreCustomerAuthController(
+            IStoreCustomerAuthService storeCustomerAuthService,
+            IAuthService authService,
+            IStoreAuthorizationService storeAuthorizationService)
         {
             _storeCustomerAuthService = storeCustomerAuthService;
+            _authService = authService;
+            _storeAuthorizationService = storeAuthorizationService;
         }
 
         [HttpPost("register")]
@@ -66,15 +76,76 @@ namespace onlineStore.Controllers
 
             var result = await _storeCustomerAuthService.LoginAsync(loginDto);
 
-            if (!result.Success)
-            {
-                if (result.RequiresEmailVerification)
-                    return Unauthorized(result);
+            if (result.Success)
+                return Ok(result);
 
-                return Unauthorized(new { message = result.Message });
+            if (result.RequiresEmailVerification)
+                return Unauthorized(result);
+
+            var ownerLoginResult = await TryStoreOwnerLoginAsync(storeId, dto);
+            if (ownerLoginResult.Success && ownerLoginResult.Response != null)
+                return Ok(ownerLoginResult.Response);
+
+            if (ownerLoginResult.Forbidden)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ownerLoginResult.Message });
+
+            return Unauthorized(new { message = ownerLoginResult.Message ?? result.Message });
+        }
+
+        private async Task<(bool Success, bool Forbidden, string? Message, AuthResponseDto? Response)> TryStoreOwnerLoginAsync(
+            Guid storeId,
+            StoreScopedCustomerLoginDto dto)
+        {
+            var ownerAuth = await _authService.LoginAsync(new LoginDto
+            {
+                Email = dto.Email,
+                Password = dto.Password
+            });
+
+            if (!ownerAuth.Success || string.IsNullOrWhiteSpace(ownerAuth.Token))
+            {
+                return (
+                    false,
+                    false,
+                    ownerAuth.Message ?? "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+                    null);
             }
 
-            return Ok(result);
+            if (ownerAuth.Roles == null || !ownerAuth.Roles.Contains("StoreOwner"))
+            {
+                return (
+                    false,
+                    true,
+                    "هذا الدخول مخصص لصاحب المتجر فقط.",
+                    null);
+            }
+
+            var userIdClaim = new JwtSecurityTokenHandler()
+                .ReadJwtToken(ownerAuth.Token)
+                .Claims
+                .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)
+                ?.Value;
+
+            if (!Guid.TryParse(userIdClaim, out var userId))
+            {
+                return (
+                    false,
+                    false,
+                    "تعذر التحقق من هوية صاحب المتجر.",
+                    null);
+            }
+
+            var canManageStore = await _storeAuthorizationService.CanManageStoreAsync(userId, storeId);
+            if (!canManageStore)
+            {
+                return (
+                    false,
+                    true,
+                    "هذا الحساب ليس صاحب هذا المتجر.",
+                    null);
+            }
+
+            return (true, false, null, ownerAuth);
         }
 
         [HttpPost("verify-email")]

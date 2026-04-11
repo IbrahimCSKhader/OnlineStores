@@ -24,10 +24,14 @@ namespace onlineStore.Services.AuthServices
         private const string StoreCustomerLoginMessage =
             "هذا الحساب مخصص لعملاء المتاجر. استخدم /api/store-customer-auth/login";
 
+        private const string StoreOwnerCustomerConflictMessage =
+            "This email belongs to the store owner for this store. Use the platform owner authentication flow instead.";
+
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
         private readonly IConfiguration _configuration;
         private readonly AppDbContext _context;
+        private readonly IStoreAccountBoundaryService _storeAccountBoundaryService;
         private readonly IPasswordHasher<StoreCustomer> _storeCustomerPasswordHasher;
         private readonly IEmailService _emailService;
         private readonly ILogger<AuthService> _logger;
@@ -37,6 +41,7 @@ namespace onlineStore.Services.AuthServices
             SignInManager<AppUser> signInManager,
             IConfiguration configuration,
             AppDbContext context,
+            IStoreAccountBoundaryService storeAccountBoundaryService,
             IPasswordHasher<StoreCustomer> storeCustomerPasswordHasher,
             IEmailService emailService,
             ILogger<AuthService> logger)
@@ -45,6 +50,7 @@ namespace onlineStore.Services.AuthServices
             _signInManager = signInManager;
             _configuration = configuration;
             _context = context;
+            _storeAccountBoundaryService = storeAccountBoundaryService;
             _storeCustomerPasswordHasher = storeCustomerPasswordHasher;
             _emailService = emailService;
             _logger = logger;
@@ -299,6 +305,15 @@ namespace onlineStore.Services.AuthServices
                     "[GoogleLogin] Store context resolved. StoreId: {StoreId}, Email: {Email}. Customer accounts are persisted only in StoreCustomers.",
                     store.Id,
                     normalizedEmail);
+
+                if (await _storeAccountBoundaryService.IsStoreOwnerEmailAsync(store.Id, normalizedEmail))
+                {
+                    _logger.LogWarning(
+                        "[GoogleLogin] Google login blocked because the email belongs to the store owner. StoreId: {StoreId}, Email: {Email}",
+                        store.Id,
+                        normalizedEmail);
+                    return Fail(StoreOwnerCustomerConflictMessage);
+                }
 
                 var storeCustomer = await EnsureCustomerStoreLinkAsync(
                     store,

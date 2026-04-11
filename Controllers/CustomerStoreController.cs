@@ -20,15 +20,29 @@ namespace onlineStore.Controllers
         [HttpGet("customers")]
         public async Task<IActionResult> GetAllCustomers()
         {
-            var data = await _customerStoreService.GetAllCustomersAsync();
-            return Ok(data);
+            try
+            {
+                var data = await _customerStoreService.GetAllCustomersAsync();
+                return Ok(data);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
         [HttpGet("store/{storeId}")]
         public async Task<IActionResult> GetStoreCustomers(Guid storeId)
         {
-            var data = await _customerStoreService.GetStoreCustomersAsync(storeId);
-            return Ok(data);
+            try
+            {
+                var data = await _customerStoreService.GetStoreCustomersAsync(storeId);
+                return Ok(data);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
         [HttpPost]
@@ -37,8 +51,19 @@ namespace onlineStore.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _customerStoreService.CreateAsync(dto);
-            return Ok(result);
+            try
+            {
+                var result = await _customerStoreService.CreateAsync(dto);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]
@@ -47,23 +72,41 @@ namespace onlineStore.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var result = await _customerStoreService.UpdateAsync(id, dto);
+            try
+            {
+                var result = await _customerStoreService.UpdateAsync(id, dto);
 
-            if (result == null)
-                return NotFound(new { message = "record Does not exist" });
+                if (result == null)
+                    return NotFound(new { message = "record Does not exist" });
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var result = await _customerStoreService.DeleteAsync(id);
+            try
+            {
+                var result = await _customerStoreService.DeleteAsync(id);
 
-            if (!result)
-                return NotFound(new { message = "record Does not exist" });
+                if (!result)
+                    return NotFound(new { message = "record Does not exist" });
 
-            return Ok(new { message = "delete done" });
+                return Ok(new { message = "delete done" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
     }
 }

@@ -16,9 +16,13 @@ namespace onlineStore.Services.StoreCustomerAuth
         private const string GenericForgotPasswordMessage =
             "If this account exists in the selected store, a password reset code has been sent to the email address.";
 
+        private const string StoreOwnerCustomerConflictMessage =
+            "This email belongs to the store owner for this store. Use the platform owner authentication flow instead.";
+
         private readonly AppDbContext _context;
         private readonly IPasswordHasher<StoreCustomer> _passwordHasher;
         private readonly IConfiguration _configuration;
+        private readonly IStoreAccountBoundaryService _storeAccountBoundaryService;
         private readonly IStoreCustomerEmailWorkflowService _emailWorkflowService;
         private readonly ILogger<StoreCustomerAuthService> _logger;
 
@@ -26,12 +30,14 @@ namespace onlineStore.Services.StoreCustomerAuth
             AppDbContext context,
             IPasswordHasher<StoreCustomer> passwordHasher,
             IConfiguration configuration,
+            IStoreAccountBoundaryService storeAccountBoundaryService,
             IStoreCustomerEmailWorkflowService emailWorkflowService,
             ILogger<StoreCustomerAuthService> logger)
         {
             _context = context;
             _passwordHasher = passwordHasher;
             _configuration = configuration;
+            _storeAccountBoundaryService = storeAccountBoundaryService;
             _emailWorkflowService = emailWorkflowService;
             _logger = logger;
         }
@@ -48,6 +54,9 @@ namespace onlineStore.Services.StoreCustomerAuth
                     return Fail("The selected store is not available.");
 
                 var normalizedEmail = NormalizeEmail(dto.Email);
+
+                if (await IsReservedForStoreOwnerAsync(dto.StoreId, normalizedEmail))
+                    return Fail(StoreOwnerCustomerConflictMessage);
 
                 var exists = await _context.StoreCustomers
                     .IgnoreQueryFilters()
@@ -103,6 +112,9 @@ namespace onlineStore.Services.StoreCustomerAuth
             {
                 var normalizedEmail = NormalizeEmail(dto.Email);
 
+                if (await IsReservedForStoreOwnerAsync(dto.StoreId, normalizedEmail))
+                    return Fail(StoreOwnerCustomerConflictMessage);
+
                 var customer = await _context.StoreCustomers
                     .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(c => c.StoreId == dto.StoreId && c.Email == normalizedEmail);
@@ -155,6 +167,9 @@ namespace onlineStore.Services.StoreCustomerAuth
         {
             try
             {
+                if (await IsReservedForStoreOwnerAsync(dto.StoreId, dto.Email))
+                    return Fail(StoreOwnerCustomerConflictMessage);
+
                 var customer = await FindStoreCustomerAsync(dto.StoreId, dto.Email);
                 if (customer == null)
                     return Fail("Invalid email verification data.");
@@ -193,6 +208,9 @@ namespace onlineStore.Services.StoreCustomerAuth
         {
             try
             {
+                if (await IsReservedForStoreOwnerAsync(dto.StoreId, dto.Email))
+                    return (false, StoreOwnerCustomerConflictMessage);
+
                 var customer = await FindStoreCustomerAsync(dto.StoreId, dto.Email);
 
                 if (customer == null || !customer.IsActive || customer.IsDeleted)
@@ -226,10 +244,34 @@ namespace onlineStore.Services.StoreCustomerAuth
         {
             try
             {
-                var customer = await FindStoreCustomerAsync(dto.StoreId, dto.Email);
+                var normalizedEmail = NormalizeEmail(dto.Email);
+
+                if (dto.StoreId == Guid.Empty)
+                {
+                    _logger.LogWarning(
+                        "Store customer forgot password requested without a valid StoreId. Email: {Email}",
+                        normalizedEmail);
+
+                    return (true, GenericForgotPasswordMessage);
+                }
+
+                if (await IsReservedForStoreOwnerAsync(dto.StoreId, normalizedEmail))
+                    return (true, GenericForgotPasswordMessage);
+
+                var customer = await FindStoreCustomerAsync(dto.StoreId, normalizedEmail);
 
                 if (customer == null || !customer.IsActive || customer.IsDeleted)
+                {
+                    _logger.LogWarning(
+                        "Store customer forgot password request did not match an active customer. StoreId: {StoreId}, Email: {Email}, CustomerFound: {CustomerFound}, IsActive: {IsActive}, IsDeleted: {IsDeleted}",
+                        dto.StoreId,
+                        normalizedEmail,
+                        customer != null,
+                        customer?.IsActive,
+                        customer?.IsDeleted);
+
                     return (true, GenericForgotPasswordMessage);
+                }
 
                 var resetCode = _emailWorkflowService.PreparePasswordReset(customer);
                 await _context.SaveChangesAsync();
@@ -252,13 +294,46 @@ namespace onlineStore.Services.StoreCustomerAuth
         {
             try
             {
-                var customer = await FindStoreCustomerAsync(dto.StoreId, dto.Email);
+                var normalizedEmail = NormalizeEmail(dto.Email);
+                var normalizedCode = NormalizeValue(dto.Code);
 
-                if (customer == null || !customer.IsActive || customer.IsDeleted)
+                if (dto.StoreId == Guid.Empty)
+                {
+                    _logger.LogWarning(
+                        "Store customer password reset failed because StoreId was empty. Email: {Email}",
+                        normalizedEmail);
+
+                    return (false, "StoreId is required for store customer password reset.");
+                }
+
+                if (await IsReservedForStoreOwnerAsync(dto.StoreId, normalizedEmail))
                     return (false, "Invalid password reset data.");
 
-                if (!_emailWorkflowService.IsValidPasswordResetCode(customer, dto.Code))
+                var customer = await FindStoreCustomerAsync(dto.StoreId, normalizedEmail);
+
+                if (customer == null || !customer.IsActive || customer.IsDeleted)
+                {
+                    _logger.LogWarning(
+                        "Store customer password reset failed because the account context was invalid. StoreId: {StoreId}, Email: {Email}, CustomerFound: {CustomerFound}, IsActive: {IsActive}, IsDeleted: {IsDeleted}",
+                        dto.StoreId,
+                        normalizedEmail,
+                        customer != null,
+                        customer?.IsActive,
+                        customer?.IsDeleted);
+
+                    return (false, "Invalid password reset data.");
+                }
+
+                if (!_emailWorkflowService.IsValidPasswordResetCode(customer, normalizedCode))
+                {
+                    _logger.LogWarning(
+                        "Store customer password reset failed because the reset code was invalid or expired. StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}, Email: {Email}",
+                        customer.StoreId,
+                        customer.Id,
+                        customer.Email);
+
                     return (false, "The password reset code is invalid or expired.");
+                }
 
                 customer.PasswordHash = _passwordHasher.HashPassword(customer, dto.NewPassword);
                 _emailWorkflowService.ClearPasswordReset(customer);
@@ -322,6 +397,10 @@ namespace onlineStore.Services.StoreCustomerAuth
                     return (false, "Password confirmation does not match.");
 
                 var normalizedEmail = NormalizeEmail(email);
+
+                if (await IsReservedForStoreOwnerAsync(storeId, normalizedEmail))
+                    return (false, StoreOwnerCustomerConflictMessage);
+
                 var customer = await _context.StoreCustomers
                     .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(c => c.StoreId == storeId && c.Email == normalizedEmail);
@@ -384,6 +463,9 @@ namespace onlineStore.Services.StoreCustomerAuth
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(c => c.StoreId == storeId && c.Email == NormalizeEmail(email));
 
+        private Task<bool> IsReservedForStoreOwnerAsync(Guid storeId, string email) =>
+            _storeAccountBoundaryService.IsStoreOwnerEmailAsync(storeId, NormalizeEmail(email));
+
         private async Task<(bool Success, string Message)> SetPasswordInternalAsync(
             StoreCustomer? customer,
             string newPassword,
@@ -394,6 +476,9 @@ namespace onlineStore.Services.StoreCustomerAuth
 
             if (!customer.IsActive)
                 return (false, "This account is inactive.");
+
+            if (await IsReservedForStoreOwnerAsync(customer.StoreId, customer.Email))
+                return (false, StoreOwnerCustomerConflictMessage);
 
             customer.PasswordHash = _passwordHasher.HashPassword(customer, newPassword);
             _emailWorkflowService.ClearPasswordReset(customer);

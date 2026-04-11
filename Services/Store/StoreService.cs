@@ -14,6 +14,7 @@ namespace onlineStore.Services.Store
         private readonly ILogger<StoreService> _logger;
         private readonly ICurrentUserService _currentUser;
         private readonly IStoreAuthorizationService _storeAuthorizationService;
+        private readonly IStoreAccountBoundaryService _storeAccountBoundaryService;
         private readonly ISubscriptionService _subscriptionService;
         private readonly IWebHostEnvironment _environment;
 
@@ -22,6 +23,7 @@ namespace onlineStore.Services.Store
             ILogger<StoreService> logger,
             ICurrentUserService currentUser,
             IStoreAuthorizationService storeAuthorizationService,
+            IStoreAccountBoundaryService storeAccountBoundaryService,
             ISubscriptionService subscriptionService,
             IWebHostEnvironment environment)
         {
@@ -29,6 +31,7 @@ namespace onlineStore.Services.Store
             _logger = logger;
             _currentUser = currentUser;
             _storeAuthorizationService = storeAuthorizationService;
+            _storeAccountBoundaryService = storeAccountBoundaryService;
             _subscriptionService = subscriptionService;
             _environment = environment;
         }
@@ -445,7 +448,7 @@ namespace onlineStore.Services.Store
                 dto.CoverPage != null,
                 dto.ThemeTemplate);
 
-            if (!Guid.TryParse(userId, out var authenticatedOwnerId))
+            if (!Guid.TryParse(userId, out var authenticatedUserId))
             {
                 _logger.LogError(
                     "StoreService.CreateStoreAsync received invalid authenticated user id. UserId: {UserId}",
@@ -453,12 +456,23 @@ namespace onlineStore.Services.Store
                 throw new ArgumentException("Authenticated user id is invalid.");
             }
 
+            var owner = await _storeAccountBoundaryService.GetActiveStoreOwnerAsync(dto.OwnerId);
+            if (owner == null)
+            {
+                _logger.LogWarning(
+                    "StoreService.CreateStoreAsync rejected invalid owner. RequestedOwnerId: {RequestedOwnerId}, AuthenticatedUserId: {AuthenticatedUserId}",
+                    dto.OwnerId,
+                    authenticatedUserId);
+                throw new ArgumentException("The provided OwnerId does not belong to an active StoreOwner account.");
+            }
+
             var normalizedSlug = dto.Slug.Trim().ToLower();
 
             _logger.LogInformation(
-                "StoreService.CreateStoreAsync normalized identifiers. NormalizedSlug: {NormalizedSlug}, AuthenticatedOwnerId: {AuthenticatedOwnerId}",
+                "StoreService.CreateStoreAsync normalized identifiers. NormalizedSlug: {NormalizedSlug}, AuthenticatedUserId: {AuthenticatedUserId}, OwnerId: {OwnerId}",
                 normalizedSlug,
-                authenticatedOwnerId);
+                authenticatedUserId,
+                owner.Id);
 
             var slugExists = await _context.Stores
                 .AsNoTracking()
@@ -497,7 +511,7 @@ namespace onlineStore.Services.Store
                 ThemeTemplate = StoreThemeTemplates.NormalizeOrThrow(
                     dto.ThemeTemplate,
                     nameof(dto.ThemeTemplate)),
-                OwnerId = authenticatedOwnerId,
+                OwnerId = owner.Id,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
                 ContactAccounts = normalizedContactAccounts

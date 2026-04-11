@@ -17,6 +17,8 @@ Core business rules you must respect:
 6. For platform admin/owner accounts, use `/api/auth/*`.
 7. Google login started from inside a store is a storefront-customer flow. It must create/update a `StoreCustomer`, not a platform `User`.
 8. Treat admin/backoffice session and storefront customer session as two separate auth contexts. Use separate storage keys if the same frontend handles both areas.
+9. A store owner's email must never exist as a `StoreCustomer` in that same store.
+10. If a storefront auth attempt uses the same email as the store owner of the target store, expect the backend to reject that customer auth flow.
 
 Source of truth:
 1. Local OpenAPI: `/openapi/v1.json` when the backend is running.
@@ -123,6 +125,8 @@ Stores (`/api/Store`):
 4. `POST /api/Store`
    - `multipart/form-data`
    - SuperAdmin only.
+   - `OwnerId` must be an existing active `StoreOwner` account.
+   - Backend assigns the store to the provided `OwnerId`, not to the authenticated `SuperAdmin`.
 5. `PUT /api/Store/{id}`
    - SuperAdmin or StoreOwner.
 6. `DELETE /api/Store/{id}`
@@ -248,6 +252,7 @@ Customer management backoffice (`/api/CustomerStore`):
 Rules:
 1. Treat these as admin/backoffice endpoints only.
 2. Use platform token (`SuperAdmin` or `StoreOwner`).
+3. A `StoreOwner` may manage only customers that belong to stores they own.
 
 Subscription management:
 Subscription plans (`/api/subscription-plans`) - SuperAdmin only:

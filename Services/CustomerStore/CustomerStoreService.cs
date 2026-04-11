@@ -3,33 +3,63 @@ using Microsoft.EntityFrameworkCore;
 using onlineStore.Data;
 using onlineStore.DTOs.CustomerStore;
 using onlineStore.Models;
+using onlineStore.Security;
 using onlineStore.Services.StoreCustomerAuth;
 
 namespace onlineStore.Services.CustomerStore
 {
     public class CustomerStoreService : ICustomerStoreService
     {
+        private const string StoreOwnerCustomerConflictMessage =
+            "The store owner's email cannot be used as a store customer email for the same store.";
+
         private readonly AppDbContext _context;
         private readonly IPasswordHasher<StoreCustomer> _passwordHasher;
+        private readonly ICurrentUserService _currentUser;
+        private readonly IStoreAuthorizationService _storeAuthorizationService;
+        private readonly IStoreAccountBoundaryService _storeAccountBoundaryService;
         private readonly IStoreCustomerEmailWorkflowService _emailWorkflowService;
         private readonly ILogger<CustomerStoreService> _logger;
 
         public CustomerStoreService(
             AppDbContext context,
             IPasswordHasher<StoreCustomer> passwordHasher,
+            ICurrentUserService currentUser,
+            IStoreAuthorizationService storeAuthorizationService,
+            IStoreAccountBoundaryService storeAccountBoundaryService,
             IStoreCustomerEmailWorkflowService emailWorkflowService,
             ILogger<CustomerStoreService> logger)
         {
             _context = context;
             _passwordHasher = passwordHasher;
+            _currentUser = currentUser;
+            _storeAuthorizationService = storeAuthorizationService;
+            _storeAccountBoundaryService = storeAccountBoundaryService;
             _emailWorkflowService = emailWorkflowService;
             _logger = logger;
         }
 
         public async Task<List<CustomerListDto>> GetAllCustomersAsync()
         {
-            return await _context.StoreCustomers
+            var query = _context.StoreCustomers
                 .AsNoTracking()
+                .AsQueryable();
+
+            if (_currentUser.IsSuperAdmin)
+            {
+                // Super admin can view all customers.
+            }
+            else if (_currentUser.IsStoreOwner && _currentUser.UserId.HasValue)
+            {
+                var ownerId = _currentUser.UserId.Value;
+                query = query.Where(x => x.Store.OwnerId == ownerId);
+            }
+            else
+            {
+                throw new UnauthorizedAccessException("You are not allowed to access customer data.");
+            }
+
+            return await query
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(x => new CustomerListDto
                 {
@@ -49,6 +79,8 @@ namespace onlineStore.Services.CustomerStore
 
         public async Task<List<CustomerStoreDto>> GetStoreCustomersAsync(Guid storeId)
         {
+            await EnsureCanManageStoreAsync(storeId);
+
             return await _context.StoreCustomers
                 .AsNoTracking()
                 .Where(x => x.StoreId == storeId)
@@ -72,6 +104,8 @@ namespace onlineStore.Services.CustomerStore
 
         public async Task<CustomerStoreDto> CreateAsync(CreateCustomerStoreDto dto)
         {
+            await EnsureCanManageStoreAsync(dto.StoreId);
+
             var store = await _context.Stores
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == dto.StoreId);
@@ -80,6 +114,9 @@ namespace onlineStore.Services.CustomerStore
                 throw new Exception("ط§ظ„ظ…طھط¬ط± ط؛ظٹط± ظ…ظˆط¬ظˆط¯");
 
             var normalizedEmail = NormalizeEmail(dto.Email);
+
+            if (await _storeAccountBoundaryService.IsStoreOwnerEmailAsync(dto.StoreId, normalizedEmail))
+                throw new ArgumentException(StoreOwnerCustomerConflictMessage);
 
             var exists = await _context.StoreCustomers
                 .IgnoreQueryFilters()
@@ -127,6 +164,8 @@ namespace onlineStore.Services.CustomerStore
             if (entity == null)
                 return null;
 
+            await EnsureCanManageStoreAsync(entity.StoreId);
+
             string? verificationCode = null;
 
             if (dto.FirstName != null)
@@ -138,6 +177,9 @@ namespace onlineStore.Services.CustomerStore
             if (dto.Email != null)
             {
                 var normalizedEmail = NormalizeEmail(dto.Email);
+
+                if (await _storeAccountBoundaryService.IsStoreOwnerEmailAsync(entity.StoreId, normalizedEmail))
+                    throw new ArgumentException(StoreOwnerCustomerConflictMessage);
 
                 var emailExists = await _context.StoreCustomers
                     .IgnoreQueryFilters()
@@ -198,6 +240,8 @@ namespace onlineStore.Services.CustomerStore
             if (entity == null)
                 return false;
 
+            await EnsureCanManageStoreAsync(entity.StoreId);
+
             entity.IsDeleted = true;
             await _context.SaveChangesAsync();
 
@@ -241,6 +285,26 @@ namespace onlineStore.Services.CustomerStore
         {
             var normalizedValue = value?.Trim();
             return string.IsNullOrWhiteSpace(normalizedValue) ? null : normalizedValue;
+        }
+
+        private async Task EnsureCanManageStoreAsync(Guid storeId, CancellationToken cancellationToken = default)
+        {
+            if (!_currentUser.IsAuthenticated || !_currentUser.UserId.HasValue)
+                throw new UnauthorizedAccessException("You are not allowed to manage this store.");
+
+            var canManageStore = await _storeAuthorizationService.CanManageStoreAsync(
+                _currentUser.UserId.Value,
+                storeId,
+                cancellationToken);
+
+            if (!canManageStore)
+            {
+                _logger.LogWarning(
+                    "Unauthorized customer management attempt. UserId: {UserId}, StoreId: {StoreId}",
+                    _currentUser.UserId,
+                    storeId);
+                throw new UnauthorizedAccessException("You are not allowed to manage this store.");
+            }
         }
     }
 }

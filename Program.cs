@@ -81,6 +81,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IStoreOwnershipService, StoreOwnershipService>();
 builder.Services.AddScoped<IStoreAuthorizationService, StoreAuthorizationService>();
+builder.Services.AddScoped<IStoreAccountBoundaryService, StoreAccountBoundaryService>();
 builder.Services.AddScoped<IPasswordHasher<StoreCustomer>, PasswordHasher<StoreCustomer>>();
 builder.Services.Configure<EmailSettings>(
     builder.Configuration.GetSection(EmailSettings.SectionName));
@@ -606,6 +607,7 @@ using (var scope = app.Services.CreateScope())
         .GetRequiredService<RoleManager<AppRole>>();
 
     await SeedRolesAndAdmin(userManager, roleManager);
+    await EnsureStoreOwnerRolesForAssignedStores(context, userManager);
 }
 
 app.Run();
@@ -644,10 +646,37 @@ async Task SeedRolesAndAdmin(
         if (result.Succeeded)
             await userManager.AddToRoleAsync(adminUser, "SuperAdmin");
     }
-    else if (!adminUser.EmailConfirmed)
+    else
     {
-        adminUser.EmailConfirmed = true;
-        await userManager.UpdateAsync(adminUser);
+        if (!adminUser.EmailConfirmed)
+        {
+            adminUser.EmailConfirmed = true;
+            await userManager.UpdateAsync(adminUser);
+        }
+
+        if (!await userManager.IsInRoleAsync(adminUser, "SuperAdmin"))
+            await userManager.AddToRoleAsync(adminUser, "SuperAdmin");
+    }
+}
+
+async Task EnsureStoreOwnerRolesForAssignedStores(
+    AppDbContext context,
+    UserManager<AppUser> userManager)
+{
+    var storeOwnerIds = await context.Stores
+        .AsNoTracking()
+        .Select(store => store.OwnerId)
+        .Distinct()
+        .ToListAsync();
+
+    foreach (var ownerId in storeOwnerIds)
+    {
+        var owner = await userManager.FindByIdAsync(ownerId.ToString());
+        if (owner == null)
+            continue;
+
+        if (!await userManager.IsInRoleAsync(owner, "StoreOwner"))
+            await userManager.AddToRoleAsync(owner, "StoreOwner");
     }
 }
 
