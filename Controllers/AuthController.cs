@@ -14,6 +14,16 @@ namespace onlineStore.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
+        private const string GoogleStoreContextRequired = "store_context_required";
+        private const string GoogleStoreContextMissing = "store_context_missing";
+        private const string GoogleAuthFailed = "google_auth_failed";
+        private const string GoogleEmailNotFound = "email_not_found";
+        private const string GoogleRedirectBuildFailed = "redirect_build_failed";
+        private const string GoogleUnexpectedError = "unexpected_error";
+
+        private const string FrontendSuccessPathFallback = "/auth/google/success";
+        private const string FrontendFailurePathFallback = "/auth/google/failure";
+
         private readonly IAuthService _authService;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthController> _logger;
@@ -139,18 +149,35 @@ namespace onlineStore.Controllers
 
         [HttpGet("google")]
         [AllowAnonymous]
-        public IActionResult GoogleLogin([FromQuery] string? storeSlug = null, [FromQuery] Guid? storeId = null)
+        public IActionResult GoogleLogin(
+            [FromQuery] string? storeSlug = null,
+            [FromQuery] Guid? storeId = null,
+            [FromQuery] string? redirectTo = null)
         {
-            _logger.LogInformation("Google login endpoint hit. Building challenge...");
+            _logger.LogInformation(
+                "[GoogleLoginEndpoint] Google login endpoint hit. HasStoreId: {HasStoreId}, StoreId: {StoreId}, HasStoreSlug: {HasStoreSlug}, StoreSlug: {StoreSlug}, HasRedirectTo: {HasRedirectTo}, RedirectTo: {RedirectTo}",
+                storeId.HasValue,
+                storeId,
+                !string.IsNullOrWhiteSpace(storeSlug),
+                storeSlug,
+                !string.IsNullOrWhiteSpace(redirectTo),
+                redirectTo);
 
             if (string.IsNullOrWhiteSpace(storeSlug) && !storeId.HasValue)
             {
-                _logger.LogWarning("Google login was called without store context.");
-                return Redirect(BuildFrontendFailureRedirect("store_context_required"));
+                _logger.LogWarning("[GoogleLoginEndpoint] Google login was called without store context.");
+                return Redirect(BuildFrontendFailureRedirect(GoogleStoreContextRequired, "Store context is required for storefront Google auth."));
             }
 
             var redirectUri = Url.Action(nameof(GoogleCallback), "Auth");
-            _logger.LogInformation("Redirect URI will be: {RedirectUri}", redirectUri);
+
+            if (string.IsNullOrWhiteSpace(redirectUri))
+            {
+                _logger.LogError("[GoogleLoginEndpoint] Failed to build Google callback redirect URI.");
+                return Redirect(BuildFrontendFailureRedirect(GoogleRedirectBuildFailed, "Could not build Google callback redirect URI."));
+            }
+
+            _logger.LogInformation("[GoogleLoginEndpoint] Callback redirect URI built: {RedirectUri}", redirectUri);
 
             var properties = new AuthenticationProperties
             {
@@ -163,6 +190,19 @@ namespace onlineStore.Controllers
             if (!string.IsNullOrWhiteSpace(storeSlug))
                 properties.Items["storeSlug"] = storeSlug.Trim();
 
+            if (!string.IsNullOrWhiteSpace(redirectTo))
+                properties.Items["redirectTo"] = redirectTo.Trim();
+
+            _logger.LogInformation(
+                "[GoogleLoginEndpoint] Challenge ready with preserved context. HasStoreId: {HasStoreId}, StoreId: {StoreId}, HasStoreSlug: {HasStoreSlug}, StoreSlug: {StoreSlug}, HasRedirectTo: {HasRedirectTo}, RedirectTo: {RedirectTo}, Items: {Items}",
+                storeId.HasValue,
+                storeId,
+                !string.IsNullOrWhiteSpace(storeSlug),
+                storeSlug,
+                !string.IsNullOrWhiteSpace(redirectTo),
+                redirectTo,
+                properties.Items);
+
             return Challenge(properties, GoogleDefaults.AuthenticationScheme);
         }
 
@@ -170,21 +210,36 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GoogleCallback([FromQuery] string? remoteError = null)
         {
+            _logger.LogInformation(
+                "[GoogleCallback] Callback started. TraceIdentifier: {TraceIdentifier}, RemoteErrorExists: {HasRemoteError}, RemoteError: {RemoteError}",
+                HttpContext.TraceIdentifier,
+                !string.IsNullOrWhiteSpace(remoteError),
+                remoteError);
+
+            Guid? storeId = null;
+            string? storeSlug = null;
+            string? redirectTo = null;
+
             try
             {
                 if (!string.IsNullOrWhiteSpace(remoteError))
                 {
-                    _logger.LogWarning("Google remote error received: {RemoteError}", remoteError);
-                    return Redirect(BuildFrontendFailureRedirect(remoteError));
+                    _logger.LogWarning("[GoogleCallback] Google remote error received: {RemoteError}", remoteError);
+                    return Redirect(BuildFrontendFailureRedirect(GoogleAuthFailed, remoteError));
                 }
 
                 var result = await HttpContext.AuthenticateAsync(
                     IdentityConstants.ExternalScheme);
 
+                _logger.LogInformation(
+                    "[GoogleCallback] External authentication completed. Succeeded: {Succeeded}, HasPrincipal: {HasPrincipal}",
+                    result.Succeeded,
+                    result.Principal != null);
+
                 if (!result.Succeeded || result.Principal == null)
                 {
-                    await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-                    return Redirect(BuildFrontendFailureRedirect("google_auth_failed"));
+                    _logger.LogWarning("[GoogleCallback] External authentication failed or principal is null.");
+                    return Redirect(BuildFrontendFailureRedirect(GoogleAuthFailed, "Google authentication did not succeed."));
                 }
 
                 var email = FindClaimValue(result.Principal, ClaimTypes.Email, "email");
@@ -192,23 +247,41 @@ namespace onlineStore.Controllers
                 var lastName = FindClaimValue(result.Principal, ClaimTypes.Surname, "family_name");
 
                 var storeIdValue = GetPropertyItem(result, "storeId");
-                var storeSlug = GetPropertyItem(result, "storeSlug");
+                storeSlug = GetPropertyItem(result, "storeSlug");
+                redirectTo = GetPropertyItem(result, "redirectTo");
 
-                Guid? storeId = null;
+                _logger.LogInformation(
+                    "[GoogleCallback] Raw Google auth properties. HasStoreIdItem: {HasStoreIdItem}, StoreIdItem: {StoreIdItem}, HasStoreSlugItem: {HasStoreSlugItem}, StoreSlugItem: {StoreSlugItem}, HasRedirectToItem: {HasRedirectToItem}, RedirectToItem: {RedirectToItem}, Items: {Items}",
+                    !string.IsNullOrWhiteSpace(storeIdValue),
+                    storeIdValue,
+                    !string.IsNullOrWhiteSpace(storeSlug),
+                    storeSlug,
+                    !string.IsNullOrWhiteSpace(redirectTo),
+                    redirectTo,
+                    result.Properties?.Items);
+
                 if (!string.IsNullOrWhiteSpace(storeIdValue) && Guid.TryParse(storeIdValue, out var parsedStoreId))
                     storeId = parsedStoreId;
 
+                _logger.LogInformation(
+                    "[GoogleCallback] Preserved context restored. HasStoreId: {HasStoreId}, StoreId: {StoreId}, HasStoreSlug: {HasStoreSlug}, StoreSlug: {StoreSlug}, HasRedirectTo: {HasRedirectTo}, RedirectTo: {RedirectTo}",
+                    storeId.HasValue,
+                    storeId,
+                    !string.IsNullOrWhiteSpace(storeSlug),
+                    storeSlug,
+                    !string.IsNullOrWhiteSpace(redirectTo),
+                    redirectTo);
+
                 if (storeId == null && string.IsNullOrWhiteSpace(storeSlug))
                 {
-                    await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-                    _logger.LogWarning("Google callback completed without preserved store context.");
-                    return Redirect(BuildFrontendFailureRedirect("store_context_missing"));
+                    _logger.LogWarning("[GoogleCallback] Google callback completed without preserved store context.");
+                    return Redirect(BuildFrontendFailureRedirect(GoogleStoreContextMissing, "Google callback lost store context."));
                 }
 
                 if (string.IsNullOrWhiteSpace(email))
                 {
-                    await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-                    return Redirect(BuildFrontendFailureRedirect("email_not_found"));
+                    _logger.LogWarning("[GoogleCallback] Google callback completed without an email claim.");
+                    return Redirect(BuildFrontendFailureRedirect(GoogleEmailNotFound, "Google account email was not provided.", storeId, storeSlug, redirectTo));
                 }
 
                 var dto = new GoogleAuthDto
@@ -217,72 +290,131 @@ namespace onlineStore.Controllers
                     FirstName = firstName ?? "",
                     LastName = lastName ?? "",
                     StoreId = storeId,
-                    StoreSlug = storeSlug
+                    StoreSlug = storeSlug,
+                    RedirectTo = redirectTo
                 };
+
+                _logger.LogInformation(
+                    "[GoogleCallback] Dispatching Google auth service call. Email: {Email}, StoreId: {StoreId}, StoreSlug: {StoreSlug}",
+                    dto.Email,
+                    dto.StoreId,
+                    dto.StoreSlug);
 
                 var authResult = await _authService.GoogleLoginAsync(dto);
 
-                await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+                _logger.LogInformation(
+                    "[GoogleCallback] Auth service returned. Success: {Success}, HasToken: {HasToken}, ErrorCode: {ErrorCode}, StoreId: {StoreId}, StoreSlug: {StoreSlug}",
+                    authResult.Success,
+                    !string.IsNullOrWhiteSpace(authResult.Token),
+                    authResult.ErrorCode,
+                    authResult.StoreId,
+                    authResult.StoreSlug);
 
                 if (!authResult.Success || string.IsNullOrWhiteSpace(authResult.Token))
                 {
-                    return Redirect(BuildFrontendFailureRedirect(authResult.Message ?? "login_failed"));
+                    var errorCode = string.IsNullOrWhiteSpace(authResult.ErrorCode)
+                        ? GoogleAuthFailed
+                        : authResult.ErrorCode;
+
+                    return Redirect(BuildFrontendFailureRedirect(
+                        errorCode,
+                        authResult.Message ?? "Google login failed.",
+                        authResult.StoreId ?? storeId,
+                        authResult.StoreSlug ?? storeSlug,
+                        authResult.RedirectTo ?? redirectTo));
                 }
 
-                return Redirect(BuildFrontendSuccessRedirect(authResult));
+                var successRedirect = BuildFrontendSuccessRedirect(authResult);
+                _logger.LogInformation("[GoogleCallback] Success redirect generated. RedirectUrl: {RedirectUrl}", successRedirect);
+
+                return Redirect(successRedirect);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during Google callback flow");
-                return Redirect(BuildFrontendFailureRedirect("unexpected_error"));
+                _logger.LogError(ex, "[GoogleCallback] Unexpected error during Google callback flow");
+                return Redirect(BuildFrontendFailureRedirect(
+                    GoogleUnexpectedError,
+                    "Unexpected error during Google callback flow.",
+                    storeId,
+                    storeSlug,
+                    redirectTo));
+            }
+            finally
+            {
+                await TrySignOutExternalSchemeAsync();
             }
         }
 
         private string BuildFrontendSuccessRedirect(AuthResponseDto authResult)
         {
-            var baseUrl = _configuration["FrontendSettings:BaseUrl"];
-            var successPath = _configuration["FrontendSettings:GoogleAuthSuccessRedirectPath"];
+            var successUrl = ResolveFrontendUrl(
+                "FrontendSettings:GoogleAuthSuccessRedirectPath",
+                FrontendSuccessPathFallback,
+                "success");
 
-            if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(successPath))
+            var fragmentParts = new List<string>
             {
-                _logger.LogError(
-                    "Frontend settings for Google success redirect are missing. BaseUrl: {BaseUrlExists}, SuccessPath: {PathExists}",
-                    !string.IsNullOrWhiteSpace(baseUrl),
-                    !string.IsNullOrWhiteSpace(successPath));
+                BuildFragmentPair("token", authResult.Token),
+                BuildFragmentPair("email", authResult.Email),
+                BuildFragmentPair("firstName", authResult.FirstName),
+                BuildFragmentPair("lastName", authResult.LastName),
+                BuildFragmentPair("storeCustomerId", authResult.StoreCustomerId?.ToString()),
+                BuildFragmentPair("accountType", authResult.AccountType),
+                BuildFragmentPair("storeId", authResult.StoreId?.ToString()),
+                BuildFragmentPair("storeSlug", authResult.StoreSlug),
+                BuildFragmentPair("redirectTo", authResult.RedirectTo),
+                BuildFragmentPair("authMode", authResult.AuthMode ?? "storefront"),
+                BuildFragmentPair("sessionScope", authResult.SessionScope ?? "storefront"),
+                BuildFragmentPair("dashboard", authResult.Dashboard ?? "customer")
+            };
 
-                throw new InvalidOperationException("Google frontend redirect settings are not configured.");
-            }
+            var fragment = string.Join("&", fragmentParts.Where(x => !string.IsNullOrWhiteSpace(x)));
 
-            var successUrl = CombineUrl(baseUrl, successPath);
-
-            var fragment = string.Join("&", new[]
-            {
-                $"token={Uri.EscapeDataString(authResult.Token ?? string.Empty)}",
-                $"email={Uri.EscapeDataString(authResult.Email ?? string.Empty)}",
-                $"firstName={Uri.EscapeDataString(authResult.FirstName ?? string.Empty)}",
-                $"lastName={Uri.EscapeDataString(authResult.LastName ?? string.Empty)}"
-            });
+            _logger.LogInformation(
+                "[BuildFrontendSuccessRedirect] Success redirect built. HasToken: {HasToken}, StoreCustomerId: {StoreCustomerId}, AccountType: {AccountType}, StoreId: {StoreId}, StoreSlug: {StoreSlug}, AuthMode: {AuthMode}, SessionScope: {SessionScope}, Dashboard: {Dashboard}, RedirectToExists: {HasRedirectTo}",
+                !string.IsNullOrWhiteSpace(authResult.Token),
+                authResult.StoreCustomerId,
+                authResult.AccountType,
+                authResult.StoreId,
+                authResult.StoreSlug,
+                authResult.AuthMode,
+                authResult.SessionScope,
+                authResult.Dashboard,
+                !string.IsNullOrWhiteSpace(authResult.RedirectTo));
 
             return $"{successUrl}#{fragment}";
         }
 
-        private string BuildFrontendFailureRedirect(string message)
+        private string BuildFrontendFailureRedirect(
+            string errorCode,
+            string? message = null,
+            Guid? storeId = null,
+            string? storeSlug = null,
+            string? redirectTo = null)
         {
-            var baseUrl = _configuration["FrontendSettings:BaseUrl"];
-            var failurePath = _configuration["FrontendSettings:GoogleAuthFailureRedirectPath"];
+            var failureUrl = ResolveFrontendUrl(
+                "FrontendSettings:GoogleAuthFailureRedirectPath",
+                FrontendFailurePathFallback,
+                "failure");
 
-            if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(failurePath))
+            var query = new Dictionary<string, string?>
             {
-                _logger.LogError(
-                    "Frontend settings for Google failure redirect are missing. BaseUrl: {BaseUrlExists}, FailurePath: {PathExists}",
-                    !string.IsNullOrWhiteSpace(baseUrl),
-                    !string.IsNullOrWhiteSpace(failurePath));
+                ["errorCode"] = errorCode,
+                ["message"] = message,
+                ["storeId"] = storeId?.ToString(),
+                ["storeSlug"] = storeSlug,
+                ["redirectTo"] = redirectTo
+            };
 
-                throw new InvalidOperationException("Google frontend redirect settings are not configured.");
-            }
+            _logger.LogWarning(
+                "[BuildFrontendFailureRedirect] Failure redirect built. ErrorCode: {ErrorCode}, Message: {Message}, StoreId: {StoreId}, StoreSlug: {StoreSlug}, RedirectToExists: {HasRedirectTo}",
+                errorCode,
+                message,
+                storeId,
+                storeSlug,
+                !string.IsNullOrWhiteSpace(redirectTo));
 
-            var failureUrl = CombineUrl(baseUrl, failurePath);
-            return QueryHelpers.AddQueryString(failureUrl, "message", message);
+            return QueryHelpers.AddQueryString(failureUrl, query!);
         }
 
         private static string? FindClaimValue(ClaimsPrincipal principal, params string[] claimTypes)
@@ -306,6 +438,54 @@ namespace onlineStore.Controllers
                 normalizedPath = "/" + normalizedPath;
 
             return normalizedBase + normalizedPath;
+        }
+
+        private string ResolveFrontendUrl(string pathSettingKey, string fallbackPath, string redirectKind)
+        {
+            var baseUrl = _configuration["FrontendSettings:BaseUrl"];
+            var configuredPath = _configuration[pathSettingKey];
+            var pathToUse = string.IsNullOrWhiteSpace(configuredPath) ? fallbackPath : configuredPath;
+
+            if (string.IsNullOrWhiteSpace(baseUrl))
+            {
+                baseUrl = $"{Request.Scheme}://{Request.Host}";
+                _logger.LogWarning(
+                    "[ResolveFrontendUrl] Frontend BaseUrl missing while building {RedirectKind} redirect. Falling back to request host base: {FallbackBaseUrl}",
+                    redirectKind,
+                    baseUrl);
+            }
+
+            if (string.IsNullOrWhiteSpace(configuredPath))
+            {
+                _logger.LogWarning(
+                    "[ResolveFrontendUrl] Frontend path setting {SettingKey} missing while building {RedirectKind} redirect. Using fallback path: {FallbackPath}",
+                    pathSettingKey,
+                    redirectKind,
+                    fallbackPath);
+            }
+
+            return CombineUrl(baseUrl, pathToUse);
+        }
+
+        private static string BuildFragmentPair(string key, string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+
+            return $"{Uri.EscapeDataString(key)}={Uri.EscapeDataString(value)}";
+        }
+
+        private async Task TrySignOutExternalSchemeAsync()
+        {
+            try
+            {
+                await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+                _logger.LogDebug("[GoogleCallback] External sign-out completed.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[GoogleCallback] External sign-out failed after callback completion.");
+            }
         }
 
         [HttpPost("create-owner")]

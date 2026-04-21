@@ -26,33 +26,44 @@ namespace onlineStore.Controllers
         public async Task<IActionResult> Create([FromBody] CreateOrderDto dto)
         {
             _logger.LogInformation(
-                "OrderController.Create started. StoreId: {StoreId}, HasCoupon: {HasCoupon}",
-                dto?.StoreId,
-                !string.IsNullOrWhiteSpace(dto?.CouponCode));
+                "order=> controller:create:start Request={@Request}",
+                dto == null
+                    ? null
+                    : new
+                    {
+                        dto.StoreId,
+                        dto.Title,
+                        dto.CouponCode,
+                        dto.CustomerNotes,
+                        dto.DeliveryAddress,
+                        dto.DeliveryCity,
+                        dto.DeliveryPhone,
+                        HasCoupon = !string.IsNullOrWhiteSpace(dto.CouponCode)
+                    });
 
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("OrderController.Create rejected بسبب ModelState غير صالح.");
+                _logger.LogWarning("order=> controller:create:invalid-model");
                 return BadRequest(ModelState);
             }
 
             if (dto == null)
             {
-                _logger.LogWarning("OrderController.Create rejected because request body is null.");
+                _logger.LogWarning("order=> controller:create:null-body");
                 return BadRequest(new { message = "بيانات الطلب غير صالحة" });
             }
 
             var storeCustomer = GetStoreCustomerContext();
             if (storeCustomer == null)
             {
-                _logger.LogWarning("OrderController.Create failed: store customer context not found.");
+                _logger.LogWarning("order=> controller:create:missing-store-customer-context");
                 return Unauthorized();
             }
 
             if (storeCustomer.Value.StoreId != dto.StoreId)
             {
                 _logger.LogWarning(
-                    "OrderController.Create forbidden. TokenStoreId: {TokenStoreId}, BodyStoreId: {BodyStoreId}, StoreCustomerId: {StoreCustomerId}",
+                    "order=> controller:create:forbidden TokenStoreId={TokenStoreId} BodyStoreId={BodyStoreId} StoreCustomerId={StoreCustomerId}",
                     storeCustomer.Value.StoreId,
                     dto.StoreId,
                     storeCustomer.Value.StoreCustomerId);
@@ -63,17 +74,35 @@ namespace onlineStore.Controllers
             {
                 var order = await _orderService.CreateOrderAsync(storeCustomer.Value.StoreCustomerId, dto);
                 _logger.LogInformation(
-                    "OrderController.Create succeeded. OrderId: {OrderId}, StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                    "order=> controller:create:result OrderId={OrderId} StoreCustomerId={StoreCustomerId} StoreId={StoreId} Order={@Order}",
                     order.Id,
                     storeCustomer.Value.StoreCustomerId,
-                    dto.StoreId);
+                    dto.StoreId,
+                    new
+                    {
+                        order.Id,
+                        order.OrderNumber,
+                        order.Title,
+                        order.Status,
+                        order.TotalAmount,
+                        ItemsCount = order.Items.Count
+                    });
                 return Ok(order);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "order=> controller:create:unauthorized StoreCustomerId={StoreCustomerId} StoreId={StoreId}",
+                    storeCustomer.Value.StoreCustomerId,
+                    dto.StoreId);
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
             }
             catch (Exception ex)
             {
                 _logger.LogError(
                     ex,
-                    "OrderController.Create failed. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                    "order=> controller:create:error StoreCustomerId={StoreCustomerId} StoreId={StoreId}",
                     storeCustomer.Value.StoreCustomerId,
                     dto.StoreId);
                 return BadRequest(new { message = ex.Message });
@@ -85,17 +114,17 @@ namespace onlineStore.Controllers
         [Authorize(Policy = "StoreCustomerOnly")]
         public async Task<IActionResult> GetMyOrders()
         {
-            _logger.LogInformation("OrderController.GetMyOrders started.");
+            _logger.LogInformation("order=> controller:get-my-orders:start");
             var storeCustomer = GetStoreCustomerContext();
             if (storeCustomer == null)
             {
-                _logger.LogWarning("OrderController.GetMyOrders failed: store customer context not found.");
+                _logger.LogWarning("order=> controller:get-my-orders:missing-store-customer-context");
                 return Unauthorized();
             }
 
             var orders = await _orderService.GetUserOrdersAsync(storeCustomer.Value.StoreCustomerId);
             _logger.LogInformation(
-                "OrderController.GetMyOrders succeeded. StoreCustomerId: {StoreCustomerId}, Count: {Count}",
+                "order=> controller:get-my-orders:result StoreCustomerId={StoreCustomerId} Count={Count}",
                 storeCustomer.Value.StoreCustomerId,
                 orders.Count);
             return Ok(orders);
@@ -106,12 +135,12 @@ namespace onlineStore.Controllers
         [Authorize(Policy = "StoreCustomerOnly")]
         public async Task<IActionResult> GetMyOrderById(Guid orderId)
         {
-            _logger.LogInformation("OrderController.GetMyOrderById started. OrderId: {OrderId}", orderId);
+            _logger.LogInformation("order=> controller:get-my-order-by-id:start OrderId={OrderId}", orderId);
             var storeCustomer = GetStoreCustomerContext();
             if (storeCustomer == null)
             {
                 _logger.LogWarning(
-                    "OrderController.GetMyOrderById failed: store customer context not found. OrderId: {OrderId}",
+                    "order=> controller:get-my-order-by-id:missing-store-customer-context OrderId={OrderId}",
                     orderId);
                 return Unauthorized();
             }
@@ -121,14 +150,14 @@ namespace onlineStore.Controllers
             if (order == null)
             {
                 _logger.LogWarning(
-                    "OrderController.GetMyOrderById not found. StoreCustomerId: {StoreCustomerId}, OrderId: {OrderId}",
+                    "order=> controller:get-my-order-by-id:not-found StoreCustomerId={StoreCustomerId} OrderId={OrderId}",
                     storeCustomer.Value.StoreCustomerId,
                     orderId);
                 return NotFound(new { message = " Order does not exit" });
             }
 
             _logger.LogInformation(
-                "OrderController.GetMyOrderById succeeded. StoreCustomerId: {StoreCustomerId}, OrderId: {OrderId}",
+                "order=> controller:get-my-order-by-id:result StoreCustomerId={StoreCustomerId} OrderId={OrderId}",
                 storeCustomer.Value.StoreCustomerId,
                 orderId);
             return Ok(order);
@@ -138,13 +167,25 @@ namespace onlineStore.Controllers
         [Authorize(Roles = "SuperAdmin,StoreOwner")]
         public async Task<IActionResult> GetStoreOrders(Guid storeId)
         {
-            _logger.LogInformation("OrderController.GetStoreOrders started. StoreId: {StoreId}", storeId);
-            var orders = await _orderService.GetStoreOrdersAsync(storeId);
-            _logger.LogInformation(
-                "OrderController.GetStoreOrders succeeded. StoreId: {StoreId}, Count: {Count}",
-                storeId,
-                orders.Count);
-            return Ok(orders);
+            _logger.LogInformation("order=> controller:get-store-orders:start StoreId={StoreId}", storeId);
+
+            try
+            {
+                var orders = await _orderService.GetStoreOrdersAsync(storeId);
+                _logger.LogInformation(
+                    "order=> controller:get-store-orders:result StoreId={StoreId} Count={Count}",
+                    storeId,
+                    orders.Count);
+                return Ok(orders);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "order=> controller:get-store-orders:forbidden StoreId={StoreId}",
+                    storeId);
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
 
@@ -153,25 +194,38 @@ namespace onlineStore.Controllers
         public async Task<IActionResult> GetStoreOrderById(Guid storeId, Guid orderId)
         {
             _logger.LogInformation(
-                "OrderController.GetStoreOrderById started. StoreId: {StoreId}, OrderId: {OrderId}",
+                "order=> controller:get-store-order-by-id:start StoreId={StoreId} OrderId={OrderId}",
                 storeId,
                 orderId);
-            var order = await _orderService.GetStoreOrderByIdAsync(storeId, orderId);
 
-            if (order == null)
+            try
             {
-                _logger.LogWarning(
-                    "OrderController.GetStoreOrderById not found. StoreId: {StoreId}, OrderId: {OrderId}",
+                var order = await _orderService.GetStoreOrderByIdAsync(storeId, orderId);
+
+                if (order == null)
+                {
+                    _logger.LogWarning(
+                        "order=> controller:get-store-order-by-id:not-found StoreId={StoreId} OrderId={OrderId}",
+                        storeId,
+                        orderId);
+                    return NotFound(new { message = " Order does not exit" });
+                }
+
+                _logger.LogInformation(
+                    "order=> controller:get-store-order-by-id:result StoreId={StoreId} OrderId={OrderId}",
                     storeId,
                     orderId);
-                return NotFound(new { message = " Order does not exit" });
+                return Ok(order);
             }
-
-            _logger.LogInformation(
-                "OrderController.GetStoreOrderById succeeded. StoreId: {StoreId}, OrderId: {OrderId}",
-                storeId,
-                orderId);
-            return Ok(order);
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "order=> controller:get-store-order-by-id:forbidden StoreId={StoreId} OrderId={OrderId}",
+                    storeId,
+                    orderId);
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
 
@@ -182,14 +236,14 @@ namespace onlineStore.Controllers
             [FromBody] UpdateOrderStatusDto dto)
         {
             _logger.LogInformation(
-                "OrderController.UpdateStatus started. OrderId: {OrderId}, NewStatus: {Status}",
+                "order=> controller:update-status:start OrderId={OrderId} NewStatus={Status}",
                 orderId,
                 dto?.Status);
 
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning(
-                    "OrderController.UpdateStatus rejected بسبب ModelState غير صالح. OrderId: {OrderId}",
+                    "order=> controller:update-status:invalid-model OrderId={OrderId}",
                     orderId);
                 return BadRequest(ModelState);
             }
@@ -197,26 +251,37 @@ namespace onlineStore.Controllers
             if (dto == null)
             {
                 _logger.LogWarning(
-                    "OrderController.UpdateStatus rejected because request body is null. OrderId: {OrderId}",
+                    "order=> controller:update-status:null-body OrderId={OrderId}",
                     orderId);
                 return BadRequest(new { message = "بيانات الطلب غير صالحة" });
             }
 
-            var order = await _orderService.UpdateOrderStatusAsync(orderId, dto);
+            try
+            {
+                var order = await _orderService.UpdateOrderStatusAsync(orderId, dto);
 
-            if (order == null)
+                if (order == null)
+                {
+                    _logger.LogWarning(
+                        "order=> controller:update-status:not-found OrderId={OrderId}",
+                        orderId);
+                    return NotFound(new { message = " Order does not exit" });
+                }
+
+                _logger.LogInformation(
+                    "order=> controller:update-status:result OrderId={OrderId} Status={Status}",
+                    orderId,
+                    dto.Status);
+                return Ok(order);
+            }
+            catch (UnauthorizedAccessException ex)
             {
                 _logger.LogWarning(
-                    "OrderController.UpdateStatus not found. OrderId: {OrderId}",
+                    ex,
+                    "order=> controller:update-status:forbidden OrderId={OrderId}",
                     orderId);
-                return NotFound(new { message = " Order does not exit" });
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
             }
-
-            _logger.LogInformation(
-                "OrderController.UpdateStatus succeeded. OrderId: {OrderId}, Status: {Status}",
-                orderId,
-                dto.Status);
-            return Ok(order);
         }
 
 
@@ -226,7 +291,7 @@ namespace onlineStore.Controllers
             var storeId = User.GetStoreCustomerStoreId();
 
             _logger.LogDebug(
-                "OrderController.GetStoreCustomerContext evaluated. HasStoreCustomerId: {HasStoreCustomerId}, HasStoreId: {HasStoreId}",
+                "order=> controller:store-customer-context HasStoreCustomerId={HasStoreCustomerId} HasStoreId={HasStoreId}",
                 storeCustomerId.HasValue,
                 storeId.HasValue);
 

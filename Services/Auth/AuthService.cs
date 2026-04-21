@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using onlineStore.Data;
 using onlineStore.DTOs.Auth;
 using onlineStore.Models;
+using onlineStore.Models.CartModels;
 using onlineStore.Models.Identity;
 using onlineStore.Security;
 using onlineStore.Services.Email;
@@ -26,6 +27,15 @@ namespace onlineStore.Services.AuthServices
 
         private const string StoreOwnerCustomerConflictMessage =
             "This email belongs to the store owner for this store. Use the platform owner authentication flow instead.";
+
+        private const string GoogleStorefrontAuthMode = "storefront";
+        private const string GoogleStorefrontSessionScope = "storefront";
+        private const string GoogleStorefrontDashboard = "customer";
+
+        private const string GoogleFailureStoreInvalidOrMissing = "store_invalid_or_missing";
+        private const string GoogleFailureOwnerCustomerConflict = "owner_customer_conflict";
+        private const string GoogleFailureJwtGenerationFailed = "jwt_generation_failed";
+        private const string GoogleFailureUnexpectedError = "unexpected_error";
 
         private readonly UserManager<AppUser> _userManager;
         private readonly SignInManager<AppUser> _signInManager;
@@ -279,16 +289,26 @@ namespace onlineStore.Services.AuthServices
 
         public async Task<AuthResponseDto> GoogleLoginAsync(GoogleAuthDto dto)
         {
-            _logger.LogInformation("[GoogleLogin] Starting Google login process for email: {Email}", dto.Email);
+            _logger.LogInformation(
+                "[GoogleLogin] Starting Google login process for email: {Email}, InputStoreId: {InputStoreId}, InputStoreSlug: {InputStoreSlug}, RedirectToExists: {HasRedirectTo}",
+                dto.Email,
+                dto.StoreId,
+                dto.StoreSlug,
+                !string.IsNullOrWhiteSpace(dto.RedirectTo));
 
             try
             {
                 var normalizedEmail = NormalizeEmail(dto.Email);
                 var normalizedFirstName = NormalizeValue(dto.FirstName, allowEmpty: true);
                 var normalizedLastName = NormalizeValue(dto.LastName, allowEmpty: true);
+                var normalizedRedirectTo = NormalizeValue(dto.RedirectTo, allowEmpty: true);
 
-                _logger.LogDebug("[GoogleLogin] Normalized data - Email: {Email}, FirstName: {FirstNameExists}, LastName: {LastNameExists}",
-                    normalizedEmail, !string.IsNullOrWhiteSpace(normalizedFirstName), !string.IsNullOrWhiteSpace(normalizedLastName));
+                _logger.LogDebug(
+                    "[GoogleLogin] Normalized inputs. Email: {Email}, FirstNameExists: {FirstNameExists}, LastNameExists: {LastNameExists}, RedirectToExists: {RedirectToExists}",
+                    normalizedEmail,
+                    !string.IsNullOrWhiteSpace(normalizedFirstName),
+                    !string.IsNullOrWhiteSpace(normalizedLastName),
+                    !string.IsNullOrWhiteSpace(normalizedRedirectTo));
 
                 var store = await ResolveGoogleStoreAsync(dto.StoreId, dto.StoreSlug);
                 if (store == null)
@@ -298,58 +318,143 @@ namespace onlineStore.Services.AuthServices
                         normalizedEmail,
                         dto.StoreId,
                         dto.StoreSlug);
-                    return Fail("store_invalid_or_missing");
+                    return Fail(GoogleFailureStoreInvalidOrMissing, "Store context is missing or invalid.");
                 }
 
                 _logger.LogInformation(
-                    "[GoogleLogin] Store context resolved. StoreId: {StoreId}, Email: {Email}. Customer accounts are persisted only in StoreCustomers.",
+                    "[GoogleLogin] Store context resolved. StoreId: {StoreId}, StoreSlug: {StoreSlug}, Email: {Email}",
                     store.Id,
+                    store.Slug,
                     normalizedEmail);
 
-                if (await _storeAccountBoundaryService.IsStoreOwnerEmailAsync(store.Id, normalizedEmail))
-                {
-                    _logger.LogWarning(
-                        "[GoogleLogin] Google login blocked because the email belongs to the store owner. StoreId: {StoreId}, Email: {Email}",
-                        store.Id,
-                        normalizedEmail);
-                    return Fail(StoreOwnerCustomerConflictMessage);
-                }
-
-                var storeCustomer = await EnsureCustomerStoreLinkAsync(
+                var storeOwnerGoogleAuthResult = await TryAuthenticateStoreOwnerViaGoogleAsync(
                     store,
                     normalizedEmail,
                     normalizedFirstName,
-                    normalizedLastName);
+                    normalizedLastName,
+                    normalizedRedirectTo);
 
-                _logger.LogDebug(
-                    "[GoogleLogin] Generating StoreCustomer JWT token for email: {Email}, StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
-                    normalizedEmail,
-                    storeCustomer.Id,
-                    storeCustomer.StoreId);
-                var token = GenerateStoreCustomerJwtToken(storeCustomer);
-                _logger.LogDebug(
-                    "[GoogleLogin] StoreCustomer JWT token generated successfully for: {Email}, StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, Expires: {ExpiresAt}",
-                    normalizedEmail,
-                    storeCustomer.Id,
-                    storeCustomer.StoreId,
-                    token.ExpiresAt);
+                if (storeOwnerGoogleAuthResult != null)
+                {
+                    return storeOwnerGoogleAuthResult;
+                }
 
-                _logger.LogInformation(
-                    "[GoogleLogin] User logged in successfully via Google as StoreCustomer. Email: {Email}, StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
-                    normalizedEmail,
-                    storeCustomer.Id,
-                    storeCustomer.StoreId);
+                var strategy = _context.Database.CreateExecutionStrategy();
 
-                return CreateStoreCustomerAuthenticatedResponse(
-                    storeCustomer,
-                    token.Token,
-                    token.ExpiresAt);
+                return await strategy.ExecuteAsync(async () =>
+                {
+                    await using var transaction = await _context.Database.BeginTransactionAsync();
+
+                    try
+                    {
+                        _logger.LogDebug(
+                            "[GoogleLogin] Transaction started for StoreId: {StoreId}, Email: {Email}",
+                            store.Id,
+                            normalizedEmail);
+
+                        var linkResult = await EnsureCustomerStoreLinkAsync(
+                            store,
+                            normalizedEmail,
+                            normalizedFirstName,
+                            normalizedLastName);
+
+                        var storeCustomer = linkResult.Customer;
+
+                        _logger.LogInformation(
+                            "[GoogleLogin] Customer link ready. StoreCustomerId: {StoreCustomerId}, WasCreated: {WasCreated}, WasReactivated: {WasReactivated}, CartProvisioned: {CartProvisioned}, HasPendingPersistence: {HasPendingPersistence}",
+                            storeCustomer.Id,
+                            linkResult.WasCreated,
+                            linkResult.WasReactivated,
+                            linkResult.CartProvisioned,
+                            linkResult.PersistNeeded);
+
+                        _logger.LogDebug(
+                            "[GoogleLogin] Generating StoreCustomer JWT token for email: {Email}, StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                            normalizedEmail,
+                            storeCustomer.Id,
+                            storeCustomer.StoreId);
+
+                        (string Token, DateTime ExpiresAt) token;
+                        try
+                        {
+                            token = GenerateStoreCustomerJwtToken(storeCustomer);
+                        }
+                        catch (Exception ex)
+                        {
+                            await transaction.RollbackAsync();
+                            _logger.LogError(
+                                ex,
+                                "[GoogleLogin] JWT generation failed. Rolling back transaction. StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}, Email: {Email}",
+                                store.Id,
+                                storeCustomer.Id,
+                                normalizedEmail);
+                            return Fail(GoogleFailureJwtGenerationFailed, "Failed to generate authentication token.");
+                        }
+
+                        if (linkResult.PersistNeeded || _context.ChangeTracker.HasChanges())
+                        {
+                            _logger.LogDebug(
+                                "[GoogleLogin] Persisting customer/cart changes for StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}",
+                                store.Id,
+                                storeCustomer.Id);
+                            await _context.SaveChangesAsync();
+                            _logger.LogDebug(
+                                "[GoogleLogin] Persistence completed for StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}",
+                                store.Id,
+                                storeCustomer.Id);
+                        }
+
+                        await transaction.CommitAsync();
+                        _logger.LogDebug(
+                            "[GoogleLogin] Transaction committed for StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}",
+                            store.Id,
+                            storeCustomer.Id);
+
+                        _logger.LogDebug(
+                            "[GoogleLogin] StoreCustomer JWT token generated successfully for: {Email}, StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, Expires: {ExpiresAt}",
+                            normalizedEmail,
+                            storeCustomer.Id,
+                            storeCustomer.StoreId,
+                            token.ExpiresAt);
+
+                        _logger.LogInformation(
+                            "[GoogleLogin] User logged in successfully via Google as StoreCustomer. Email: {Email}, StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
+                            normalizedEmail,
+                            storeCustomer.Id,
+                            storeCustomer.StoreId);
+
+                        return CreateStoreCustomerAuthenticatedResponse(
+                            storeCustomer,
+                            token.Token,
+                            token.ExpiresAt,
+                            store.Id,
+                            store.Slug,
+                            normalizedRedirectTo);
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            await transaction.RollbackAsync();
+                        }
+                        catch (Exception rollbackEx)
+                        {
+                            _logger.LogWarning(
+                                rollbackEx,
+                                "[GoogleLogin] Transaction rollback failed after exception. StoreId: {StoreId}, Email: {Email}",
+                                store.Id,
+                                normalizedEmail);
+                        }
+
+                        throw;
+                    }
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[GoogleLogin] Unhandled exception during Google login for {Email}. Error: {Message}",
                     dto.Email, ex.Message);
-                return Fail("حدث خطأ أثناء تسجيل الدخول عبر Google");
+                return Fail(GoogleFailureUnexpectedError, "حدث خطأ أثناء تسجيل الدخول عبر Google");
             }
         }
 
@@ -488,15 +593,33 @@ namespace onlineStore.Services.AuthServices
 
         private (string Token, DateTime ExpiresAt) GenerateStoreCustomerJwtToken(StoreCustomer customer)
         {
+            _logger.LogDebug(
+                "[GenerateStoreCustomerJwtToken] Generating token for StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, Email: {Email}",
+                customer.Id,
+                customer.StoreId,
+                customer.Email);
+
             var jwtSettings = _configuration.GetSection("JwtSettings");
             var secretKey = jwtSettings["SecretKey"];
 
             if (string.IsNullOrWhiteSpace(secretKey))
+            {
+                _logger.LogError("[GenerateStoreCustomerJwtToken] JWT SecretKey is not configured.");
                 throw new InvalidOperationException("JWT SecretKey is not configured");
+            }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var expiresAt = DateTime.UtcNow.AddDays(int.Parse(jwtSettings["ExpiryInDays"] ?? "7"));
+            var expiryInDaysValue = jwtSettings["ExpiryInDays"] ?? "7";
+            if (!int.TryParse(expiryInDaysValue, out var expiryInDays) || expiryInDays <= 0)
+            {
+                _logger.LogWarning(
+                    "[GenerateStoreCustomerJwtToken] Invalid ExpiryInDays value: {ExpiryInDaysValue}. Defaulting to 7.",
+                    expiryInDaysValue);
+                expiryInDays = 7;
+            }
+
+            var expiresAt = DateTime.UtcNow.AddDays(expiryInDays);
 
             var claims = new List<Claim>
             {
@@ -516,6 +639,11 @@ namespace onlineStore.Services.AuthServices
                     ClaimValueTypes.Integer64)
             };
 
+            _logger.LogDebug(
+                "[GenerateStoreCustomerJwtToken] Claim set prepared for StoreCustomerId: {StoreCustomerId}. ClaimsCount: {ClaimsCount}",
+                customer.Id,
+                claims.Count);
+
             var token = new JwtSecurityToken(
                 issuer: jwtSettings["Issuer"],
                 audience: jwtSettings["Audience"],
@@ -524,7 +652,13 @@ namespace onlineStore.Services.AuthServices
                 expires: expiresAt,
                 signingCredentials: credentials);
 
-            return (new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
+            var tokenValue = new JwtSecurityTokenHandler().WriteToken(token);
+            _logger.LogDebug(
+                "[GenerateStoreCustomerJwtToken] Token generated successfully for StoreCustomerId: {StoreCustomerId}, ExpiresAt: {ExpiresAt}",
+                customer.Id,
+                expiresAt);
+
+            return (tokenValue, expiresAt);
         }
 
         private async Task<bool> TrySendEmailVerificationCodeAsync(AppUser user, string source)
@@ -618,7 +752,10 @@ namespace onlineStore.Services.AuthServices
             string token,
             DateTime expiresAt,
             IList<string> roles,
-            string? message = null) => new()
+            string? message = null,
+            Guid? storeId = null,
+            string? storeSlug = null,
+            string? redirectTo = null) => new()
             {
                 Success = true,
                 RequiresEmailVerification = false,
@@ -627,14 +764,24 @@ namespace onlineStore.Services.AuthServices
                 Email = user.Email,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
+                AccountType = "PlatformUser",
                 Roles = roles,
-                ExpiresAt = expiresAt
+                ExpiresAt = expiresAt,
+                StoreId = storeId,
+                StoreSlug = storeSlug,
+                RedirectTo = redirectTo,
+                AuthMode = "platform",
+                SessionScope = "platform",
+                Dashboard = "owner"
             };
 
         private static AuthResponseDto CreateStoreCustomerAuthenticatedResponse(
             StoreCustomer customer,
             string token,
             DateTime expiresAt,
+            Guid storeId,
+            string? storeSlug,
+            string? redirectTo,
             string? message = null) => new()
             {
                 Success = true,
@@ -644,8 +791,16 @@ namespace onlineStore.Services.AuthServices
                 Email = customer.Email,
                 FirstName = customer.FirstName,
                 LastName = customer.LastName,
+                StoreCustomerId = customer.Id,
+                AccountType = StoreCustomerClaimTypes.StoreCustomerAccountType,
                 Roles = [StoreCustomerClaimTypes.StoreCustomerAccountType],
-                ExpiresAt = expiresAt
+                ExpiresAt = expiresAt,
+                StoreId = storeId,
+                StoreSlug = storeSlug,
+                RedirectTo = redirectTo,
+                AuthMode = GoogleStorefrontAuthMode,
+                SessionScope = GoogleStorefrontSessionScope,
+                Dashboard = GoogleStorefrontDashboard
             };
 
         private static AuthResponseDto FailRequiresEmailVerification(string message) => new()
@@ -658,6 +813,13 @@ namespace onlineStore.Services.AuthServices
         private static AuthResponseDto Fail(string message) => new()
         {
             Success = false,
+            Message = message
+        };
+
+        private static AuthResponseDto Fail(string errorCode, string? message) => new()
+        {
+            Success = false,
+            ErrorCode = errorCode,
             Message = message
         };
 
@@ -740,6 +902,110 @@ namespace onlineStore.Services.AuthServices
             return user;
         }
 
+        private async Task<AuthResponseDto?> TryAuthenticateStoreOwnerViaGoogleAsync(
+            onlineStore.Models.Store store,
+            string normalizedEmail,
+            string normalizedFirstName,
+            string normalizedLastName,
+            string normalizedRedirectTo)
+        {
+            if (!await _storeAccountBoundaryService.IsStoreOwnerEmailAsync(store.Id, normalizedEmail))
+                return null;
+
+            _logger.LogInformation(
+                "[GoogleLoginOwner] Google login matched the current store owner. StoreId: {StoreId}, OwnerId: {OwnerId}, Email: {Email}",
+                store.Id,
+                store.OwnerId,
+                normalizedEmail);
+
+            var owner = await FindPlatformUserByEmailAsync(normalizedEmail);
+            if (owner == null || owner.Id != store.OwnerId)
+            {
+                _logger.LogWarning(
+                    "[GoogleLoginOwner] Store owner lookup failed or mismatched. StoreId: {StoreId}, ExpectedOwnerId: {ExpectedOwnerId}, ResolvedOwnerId: {ResolvedOwnerId}, Email: {Email}",
+                    store.Id,
+                    store.OwnerId,
+                    owner?.Id,
+                    normalizedEmail);
+                return Fail(GoogleFailureOwnerCustomerConflict, StoreOwnerCustomerConflictMessage);
+            }
+
+            var roles = await _userManager.GetRolesAsync(owner);
+            if (!roles.Any(role => string.Equals(role, "StoreOwner", StringComparison.OrdinalIgnoreCase)))
+            {
+                _logger.LogWarning(
+                    "[GoogleLoginOwner] Store owner account is missing the StoreOwner role. StoreId: {StoreId}, OwnerId: {OwnerId}, Email: {Email}",
+                    store.Id,
+                    owner.Id,
+                    normalizedEmail);
+                return Fail(GoogleFailureOwnerCustomerConflict, StoreOwnerCustomerConflictMessage);
+            }
+
+            if (!owner.IsActive || owner.IsDeleted)
+            {
+                _logger.LogWarning(
+                    "[GoogleLoginOwner] Store owner account is inactive or deleted. StoreId: {StoreId}, OwnerId: {OwnerId}, Email: {Email}, IsActive: {IsActive}, IsDeleted: {IsDeleted}",
+                    store.Id,
+                    owner.Id,
+                    normalizedEmail,
+                    owner.IsActive,
+                    owner.IsDeleted);
+                return Fail(GoogleFailureOwnerCustomerConflict, "This store owner account is inactive.");
+            }
+
+            var shouldUpdateOwner = false;
+
+            if (!owner.EmailConfirmed)
+            {
+                owner.EmailConfirmed = true;
+                shouldUpdateOwner = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(owner.FirstName) && !string.IsNullOrWhiteSpace(normalizedFirstName))
+            {
+                owner.FirstName = normalizedFirstName;
+                shouldUpdateOwner = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(owner.LastName) && !string.IsNullOrWhiteSpace(normalizedLastName))
+            {
+                owner.LastName = normalizedLastName;
+                shouldUpdateOwner = true;
+            }
+
+            if (shouldUpdateOwner)
+            {
+                var updateResult = await _userManager.UpdateAsync(owner);
+                if (!updateResult.Succeeded)
+                {
+                    _logger.LogWarning(
+                        "[GoogleLoginOwner] Failed to persist owner updates after Google verification. StoreId: {StoreId}, OwnerId: {OwnerId}, Email: {Email}, Errors: {Errors}",
+                        store.Id,
+                        owner.Id,
+                        normalizedEmail,
+                        updateResult.Errors.Select(error => $"{error.Code}:{error.Description}"));
+                    return Fail(GoogleFailureUnexpectedError, "Failed to update the store owner account.");
+                }
+            }
+
+            var token = await GenerateJwtToken(owner);
+
+            _logger.LogInformation(
+                "[GoogleLoginOwner] Store owner authenticated successfully via Google. StoreId: {StoreId}, OwnerId: {OwnerId}, Email: {Email}",
+                store.Id,
+                owner.Id,
+                normalizedEmail);
+
+            return CreateAuthenticatedResponse(
+                owner,
+                token.Token,
+                token.ExpiresAt,
+                roles,
+                storeId: store.Id,
+                storeSlug: store.Slug,
+                redirectTo: normalizedRedirectTo);
+        }
+
         private async Task<onlineStore.Models.Store?> ResolveGoogleStoreAsync(Guid? storeId, string? storeSlug)
         {
             if (storeId.HasValue)
@@ -758,30 +1024,45 @@ namespace onlineStore.Services.AuthServices
                 .FirstOrDefaultAsync(x => x.Slug == normalizedSlug && x.IsActive);
         }
 
-        private async Task<StoreCustomer> EnsureCustomerStoreLinkAsync(
+        private async Task<StoreCustomerProvisionResult> EnsureCustomerStoreLinkAsync(
             onlineStore.Models.Store store,
             string normalizedEmail,
             string normalizedFirstName,
             string normalizedLastName)
         {
+            _logger.LogDebug(
+                "[EnsureCustomerStoreLink] Ensuring StoreCustomer link. StoreId: {StoreId}, Email: {Email}",
+                store.Id,
+                normalizedEmail);
+
             var existingCustomer = await _context.StoreCustomers
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(x => x.StoreId == store.Id && x.Email == normalizedEmail);
 
             if (existingCustomer != null)
             {
+                _logger.LogInformation(
+                    "[EnsureCustomerStoreLink] Existing customer found. StoreCustomerId: {StoreCustomerId}, IsDeleted: {IsDeleted}, IsActive: {IsActive}, EmailConfirmed: {EmailConfirmed}",
+                    existingCustomer.Id,
+                    existingCustomer.IsDeleted,
+                    existingCustomer.IsActive,
+                    existingCustomer.EmailConfirmed);
+
                 var shouldUpdate = false;
+                var reactivated = false;
 
                 if (existingCustomer.IsDeleted)
                 {
                     existingCustomer.IsDeleted = false;
                     shouldUpdate = true;
+                    reactivated = true;
                 }
 
                 if (!existingCustomer.IsActive)
                 {
                     existingCustomer.IsActive = true;
                     shouldUpdate = true;
+                    reactivated = true;
                 }
 
                 if (!existingCustomer.EmailConfirmed)
@@ -802,14 +1083,36 @@ namespace onlineStore.Services.AuthServices
                     shouldUpdate = true;
                 }
 
-                if (shouldUpdate)
-                    await _context.SaveChangesAsync();
+                if (string.IsNullOrWhiteSpace(existingCustomer.PasswordHash))
+                {
+                    existingCustomer.PasswordHash = _storeCustomerPasswordHasher.HashPassword(
+                        existingCustomer,
+                        $"google:{Guid.NewGuid():N}");
+                    shouldUpdate = true;
+                }
 
-                return existingCustomer;
+                var cartUpdated = await EnsureCustomerCartExistsAsync(existingCustomer.Id, store.Id);
+
+                _logger.LogInformation(
+                    "[EnsureCustomerStoreLink] Existing customer processed. StoreCustomerId: {StoreCustomerId}, ShouldUpdate: {ShouldUpdate}, CartUpdated: {CartUpdated}, Reactivated: {Reactivated}",
+                    existingCustomer.Id,
+                    shouldUpdate,
+                    cartUpdated,
+                    reactivated);
+
+                return new StoreCustomerProvisionResult
+                {
+                    Customer = existingCustomer,
+                    PersistNeeded = shouldUpdate || cartUpdated,
+                    WasCreated = false,
+                    WasReactivated = reactivated,
+                    CartProvisioned = cartUpdated
+                };
             }
 
             var customer = new StoreCustomer
             {
+                Id = Guid.NewGuid(),
                 StoreId = store.Id,
                 FirstName = string.IsNullOrWhiteSpace(normalizedFirstName) ? "Google" : normalizedFirstName,
                 LastName = string.IsNullOrWhiteSpace(normalizedLastName) ? "Customer" : normalizedLastName,
@@ -822,15 +1125,89 @@ namespace onlineStore.Services.AuthServices
             customer.PasswordHash = _storeCustomerPasswordHasher.HashPassword(customer, $"google:{Guid.NewGuid():N}");
 
             _context.StoreCustomers.Add(customer);
-            await _context.SaveChangesAsync();
+            var cartProvisioned = await EnsureCustomerCartExistsAsync(customer.Id, store.Id);
 
             _logger.LogInformation(
-                "[GoogleLogin] CustomerStore link created. StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}, Email: {Email}",
+                "[EnsureCustomerStoreLink] New StoreCustomer prepared. StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}, Email: {Email}, CartProvisioned: {CartProvisioned}",
                 store.Id,
                 customer.Id,
-                normalizedEmail);
+                normalizedEmail,
+                cartProvisioned);
 
-            return customer;
+            return new StoreCustomerProvisionResult
+            {
+                Customer = customer,
+                PersistNeeded = true,
+                WasCreated = true,
+                WasReactivated = false,
+                CartProvisioned = cartProvisioned
+            };
+        }
+
+        private async Task<bool> EnsureCustomerCartExistsAsync(Guid storeCustomerId, Guid storeId)
+        {
+            _logger.LogDebug(
+                "[EnsureCustomerCartExists] Ensuring cart. StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}",
+                storeId,
+                storeCustomerId);
+
+            var hasActiveCart = await _context.Carts
+                .AnyAsync(c => c.StoreCustomerId == storeCustomerId
+                               && c.StoreId == storeId
+                               && !c.IsDeleted);
+
+            if (hasActiveCart)
+            {
+                _logger.LogDebug(
+                    "[EnsureCustomerCartExists] Active cart already exists. StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}",
+                    storeId,
+                    storeCustomerId);
+                return false;
+            }
+
+            var softDeletedCart = await _context.Carts
+                .Where(c => c.StoreCustomerId == storeCustomerId
+                            && c.StoreId == storeId
+                            && c.IsDeleted)
+                .OrderByDescending(c => c.UpdatedAt ?? c.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (softDeletedCart != null)
+            {
+                softDeletedCart.IsDeleted = false;
+                softDeletedCart.UpdatedAt = DateTime.UtcNow;
+
+                _logger.LogInformation(
+                    "[EnsureCustomerCartExists] Soft-deleted cart restored. CartId: {CartId}, StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}",
+                    softDeletedCart.Id,
+                    storeId,
+                    storeCustomerId);
+                return true;
+            }
+
+            _context.Carts.Add(new ShoppingCart
+            {
+                StoreCustomerId = storeCustomerId,
+                StoreId = storeId,
+                CreatedAt = DateTime.UtcNow,
+                IsDeleted = false
+            });
+
+            _logger.LogInformation(
+                "[EnsureCustomerCartExists] New cart prepared for creation. StoreId: {StoreId}, StoreCustomerId: {StoreCustomerId}",
+                storeId,
+                storeCustomerId);
+
+            return true;
+        }
+
+        private sealed class StoreCustomerProvisionResult
+        {
+            public StoreCustomer Customer { get; set; } = null!;
+            public bool PersistNeeded { get; set; }
+            public bool WasCreated { get; set; }
+            public bool WasReactivated { get; set; }
+            public bool CartProvisioned { get; set; }
         }
     }
 }

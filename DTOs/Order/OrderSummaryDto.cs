@@ -6,6 +6,7 @@ namespace onlineStore.DTOs.Order
     {
         public Guid Id { get; set; }
         public string OrderNumber { get; set; } = string.Empty;
+        public string? Title { get; set; }
 
         public OrderStatus Status { get; set; }
 
@@ -13,8 +14,18 @@ namespace onlineStore.DTOs.Order
         public decimal DiscountAmount { get; set; }
         public decimal TotalAmount { get; set; }
 
+        public Guid StoreCustomerId { get; set; }
+        public string? CustomerName { get; set; }
+        public string? CustomerEmail { get; set; }
+        public string? CustomerPhone { get; set; }
+        public decimal CustomerDiscountPercentage { get; set; }
+
         public int ItemsCount { get; set; }
         public Guid StoreId { get; set; }
+        public Guid? CouponId { get; set; }
+        public string? CouponCode { get; set; }
+        public DiscountType? CouponDiscountType { get; set; }
+        public decimal? CouponDiscountValue { get; set; }
 
         public DateTime CreatedAt { get; set; }
     }

@@ -31,6 +31,18 @@ namespace onlineStore.Controllers
             return Ok(stores);
         }
 
+        [HttpGet("owned")]
+        [Authorize(Roles = "StoreOwner")]
+        public async Task<IActionResult> GetOwned(CancellationToken cancellationToken)
+        {
+            var store = await _storeService.GetOwnedStoreAsync(cancellationToken);
+
+            if (store == null)
+                return NotFound(new { message = "لا يوجد متجر مرتبط بهذا الحساب" });
+
+            return Ok(store);
+        }
+
         [HttpGet("{id}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetById(Guid id)

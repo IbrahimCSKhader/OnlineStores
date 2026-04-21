@@ -4,6 +4,10 @@ namespace onlineStore.Security
 {
     public interface IStoreAccountBoundaryService
     {
+        Task<bool> IsActiveStoreOwnerEmailAsync(
+            string email,
+            CancellationToken cancellationToken = default);
+
         Task<bool> IsStoreOwnerEmailAsync(
             Guid storeId,
             string email,

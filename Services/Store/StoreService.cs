@@ -63,6 +63,19 @@ namespace onlineStore.Services.Store
 
         }
 
+        public async Task<StoreDto?> GetOwnedStoreAsync(CancellationToken cancellationToken = default)
+        {
+            if (!_currentUser.IsStoreOwner || !_currentUser.UserId.HasValue)
+                return null;
+
+            var store = await GetStoresWithContacts(asNoTracking: true)
+                .Where(s => s.OwnerId == _currentUser.UserId.Value)
+                .OrderByDescending(s => s.CreatedAt)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            return store == null ? null : ToDto(store);
+        }
+
         public async Task<StoreDto?> GetStoreByIdAsync(Guid id)
         {
             IQueryable<Models.Store> query = GetStoresWithContacts(asNoTracking: true)

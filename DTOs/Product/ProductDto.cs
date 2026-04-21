@@ -25,7 +25,11 @@ namespace onlineStore.DTOs.Product
 
         public bool IsInStock => !TrackInventory || StockQuantity > 0;
 
-        public bool HasDiscount => CompareAtPrice.HasValue && CompareAtPrice > OriginalPrice;
+        public bool HasDiscount =>
+            CompareAtPrice.HasValue &&
+            CompareAtPrice.Value > 0m &&
+            OriginalPrice >= 0m &&
+            CompareAtPrice.Value > OriginalPrice;
 
         public decimal? DiscountPercentage => HasDiscount
             ? Math.Round((1 - OriginalPrice / CompareAtPrice!.Value) * 100, 0)

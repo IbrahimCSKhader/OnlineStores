@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
@@ -304,19 +305,36 @@ builder.Services.AddAuthentication(options =>
                 .GetRequiredService<ILogger<Program>>();
             logger.LogError(context.Failure, "Google OAuth: Remote failure occurred");
 
-            // Prevent unhandled exception bubble-up and redirect user to callback action to finish failure flow.
+            // Prevent unhandled exception bubble-up and redirect user to the same callback flow
+            // that originally initiated the Google challenge.
             context.HandleResponse();
 
-            var callbackUrl = "/api/auth/google-callback?remoteError=google_oauth_failed";
+            var callbackPath = context.Properties?.RedirectUri;
+            if (string.IsNullOrWhiteSpace(callbackPath) ||
+                !callbackPath.StartsWith("/", StringComparison.Ordinal) ||
+                callbackPath.StartsWith("//", StringComparison.Ordinal))
+            {
+                callbackPath = "/api/auth/google-callback";
+            }
+
+            var query = new Dictionary<string, string?>
+            {
+                ["remoteError"] = "google_oauth_failed"
+            };
+
             if (context.Properties?.Items != null)
             {
                 if (context.Properties.Items.TryGetValue("storeId", out var storeId) && !string.IsNullOrWhiteSpace(storeId))
-                    callbackUrl += $"&storeId={Uri.EscapeDataString(storeId)}";
+                    query["storeId"] = storeId;
 
                 if (context.Properties.Items.TryGetValue("storeSlug", out var storeSlug) && !string.IsNullOrWhiteSpace(storeSlug))
-                    callbackUrl += $"&storeSlug={Uri.EscapeDataString(storeSlug)}";
+                    query["storeSlug"] = storeSlug;
+
+                if (context.Properties.Items.TryGetValue("redirectTo", out var redirectTo) && !string.IsNullOrWhiteSpace(redirectTo))
+                    query["redirectTo"] = redirectTo;
             }
 
+            var callbackUrl = QueryHelpers.AddQueryString(callbackPath, query);
             context.Response.Redirect(callbackUrl);
             return Task.CompletedTask;
         }
@@ -530,7 +548,8 @@ if (app.Environment.IsDevelopment())
 // Request Logging Middleware for Google Auth diagnostics
 app.Use(async (context, next) =>
 {
-    if (context.Request.Path.StartsWithSegments("/api/auth/google"))
+    if (context.Request.Path.StartsWithSegments("/api/auth/google")
+        || context.Request.Path.StartsWithSegments("/api/store-customer-auth/google"))
     {
         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
         logger.LogInformation(

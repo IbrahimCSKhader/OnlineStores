@@ -6,6 +6,7 @@ namespace onlineStore.Services.StoreCustomerAuth
     {
         Task<StoreCustomerAuthResponseDto> RegisterAsync(StoreCustomerRegisterDto dto);
         Task<StoreCustomerAuthResponseDto> LoginAsync(StoreCustomerLoginDto dto);
+        Task<StorefrontLoginResponseDto> LoginToStoreAsync(Guid storeId, string email, string password);
         Task<StoreCustomerAuthResponseDto> VerifyEmailAsync(StoreCustomerVerifyEmailDto dto);
         Task<(bool Success, string Message)> ResendVerificationCodeAsync(StoreCustomerResendVerificationCodeDto dto);
         Task<(bool Success, string Message)> ForgotPasswordAsync(StoreCustomerForgotPasswordDto dto);

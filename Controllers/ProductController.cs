@@ -22,9 +22,16 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetByStore(Guid storeId)
         {
-            var userId = GetUserIdOrNull();
-            var products = await _productService.GetStoreProductsAsync(storeId, userId);
-            return Ok(products);
+            try
+            {
+                var userId = GetUserIdOrNull();
+                var products = await _productService.GetStoreProductsAsync(storeId, userId);
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
         }
 
         // GET api/product/featured/{storeId}
@@ -32,9 +39,16 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetFeatured(Guid storeId)
         {
-            var userId = GetUserIdOrNull();
-            var products = await _productService.GetFeaturedProductsAsync(storeId, userId);
-            return Ok(products);
+            try
+            {
+                var userId = GetUserIdOrNull();
+                var products = await _productService.GetFeaturedProductsAsync(storeId, userId);
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
         }
 
         // GET api/product/category/{categoryId}
@@ -42,9 +56,16 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetByCategory(Guid categoryId)
         {
-            var userId = GetUserIdOrNull();
-            var products = await _productService.GetProductsByCategoryAsync(categoryId, userId);
-            return Ok(products);
+            try
+            {
+                var userId = GetUserIdOrNull();
+                var products = await _productService.GetProductsByCategoryAsync(categoryId, userId);
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
         }
 
         // GET api/product/section/{sectionId}
@@ -52,9 +73,16 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetBySection(Guid sectionId)
         {
-            var userId = GetUserIdOrNull();
-            var products = await _productService.GetProductsBySectionAsync(sectionId, userId);
-            return Ok(products);
+            try
+            {
+                var userId = GetUserIdOrNull();
+                var products = await _productService.GetProductsBySectionAsync(sectionId, userId);
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
         }
 
         // GET api/product/{id}
@@ -62,13 +90,20 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var userId = GetUserIdOrNull();
-            var product = await _productService.GetProductByIdAsync(id, userId);
+            try
+            {
+                var userId = GetUserIdOrNull();
+                var product = await _productService.GetProductByIdAsync(id, userId);
 
-            if (product == null)
-                return NotFound(new { message = "المنتج غير موجود" });
+                if (product == null)
+                    return NotFound(new { message = "المنتج غير موجود" });
 
-            return Ok(product);
+                return Ok(product);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
         }
 
         // GET api/product/slug/{slug}
@@ -76,13 +111,20 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetBySlug(string slug)
         {
-            var userId = GetUserIdOrNull();
-            var product = await _productService.GetProductBySlugAsync(slug, userId);
+            try
+            {
+                var userId = GetUserIdOrNull();
+                var product = await _productService.GetProductBySlugAsync(slug, userId);
 
-            if (product == null)
-                return NotFound(new { message = "المنتج غير موجود" });
+                if (product == null)
+                    return NotFound(new { message = "المنتج غير موجود" });
 
-            return Ok(product);
+                return Ok(product);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
         }
 
         // POST api/product
@@ -102,6 +144,14 @@ namespace onlineStore.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -126,6 +176,14 @@ namespace onlineStore.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
 

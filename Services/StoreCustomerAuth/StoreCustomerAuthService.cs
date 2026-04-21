@@ -2,9 +2,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using onlineStore.Data;
+using onlineStore.DTOs.Auth;
 using onlineStore.DTOs.StoreCustomerAuth;
 using onlineStore.Models;
 using onlineStore.Security;
+using onlineStore.Services.AuthServices;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -20,26 +22,90 @@ namespace onlineStore.Services.StoreCustomerAuth
             "This email belongs to the store owner for this store. Use the platform owner authentication flow instead.";
 
         private readonly AppDbContext _context;
+        private readonly IAuthService _authService;
         private readonly IPasswordHasher<StoreCustomer> _passwordHasher;
         private readonly IConfiguration _configuration;
+        private readonly IStoreAuthorizationService _storeAuthorizationService;
         private readonly IStoreAccountBoundaryService _storeAccountBoundaryService;
         private readonly IStoreCustomerEmailWorkflowService _emailWorkflowService;
         private readonly ILogger<StoreCustomerAuthService> _logger;
 
         public StoreCustomerAuthService(
             AppDbContext context,
+            IAuthService authService,
             IPasswordHasher<StoreCustomer> passwordHasher,
             IConfiguration configuration,
+            IStoreAuthorizationService storeAuthorizationService,
             IStoreAccountBoundaryService storeAccountBoundaryService,
             IStoreCustomerEmailWorkflowService emailWorkflowService,
             ILogger<StoreCustomerAuthService> logger)
         {
             _context = context;
+            _authService = authService;
             _passwordHasher = passwordHasher;
             _configuration = configuration;
+            _storeAuthorizationService = storeAuthorizationService;
             _storeAccountBoundaryService = storeAccountBoundaryService;
             _emailWorkflowService = emailWorkflowService;
             _logger = logger;
+        }
+
+        public async Task<StorefrontLoginResponseDto> LoginToStoreAsync(Guid storeId, string email, string password)
+        {
+            var normalizedEmail = NormalizeEmail(email);
+
+            var isActiveStoreOwnerEmail = await IsActiveStoreOwnerEmailAsync(normalizedEmail);
+
+            if (isActiveStoreOwnerEmail)
+            {
+                _logger.LogInformation(
+                    "Storefront owner login detected. StoreId: {StoreId}, Email: {Email}",
+                    storeId,
+                    normalizedEmail);
+
+                var ownerLoginResult = await TryLoginAsStoreOwnerAsync(storeId, normalizedEmail, password);
+
+                if (ownerLoginResult.Success || ownerLoginResult.RequiresEmailVerification || ownerLoginResult.IsForbidden)
+                    return ownerLoginResult;
+
+                _logger.LogInformation(
+                    "Storefront owner login did not complete. Falling back to customer login. StoreId: {StoreId}, Email: {Email}",
+                    storeId,
+                    normalizedEmail);
+            }
+
+            var customerResult = await LoginAsync(new StoreCustomerLoginDto
+            {
+                StoreId = storeId,
+                Email = normalizedEmail,
+                Password = password
+            });
+
+            if (customerResult.Success)
+                return MapCustomerLoginResponse(customerResult);
+
+            if (customerResult.RequiresEmailVerification)
+                return new StorefrontLoginResponseDto
+                {
+                    Success = false,
+                    RequiresEmailVerification = true,
+                    Message = customerResult.Message,
+                    Email = customerResult.Email,
+                    FirstName = customerResult.FirstName,
+                    LastName = customerResult.LastName,
+                    StoreId = customerResult.StoreId,
+                    StoreCustomerId = customerResult.StoreCustomerId,
+                    AccountType = StoreCustomerClaimTypes.StoreCustomerAccountType,
+                    Dashboard = "Customer"
+                };
+
+            return new StorefrontLoginResponseDto
+            {
+                Success = false,
+                Message = customerResult.Message ?? "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+                AccountType = string.Empty,
+                Dashboard = string.Empty
+            };
         }
 
         public async Task<StoreCustomerAuthResponseDto> RegisterAsync(StoreCustomerRegisterDto dto)
@@ -161,6 +227,142 @@ namespace onlineStore.Services.StoreCustomerAuth
                 _logger.LogError(ex, "Error while logging in store customer for store {StoreId}", dto.StoreId);
                 return Fail("An unexpected error occurred while logging in.");
             }
+        }
+
+        private async Task<StorefrontLoginResponseDto> TryLoginAsStoreOwnerAsync(
+            Guid storeId,
+            string normalizedEmail,
+            string password)
+        {
+            try
+            {
+                var ownerAuth = await _authService.LoginAsync(new LoginDto
+                {
+                    Email = normalizedEmail,
+                    Password = password
+                });
+
+                if (ownerAuth.RequiresEmailVerification)
+                {
+                    return new StorefrontLoginResponseDto
+                    {
+                        Success = false,
+                        RequiresEmailVerification = true,
+                        Message = ownerAuth.Message,
+                        Email = ownerAuth.Email,
+                        FirstName = ownerAuth.FirstName,
+                        LastName = ownerAuth.LastName,
+                        AccountType = "StoreOwner",
+                        Dashboard = "Owner"
+                    };
+                }
+
+                if (!ownerAuth.Success || string.IsNullOrWhiteSpace(ownerAuth.Token))
+                {
+                    return new StorefrontLoginResponseDto
+                    {
+                        Success = false,
+                        Message = ownerAuth.Message,
+                        AccountType = string.Empty,
+                        Dashboard = string.Empty
+                    };
+                }
+
+                if (ownerAuth.Roles == null || !ownerAuth.Roles.Any(r => string.Equals(r, "StoreOwner", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return new StorefrontLoginResponseDto
+                    {
+                        Success = false,
+                        Message = null,
+                        AccountType = string.Empty,
+                        Dashboard = string.Empty
+                    };
+                }
+
+                var userIdClaim = new JwtSecurityTokenHandler()
+                    .ReadJwtToken(ownerAuth.Token)
+                    .Claims
+                    .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)
+                    ?.Value;
+
+                if (!Guid.TryParse(userIdClaim, out var userId))
+                {
+                    return new StorefrontLoginResponseDto
+                    {
+                        Success = false,
+                        Message = "تعذر التحقق من هوية صاحب المتجر.",
+                        AccountType = string.Empty,
+                        Dashboard = string.Empty
+                    };
+                }
+
+                if (!await _storeAuthorizationService.CanManageStoreAsync(userId, storeId))
+                {
+                    _logger.LogWarning(
+                        "Store owner attempted to access a store they do not own. UserId: {UserId}, StoreId: {StoreId}, Email: {Email}",
+                        userId,
+                        storeId,
+                        normalizedEmail);
+
+                    return new StorefrontLoginResponseDto
+                    {
+                        Success = false,
+                        IsForbidden = true,
+                        Message = "هذا الحساب ليس صاحب هذا المتجر.",
+                        AccountType = "StoreOwner",
+                        Dashboard = "Owner",
+                        StoreId = storeId
+                    };
+                }
+
+                return new StorefrontLoginResponseDto
+                {
+                    Success = true,
+                    Message = ownerAuth.Message,
+                    Token = ownerAuth.Token,
+                    Email = ownerAuth.Email,
+                    FirstName = ownerAuth.FirstName,
+                    LastName = ownerAuth.LastName,
+                    ExpiresAt = ownerAuth.ExpiresAt,
+                    AccountType = "StoreOwner",
+                    Roles = ownerAuth.Roles,
+                    StoreId = storeId,
+                    StoreCustomerId = null,
+                    Dashboard = "Owner"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while logging in store owner for store {StoreId} and email {Email}", storeId, normalizedEmail);
+
+                return new StorefrontLoginResponseDto
+                {
+                    Success = false,
+                    Message = "حدث خطأ أثناء تسجيل الدخول لصاحب المتجر",
+                    AccountType = string.Empty,
+                    Dashboard = string.Empty
+                };
+            }
+        }
+
+        private static StorefrontLoginResponseDto MapCustomerLoginResponse(StoreCustomerAuthResponseDto customerAuth)
+        {
+            return new StorefrontLoginResponseDto
+            {
+                Success = true,
+                RequiresEmailVerification = false,
+                Message = customerAuth.Message,
+                Token = customerAuth.Token,
+                Email = customerAuth.Email,
+                FirstName = customerAuth.FirstName,
+                LastName = customerAuth.LastName,
+                ExpiresAt = customerAuth.ExpiresAt,
+                AccountType = customerAuth.AccountType,
+                Roles = [StoreCustomerClaimTypes.StoreCustomerAccountType],
+                StoreId = customerAuth.StoreId,
+                StoreCustomerId = customerAuth.StoreCustomerId,
+                Dashboard = "Customer"
+            };
         }
 
         public async Task<StoreCustomerAuthResponseDto> VerifyEmailAsync(StoreCustomerVerifyEmailDto dto)
@@ -465,6 +667,9 @@ namespace onlineStore.Services.StoreCustomerAuth
 
         private Task<bool> IsReservedForStoreOwnerAsync(Guid storeId, string email) =>
             _storeAccountBoundaryService.IsStoreOwnerEmailAsync(storeId, NormalizeEmail(email));
+
+        private Task<bool> IsActiveStoreOwnerEmailAsync(string email) =>
+            _storeAccountBoundaryService.IsActiveStoreOwnerEmailAsync(NormalizeEmail(email));
 
         private async Task<(bool Success, string Message)> SetPasswordInternalAsync(
             StoreCustomer? customer,

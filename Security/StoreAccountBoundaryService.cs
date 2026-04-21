@@ -15,6 +15,42 @@ namespace onlineStore.Security
             _context = context;
         }
 
+        public async Task<bool> IsActiveStoreOwnerEmailAsync(
+            string email,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return false;
+
+            var normalizedEmail = NormalizeEmail(email);
+
+            var storeOwnerUserIds = _context.UserRoles
+                .AsNoTracking()
+                .Join(
+                    _context.Roles.AsNoTracking().Where(role => role.Name == StoreOwnerRole),
+                    userRole => userRole.RoleId,
+                    role => role.Id,
+                    (userRole, _) => userRole.UserId);
+
+            return await _context.Users
+                .AsNoTracking()
+                .Where(user => user.IsActive && !user.IsDeleted)
+                .Join(
+                    storeOwnerUserIds,
+                    user => user.Id,
+                    storeOwnerUserId => storeOwnerUserId,
+                    (user, _) => new
+                    {
+                        user.Email,
+                        user.UserName
+                    })
+                .AnyAsync(
+                    user =>
+                        (user.Email != null && user.Email.ToLower() == normalizedEmail) ||
+                        (user.UserName != null && user.UserName.ToLower() == normalizedEmail),
+                    cancellationToken);
+        }
+
         public async Task<bool> IsStoreOwnerEmailAsync(
             Guid storeId,
             string email,

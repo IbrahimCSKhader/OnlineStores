@@ -6,6 +6,8 @@ namespace onlineStore.Services.Store
     {
         Task<List<StoreDto>> GetAllStoresAsync();
 
+        Task<StoreDto?> GetOwnedStoreAsync(CancellationToken cancellationToken = default);
+
         Task<StoreDto?> GetStoreByIdAsync(Guid id);
 
         Task<StoreDto?> GetStoreBySlugAsync(string slug);

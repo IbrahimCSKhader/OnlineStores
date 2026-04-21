@@ -7,6 +7,9 @@ namespace onlineStore.DTOs.Order
         [Required(ErrorMessage = "معرّف المتجر مطلوب")]
         public Guid StoreId { get; set; }
 
+        [MaxLength(200)]
+        public string? Title { get; set; }
+
         [MaxLength(50)]
         public string? CouponCode { get; set; }
 

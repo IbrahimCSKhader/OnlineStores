@@ -7,5 +7,6 @@
         public string LastName { get; set; } = string.Empty;
         public Guid? StoreId { get; set; }
         public string? StoreSlug { get; set; }
+        public string? RedirectTo { get; set; }
     }
 }

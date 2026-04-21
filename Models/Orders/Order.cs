@@ -14,6 +14,9 @@ namespace onlineStore.Models.Orders
         [Required, MaxLength(50)]
         public string OrderNumber { get; set; } // e.g. "ORD-20240321-0001"
 
+        [MaxLength(200)]
+        public string? Title { get; set; }
+
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
         [Column(TypeName = "decimal(18,2)")]

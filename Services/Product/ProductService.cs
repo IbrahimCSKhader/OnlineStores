@@ -55,19 +55,6 @@ namespace onlineStore.Services.Product
                 .Include(p => p.AttributeValues)
                     .ThenInclude(av => av.Attribute);
 
-            var canManageStore = await CanCurrentUserManageStoreAsync(storeId);
-
-           
-            
-             
-            
-     
-
-            if (!canManageStore)
-            {
-                query = query.Where(p => p.Status == ProductStatus.Active);
-            }
-
             var products = await query
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
@@ -87,10 +74,13 @@ namespace onlineStore.Services.Product
             var products = await _context.Products
                 .AsNoTracking()
                 .Where(p => p.StoreId == storeId &&
-                            p.IsFeatured &&
-                            p.Status == ProductStatus.Active)
+                            p.IsFeatured)
                 .Include(p => p.Images)
                 .ToListAsync();
+
+            products = products
+                .Where(p => p.Status == ProductStatus.Active)
+                .ToList();
 
             return products.Select(p => ToDto(p, discountPercentage)).ToList();
         }
@@ -104,7 +94,7 @@ namespace onlineStore.Services.Product
         {
             var products = await _context.Products
                 .AsNoTracking()
-                .Where(p => p.CategoryId == categoryId && p.Status == ProductStatus.Active)
+                .Where(p => p.CategoryId == categoryId)
                 .Include(p => p.Category)
                 .Include(p => p.Section)
                 .Include(p => p.Images)
@@ -113,13 +103,17 @@ namespace onlineStore.Services.Product
                     .ThenInclude(av => av.Attribute)
                 .ToListAsync();
 
-            if (!products.Any())
+            var activeProducts = products
+                .Where(p => p.Status == ProductStatus.Active)
+                .ToList();
+
+            if (!activeProducts.Any())
                 return new List<ProductDto>();
 
-            var storeId = products.First().StoreId;
+            var storeId = activeProducts.First().StoreId;
             var discountPercentage = await GetCustomerDiscountPercentageAsync(storeId, userId);
 
-            return products.Select(p => ToDto(p, discountPercentage)).ToList();
+            return activeProducts.Select(p => ToDto(p, discountPercentage)).ToList();
         }
 
         // ════════════════════════════════════════════════════
@@ -131,7 +125,7 @@ namespace onlineStore.Services.Product
         {
             var products = await _context.Products
                 .AsNoTracking()
-                .Where(p => p.SectionId == sectionId && p.Status == ProductStatus.Active)
+                .Where(p => p.SectionId == sectionId)
                 .Include(p => p.Category)
                 .Include(p => p.Section)
                 .Include(p => p.Images)
@@ -140,13 +134,17 @@ namespace onlineStore.Services.Product
                     .ThenInclude(av => av.Attribute)
                 .ToListAsync();
 
-            if (!products.Any())
+            var activeProducts = products
+                .Where(p => p.Status == ProductStatus.Active)
+                .ToList();
+
+            if (!activeProducts.Any())
                 return new List<ProductDto>();
 
-            var storeId = products.First().StoreId;
+            var storeId = activeProducts.First().StoreId;
             var discountPercentage = await GetCustomerDiscountPercentageAsync(storeId, userId);
 
-            return products.Select(p => ToDto(p, discountPercentage)).ToList();
+            return activeProducts.Select(p => ToDto(p, discountPercentage)).ToList();
         }
 
         // ════════════════════════════════════════════════════
@@ -277,7 +275,7 @@ namespace onlineStore.Services.Product
                 ThumbnailUrl = dto.ThumbnailUrl?.Trim(),
                 MetaTitle = dto.MetaTitle?.Trim(),
                 MetaDescription = dto.MetaDescription?.Trim(),
-                Status = ProductStatus.Draft,
+                Status = ProductStatus.Active,
                 StoreId = dto.StoreId,
                 CategoryId = dto.CategoryId,
                 SectionId = dto.SectionId,
@@ -872,10 +870,12 @@ namespace onlineStore.Services.Product
             if (!_currentUser.UserId.HasValue)
                 return false;
 
-            return await _storeAuthorizationService.CanManageStoreAsync(
+            var canManageStore = await _storeAuthorizationService.CanManageStoreAsync(
                 _currentUser.UserId.Value,
                 storeId,
                 cancellationToken);
+
+            return canManageStore;
         }
 
         private async Task EnsureCategoryAndSectionBelongToStoreAsync(
