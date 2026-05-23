@@ -67,6 +67,31 @@ namespace onlineStore.Controllers
             return Ok(store);
         }
 
+        [HttpGet("resolve")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResolveStore(
+            [FromQuery] string? host = null,
+            [FromQuery] string? slug = null)
+        {
+            if (!string.IsNullOrWhiteSpace(host))
+            {
+                var storeByDomain = await _storeService.GetStoreByDomainAsync(host);
+
+                if (storeByDomain != null)
+                    return Ok(storeByDomain);
+            }
+
+            if (!string.IsNullOrWhiteSpace(slug))
+            {
+                var storeBySlug = await _storeService.GetStoreBySlugAsync(slug);
+
+                if (storeBySlug != null)
+                    return Ok(storeBySlug);
+            }
+
+            return NotFound(new { message = "المتجر غير موجود" });
+        }
+
         [HttpPost]
         [Authorize(Roles = "SuperAdmin")]
         [Consumes("multipart/form-data")]
@@ -201,19 +226,26 @@ namespace onlineStore.Controllers
         }
 
         [HttpGet("{id}/visit-count")]
-        [AllowAnonymous]
+        [Authorize(Roles = "StoreOwner,SuperAdmin")]
         public async Task<IActionResult> GetVisitCount(Guid id)
         {
-            var visitCount = await _storeService.GetStoreVisitCountAsync(id);
-
-            if (visitCount == null)
-                return NotFound(new { message = "store does not exist" });
-
-            return Ok(new
+            try
             {
-                storeId = id,
-                visitCount = visitCount.Value
-            });
+                var visitCount = await _storeService.GetStoreVisitCountAsync(id);
+
+                if (visitCount == null)
+                    return NotFound(new { message = "store does not exist" });
+
+                return Ok(new
+                {
+                    storeId = id,
+                    visitCount = visitCount.Value
+                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
         private async Task PopulateContactAccountsFromFormAsync(CreateStoreDto dto)

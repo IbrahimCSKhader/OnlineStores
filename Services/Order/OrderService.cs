@@ -71,10 +71,14 @@ namespace onlineStore.Services.Order
                 try
                 {
                     await EnsureActiveStoreCustomerAsync(storeCustomerId, dto.StoreId);
-                    _logger.LogInformation(
-                        "order=> create:customer-validated StoreCustomerId={StoreCustomerId} StoreId={StoreId}",
+                    var customerDiscountPercentage = await GetStoreCustomerDiscountPercentageAsync(
                         storeCustomerId,
                         dto.StoreId);
+                    _logger.LogInformation(
+                        "order=> create:customer-validated StoreCustomerId={StoreCustomerId} StoreId={StoreId} CustomerDiscountPercentage={CustomerDiscountPercentage}",
+                        storeCustomerId,
+                        dto.StoreId,
+                        customerDiscountPercentage);
 
                     var carts = await _context.Carts
                         .Include(c => c.Items.Where(i => !i.IsDeleted))
@@ -143,7 +147,10 @@ namespace onlineStore.Services.Order
                                 $"الكمية المتاحة من المنتج {item.Product.Name} هي {availableStock} فقط");
                     }
 
-                    var pricing = await _cartPricingService.CalculatePricingAsync(dto.StoreId, cartItems);
+                    var pricing = await _cartPricingService.CalculatePricingAsync(
+                        dto.StoreId,
+                        cartItems,
+                        customerDiscountPercentage);
                     var subTotal = pricing.Subtotal;
                     var offerDiscount = pricing.Discount;
                     var subtotalAfterOffers = pricing.FinalTotal;
@@ -428,32 +435,173 @@ namespace onlineStore.Services.Order
             if (dto == null)
                 throw new ArgumentNullException(nameof(dto));
 
-            var order = await _context.Orders
-                .FirstOrDefaultAsync(o => o.Id == orderId);
+            var strategy = _context.Database.CreateExecutionStrategy();
 
-            if (order == null)
+            return await strategy.ExecuteAsync(async () =>
             {
-                _logger.LogWarning(
-                    "order=> update-status:not-found OrderId={OrderId}",
-                    orderId);
-                return null;
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+
+                try
+                {
+                    var order = await _context.Orders
+                        .Include(o => o.Items)
+                            .ThenInclude(i => i.Product)
+                        .Include(o => o.Items)
+                            .ThenInclude(i => i.Variant)
+                        .FirstOrDefaultAsync(o => o.Id == orderId);
+
+                    if (order == null)
+                    {
+                        _logger.LogWarning(
+                            "order=> update-status:not-found OrderId={OrderId}",
+                            orderId);
+                        return null;
+                    }
+
+                    await EnsureCanAccessStoreOrdersAsync(order.StoreId);
+
+                    var previousStatus = order.Status;
+                    ApplyInventoryForStatusTransition(order, dto.Status);
+                    order.Status = dto.Status;
+
+                    if (dto.StoreNotes != null)
+                        order.StoreNotes = dto.StoreNotes.Trim();
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    _logger.LogInformation(
+                        "order=> update-status:saved OrderId={OrderId} PreviousStatus={PreviousStatus} Status={Status}",
+                        orderId,
+                        previousStatus,
+                        dto.Status);
+
+                    return await GetOrderDtoByIdAsync(orderId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    _logger.LogError(
+                        ex,
+                        "order=> update-status:error OrderId={OrderId} NewStatus={Status}",
+                        orderId,
+                        dto.Status);
+
+                    throw;
+                }
+            });
+        }
+
+        private void ApplyInventoryForStatusTransition(
+            Models.Orders.Order order,
+            OrderStatus nextStatus)
+        {
+            var previousStatus = order.Status;
+
+            if (previousStatus == nextStatus)
+                return;
+
+            if (nextStatus == OrderStatus.Cancelled)
+            {
+                RestoreInventoryForCancelledOrder(order);
+                return;
             }
 
-            await EnsureCanAccessStoreOrdersAsync(order.StoreId);
+            if (previousStatus == OrderStatus.Cancelled)
+            {
+                ReserveInventoryForReactivatedOrder(order);
+            }
+        }
 
-            order.Status = dto.Status;
+        private void RestoreInventoryForCancelledOrder(Models.Orders.Order order)
+        {
+            foreach (var item in order.Items)
+            {
+                if (item.Product == null)
+                {
+                    _logger.LogWarning(
+                        "order=> update-status:restore-skip-missing-product OrderId={OrderId} OrderItemId={OrderItemId} ProductId={ProductId}",
+                        order.Id,
+                        item.Id,
+                        item.ProductId);
+                    continue;
+                }
 
-            if (dto.StoreNotes != null)
-                order.StoreNotes = dto.StoreNotes.Trim();
+                if (!item.Product.TrackInventory)
+                    continue;
 
-            await _context.SaveChangesAsync();
+                if (item.VariantId.HasValue)
+                {
+                    if (item.Variant == null)
+                    {
+                        _logger.LogWarning(
+                            "order=> update-status:restore-skip-missing-variant OrderId={OrderId} OrderItemId={OrderItemId} VariantId={VariantId}",
+                            order.Id,
+                            item.Id,
+                            item.VariantId);
+                        continue;
+                    }
 
-            _logger.LogInformation(
-                "order=> update-status:saved OrderId={OrderId} Status={Status}",
-                orderId,
-                dto.Status);
+                    item.Variant.StockQuantity += item.Quantity;
+                    continue;
+                }
 
-            return await GetOrderDtoByIdAsync(orderId);
+                item.Product.StockQuantity += item.Quantity;
+            }
+        }
+
+        private void ReserveInventoryForReactivatedOrder(Models.Orders.Order order)
+        {
+            foreach (var item in order.Items)
+            {
+                if (item.Product == null)
+                {
+                    throw new InvalidOperationException(
+                        $"لا يمكن إعادة تفعيل الطلب لأن المنتج {BuildInventoryItemLabel(item)} لم يعد موجودًا.");
+                }
+
+                if (!item.Product.TrackInventory)
+                    continue;
+
+                if (item.VariantId.HasValue)
+                {
+                    if (item.Variant == null)
+                    {
+                        throw new InvalidOperationException(
+                            $"لا يمكن إعادة تفعيل الطلب لأن المتغير {BuildInventoryItemLabel(item)} لم يعد موجودًا.");
+                    }
+
+                    if (item.Variant.StockQuantity < item.Quantity)
+                    {
+                        throw new InvalidOperationException(
+                            $"لا يمكن إعادة تفعيل الطلب لأن الكمية المتاحة من {BuildInventoryItemLabel(item)} هي {item.Variant.StockQuantity} فقط.");
+                    }
+
+                    item.Variant.StockQuantity -= item.Quantity;
+                    continue;
+                }
+
+                if (item.Product.StockQuantity < item.Quantity)
+                {
+                    throw new InvalidOperationException(
+                        $"لا يمكن إعادة تفعيل الطلب لأن الكمية المتاحة من {BuildInventoryItemLabel(item)} هي {item.Product.StockQuantity} فقط.");
+                }
+
+                item.Product.StockQuantity -= item.Quantity;
+            }
+        }
+
+        private static string BuildInventoryItemLabel(OrderItem item)
+        {
+            var productName = string.IsNullOrWhiteSpace(item.ProductName)
+                ? "هذا المنتج"
+                : item.ProductName.Trim();
+            var variantName = item.VariantName?.Trim();
+
+            return string.IsNullOrWhiteSpace(variantName)
+                ? productName
+                : $"{productName} - {variantName}";
         }
 
         private async Task<CouponEntity> ValidateCouponAsync(
@@ -630,6 +778,19 @@ namespace onlineStore.Services.Order
                 "order=> ensure-active-customer:result StoreCustomerId={StoreCustomerId} StoreId={StoreId}",
                 storeCustomerId,
                 storeId);
+        }
+
+        private async Task<decimal> GetStoreCustomerDiscountPercentageAsync(
+            Guid storeCustomerId,
+            Guid storeId)
+        {
+            return await _context.StoreCustomers
+                .AsNoTracking()
+                .Where(customer => customer.Id == storeCustomerId
+                                && customer.StoreId == storeId
+                                && customer.IsActive)
+                .Select(customer => customer.DiscountPercentage)
+                .FirstOrDefaultAsync();
         }
 
         private async Task EnsureCanAccessStoreOrdersAsync(Guid storeId)

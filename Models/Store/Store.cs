@@ -7,6 +7,7 @@ using onlineStore.Models.Subscriptions;
 namespace onlineStore.Models
 {
     [Index(nameof(Slug), IsUnique = true)]
+    [Index(nameof(CustomDomain), IsUnique = true)]
     [Index(nameof(OwnerId))]
     public class Store : BaseEntity
     {
@@ -18,6 +19,9 @@ namespace onlineStore.Models
 
         [MaxLength(500)]
         public string? Description { get; set; }
+
+        [MaxLength(255)]
+        public string? CustomDomain { get; set; }
 
         public string? LogoUrl { get; set; }
         public string? CoverImageUrl { get; set; }

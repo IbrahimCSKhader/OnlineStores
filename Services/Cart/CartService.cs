@@ -194,7 +194,9 @@ namespace onlineStore.Services.Cart
                     var unitPrice = await ApplyWholesaleDiscountIfExistsAsync(
                         storeCustomerId,
                         dto.StoreId,
-                        basePrice);
+                        basePrice,
+                        product.CompareAtPrice,
+                        dto.VariantId.HasValue);
 
                     _logger.LogInformation(
                         "Final unit price resolved. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, ProductId: {ProductId}, VariantId: {VariantId}, UnitPrice: {UnitPrice}",
@@ -586,7 +588,9 @@ namespace onlineStore.Services.Cart
         private async Task<decimal> ApplyWholesaleDiscountIfExistsAsync(
             Guid storeCustomerId,
             Guid storeId,
-            decimal price)
+            decimal price,
+            decimal? compareAtPrice = null,
+            bool variantPriceApplied = false)
         {
             try
             {
@@ -594,13 +598,7 @@ namespace onlineStore.Services.Cart
                     "ApplyWholesaleDiscountIfExistsAsync started. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, OriginalPrice: {Price}",
                     storeCustomerId, storeId, price);
 
-                var discount = await _context.CustomerStores
-                    .AsNoTracking()
-                    .Where(x => x.StoreId == storeId
-                             && x.Id == storeCustomerId
-                             && x.IsActive)
-                    .Select(x => x.DiscountPercentage)
-                    .FirstOrDefaultAsync();
+                var discount = await GetStoreCustomerDiscountPercentageAsync(storeCustomerId, storeId);
 
                 _logger.LogInformation(
                     "Wholesale discount query completed. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, DiscountPercentage: {Discount}",
@@ -615,11 +613,15 @@ namespace onlineStore.Services.Cart
                     return price;
                 }
 
-                var discountedPrice = price - (price * discount / 100m);
+                var priceBeforeDiscount = ResolvePriceBeforeStoreCustomerDiscount(
+                    price,
+                    compareAtPrice,
+                    variantPriceApplied);
+                var discountedPrice = priceBeforeDiscount - (priceBeforeDiscount * discount / 100m);
 
                 _logger.LogInformation(
-                    "Wholesale discount applied successfully. OriginalPrice: {OriginalPrice}, DiscountPercentage: {Discount}, FinalPrice: {FinalPrice}",
-                    price, discount, discountedPrice);
+                    "Wholesale discount applied successfully. OriginalPrice: {OriginalPrice}, PriceBeforeStoreCustomerDiscount: {PriceBeforeDiscount}, DiscountPercentage: {Discount}, FinalPrice: {FinalPrice}",
+                    price, priceBeforeDiscount, discount, discountedPrice);
 
                 return discountedPrice;
             }
@@ -674,10 +676,14 @@ namespace onlineStore.Services.Cart
                     ? i.Variant.StockQuantity
                     : i.Product?.StockQuantity ?? 0
             }).ToList() ?? new List<CartItemDto>();
+            var customerDiscountPercentage = await GetStoreCustomerDiscountPercentageAsync(
+                cart.StoreCustomerId,
+                cart.StoreId);
 
             var pricing = await _cartPricingService.CalculatePricingAsync(
                 cart.StoreId,
-                cart.Items?.ToList() ?? new List<CartItem>());
+                cart.Items?.ToList() ?? new List<CartItem>(),
+                customerDiscountPercentage);
 
             _logger.LogInformation(
                 "CartService.ToDtoAsync pricing calculated. CartId: {CartId}, Subtotal: {Subtotal}, Discount: {Discount}, FinalTotal: {FinalTotal}, AppliedOffersCount: {AppliedOffersCount}",
@@ -801,6 +807,34 @@ namespace onlineStore.Services.Cart
                 "CartService.EnsureActiveStoreCustomerAsync succeeded. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}",
                 storeCustomerId,
                 storeId);
+        }
+
+        private async Task<decimal> GetStoreCustomerDiscountPercentageAsync(
+            Guid storeCustomerId,
+            Guid storeId)
+        {
+            return await _context.StoreCustomers
+                .AsNoTracking()
+                .Where(customer => customer.Id == storeCustomerId
+                                && customer.StoreId == storeId
+                                && customer.IsActive)
+                .Select(customer => customer.DiscountPercentage)
+                .FirstOrDefaultAsync();
+        }
+
+        private static decimal ResolvePriceBeforeStoreCustomerDiscount(
+            decimal price,
+            decimal? compareAtPrice,
+            bool variantPriceApplied)
+        {
+            if (!variantPriceApplied &&
+                compareAtPrice.HasValue &&
+                compareAtPrice.Value > price)
+            {
+                return compareAtPrice.Value;
+            }
+
+            return price;
         }
     }
 }

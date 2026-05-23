@@ -19,6 +19,7 @@ namespace onlineStore.DTOs.Product
         public decimal? Price { get; set; }
         public decimal? CompareAtPrice { get; set; }
         public decimal? CostPrice { get; set; }
+        public decimal? WholesalePrice { get; set; }
 
         public int? StockQuantity { get; set; }
         public bool? TrackInventory { get; set; }

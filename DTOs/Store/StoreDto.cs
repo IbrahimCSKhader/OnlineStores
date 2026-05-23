@@ -8,6 +8,7 @@ namespace onlineStore.DTOs.Store
         public string Name { get; set; } = null!;
         public string Slug { get; set; } = null!;
         public string? Description { get; set; }
+        public string? CustomDomain { get; set; }
         public string? BusinessType { get; set; }
         public string? LogoUrl { get; set; }
         public string? CoverImageUrl { get; set; }

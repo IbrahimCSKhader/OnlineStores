@@ -43,6 +43,9 @@ namespace onlineStore.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal? CostPrice { get; set; }
 
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal WholesalePrice { get; set; } = 0m;
+
         public int StockQuantity { get; set; } = 0;
         public bool TrackInventory { get; set; } = true;
 

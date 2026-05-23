@@ -20,6 +20,7 @@ namespace onlineStore.Services.Pricing
         public async Task<CartPricingDto> CalculatePricingAsync(
             Guid storeId,
             IReadOnlyCollection<CartItem> items,
+            decimal customerDiscountPercentage = 0m,
             CancellationToken cancellationToken = default)
         {
             var subtotal = items.Sum(i => i.UnitPrice * i.Quantity);
@@ -30,6 +31,22 @@ namespace onlineStore.Services.Pricing
                     Subtotal = subtotal,
                     Discount = 0,
                     FinalTotal = subtotal
+                };
+            }
+
+            if (customerDiscountPercentage > 0m)
+            {
+                _logger.LogInformation(
+                    "Cart pricing skipped store offers because a store-customer discount is active. StoreId: {StoreId}, CustomerDiscountPercentage: {CustomerDiscountPercentage}, Subtotal: {Subtotal}",
+                    storeId,
+                    customerDiscountPercentage,
+                    subtotal);
+
+                return new CartPricingDto
+                {
+                    Subtotal = decimal.Round(subtotal, 2),
+                    Discount = 0,
+                    FinalTotal = decimal.Round(subtotal, 2)
                 };
             }
 

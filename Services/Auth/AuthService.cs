@@ -220,7 +220,7 @@ namespace onlineStore.Services.AuthServices
             try
             {
                 var normalizedEmail = NormalizeEmail(dto.Email);
-                var user = await _userManager.FindByEmailAsync(normalizedEmail);
+                var user = await FindPlatformUserByEmailAsync(normalizedEmail);
 
                 if (user == null || !user.IsActive)
                     return (true, GenericForgotPasswordMessage);
@@ -247,7 +247,7 @@ namespace onlineStore.Services.AuthServices
                 var normalizedEmail = NormalizeEmail(dto.Email);
                 var resetCode = NormalizeValue(dto.Code);
 
-                var user = await _userManager.FindByEmailAsync(normalizedEmail);
+                var user = await FindPlatformUserByEmailAsync(normalizedEmail);
                 if (user == null || !user.IsActive)
                     return (false, "بيانات إعادة تعيين كلمة المرور غير صحيحة");
 

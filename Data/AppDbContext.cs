@@ -179,7 +179,7 @@ namespace onlineStore.Data
                 entity.ToTable(t =>
                     t.HasCheckConstraint(
                         "CK_Stores_ThemeTemplate",
-                        "[ThemeTemplate] IN ('D', 'L', 'F')"));
+                        "[ThemeTemplate] IN ('D', 'L', 'F', 'P')"));
             });
 
             builder.Entity<StoreContactAccount>()
@@ -218,6 +218,9 @@ namespace onlineStore.Data
                 e.Property(p => p.Price).HasColumnType("decimal(18,2)");
                 e.Property(p => p.CompareAtPrice).HasColumnType("decimal(18,2)");
                 e.Property(p => p.CostPrice).HasColumnType("decimal(18,2)");
+                e.Property(p => p.WholesalePrice)
+                    .HasColumnType("decimal(18,2)")
+                    .HasDefaultValue(0m);
             });
 
             builder.Entity<Order>(e =>

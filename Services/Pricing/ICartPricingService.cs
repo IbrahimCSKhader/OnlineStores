@@ -8,6 +8,7 @@ namespace onlineStore.Services.Pricing
         Task<CartPricingDto> CalculatePricingAsync(
             Guid storeId,
             IReadOnlyCollection<CartItem> items,
+            decimal customerDiscountPercentage = 0m,
             CancellationToken cancellationToken = default);
     }
 }

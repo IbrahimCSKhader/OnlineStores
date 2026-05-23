@@ -62,6 +62,25 @@ namespace onlineStore.Services.Product
             return products.Select(p => ToDto(p, discountPercentage)).ToList();
         }
 
+        public async Task<List<ProductDto>> GetStoreProductsForManagementAsync(Guid storeId)
+        {
+            await EnsureCanManageStoreAsync(storeId);
+
+            var products = await _context.Products
+                .AsNoTracking()
+                .Where(p => p.StoreId == storeId)
+                .Include(p => p.Category)
+                .Include(p => p.Section)
+                .Include(p => p.Images)
+                .Include(p => p.Variants)
+                .Include(p => p.AttributeValues)
+                    .ThenInclude(av => av.Attribute)
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+
+            return products.Select(p => ToDto(p, 0m, includeManagementFields: true)).ToList();
+        }
+
         // ════════════════════════════════════════════════════
         // Get Featured Products
         // ════════════════════════════════════════════════════
@@ -270,6 +289,7 @@ namespace onlineStore.Services.Product
                 Price = dto.Price,
                 CompareAtPrice = dto.CompareAtPrice,
                 CostPrice = dto.CostPrice,
+                WholesalePrice = dto.WholesalePrice,
                 StockQuantity = dto.StockQuantity,
                 TrackInventory = dto.TrackInventory,
                 ThumbnailUrl = dto.ThumbnailUrl?.Trim(),
@@ -361,7 +381,7 @@ namespace onlineStore.Services.Product
 
             _logger.LogInformation("Product created: {ProductName}", product.Name);
 
-            return ToDto(createdProduct, 0m);
+            return ToDto(createdProduct, 0m, includeManagementFields: true);
         }
 
         // ════════════════════════════════════════════════════
@@ -400,6 +420,9 @@ namespace onlineStore.Services.Product
 
             if (dto.CostPrice != null)
                 product.CostPrice = dto.CostPrice;
+
+            if (dto.WholesalePrice != null)
+                product.WholesalePrice = dto.WholesalePrice.Value;
 
             if (dto.StockQuantity != null)
                 product.StockQuantity = dto.StockQuantity.Value;
@@ -495,7 +518,7 @@ namespace onlineStore.Services.Product
 
             _logger.LogInformation("Product updated: {ProductId}", id);
 
-            return ToDto(updatedProduct, 0m);
+            return ToDto(updatedProduct, 0m, includeManagementFields: true);
         }
 
         // ════════════════════════════════════════════════════
@@ -937,12 +960,33 @@ namespace onlineStore.Services.Product
             return discount;
         }
 
-        private static ProductDto ToDto(Models.Product p, decimal discountPercentage = 0m)
+        private static decimal ResolvePriceBeforeStoreCustomerDiscount(Models.Product product)
         {
-            var finalPrice = p.Price;
+            if (product.CompareAtPrice.HasValue &&
+                product.CompareAtPrice.Value > product.Price)
+            {
+                return product.CompareAtPrice.Value;
+            }
 
-            if (discountPercentage > 0)
-                finalPrice = p.Price - (p.Price * discountPercentage / 100m);
+            return product.Price;
+        }
+
+        private static ProductDto ToDto(
+            Models.Product p,
+            decimal discountPercentage = 0m,
+            bool includeManagementFields = false)
+        {
+            var isStoreCustomerDiscountApplied = discountPercentage > 0m;
+            var priceBeforeStoreCustomerDiscount = isStoreCustomerDiscountApplied
+                ? ResolvePriceBeforeStoreCustomerDiscount(p)
+                : p.Price;
+            var finalPrice = priceBeforeStoreCustomerDiscount;
+
+            if (isStoreCustomerDiscountApplied)
+            {
+                finalPrice = priceBeforeStoreCustomerDiscount -
+                             (priceBeforeStoreCustomerDiscount * discountPercentage / 100m);
+            }
 
             return new ProductDto
             {
@@ -954,12 +998,13 @@ namespace onlineStore.Services.Product
                 ShortDescription = p.ShortDescription,
 
                 Price = finalPrice,
-                OriginalPrice = p.Price,
+                OriginalPrice = priceBeforeStoreCustomerDiscount,
                 FinalPrice = finalPrice,
                 AppliedDiscountPercentage = discountPercentage,
-                IsWholesalePriceApplied = discountPercentage > 0,
+                IsWholesalePriceApplied = isStoreCustomerDiscountApplied,
 
-                CompareAtPrice = p.CompareAtPrice,
+                CompareAtPrice = isStoreCustomerDiscountApplied ? null : p.CompareAtPrice,
+                WholesalePrice = includeManagementFields ? p.WholesalePrice : null,
                 StockQuantity = p.StockQuantity,
                 TrackInventory = p.TrackInventory,
                 ThumbnailUrl = p.ThumbnailUrl,

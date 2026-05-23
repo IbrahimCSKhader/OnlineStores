@@ -15,6 +15,9 @@ namespace onlineStore.DTOs.Store
         [MaxLength(500)]
         public string? Description { get; set; }
 
+        [MaxLength(255)]
+        public string? CustomDomain { get; set; }
+
         [MaxLength(100)]
         public string? BusinessType { get; set; }
 

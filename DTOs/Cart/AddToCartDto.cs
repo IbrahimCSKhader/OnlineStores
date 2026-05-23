@@ -10,7 +10,7 @@ namespace onlineStore.DTOs.Cart
         public Guid? VariantId { get; set; }
 
         [Required]
-        [Range(1, 100)]
+        [Range(1, int.MaxValue)]
         public int Quantity { get; set; } = 1;
 
         [Required]

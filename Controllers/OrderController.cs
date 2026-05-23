@@ -282,6 +282,14 @@ namespace onlineStore.Controllers
                     orderId);
                 return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "order=> controller:update-status:error OrderId={OrderId}",
+                    orderId);
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
 

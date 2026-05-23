@@ -369,10 +369,20 @@ namespace onlineStore.Services.StoreCustomerAuth
         {
             try
             {
-                if (await IsReservedForStoreOwnerAsync(dto.StoreId, dto.Email))
-                    return Fail(StoreOwnerCustomerConflictMessage);
+                var normalizedEmail = NormalizeEmail(dto.Email);
 
-                var customer = await FindStoreCustomerAsync(dto.StoreId, dto.Email);
+                if (await IsReservedForStoreOwnerAsync(dto.StoreId, normalizedEmail))
+                {
+                    var ownerVerificationResult = await _authService.VerifyEmailAsync(new VerifyEmailDto
+                    {
+                        Email = normalizedEmail,
+                        Code = dto.Code
+                    });
+
+                    return MapStoreOwnerAuthResponse(ownerVerificationResult, dto.StoreId);
+                }
+
+                var customer = await FindStoreCustomerAsync(dto.StoreId, normalizedEmail);
                 if (customer == null)
                     return Fail("Invalid email verification data.");
 
@@ -410,10 +420,17 @@ namespace onlineStore.Services.StoreCustomerAuth
         {
             try
             {
-                if (await IsReservedForStoreOwnerAsync(dto.StoreId, dto.Email))
-                    return (false, StoreOwnerCustomerConflictMessage);
+                var normalizedEmail = NormalizeEmail(dto.Email);
 
-                var customer = await FindStoreCustomerAsync(dto.StoreId, dto.Email);
+                if (await IsReservedForStoreOwnerAsync(dto.StoreId, normalizedEmail))
+                {
+                    return await _authService.ResendVerificationCodeAsync(new ResendVerificationCodeDto
+                    {
+                        Email = normalizedEmail
+                    });
+                }
+
+                var customer = await FindStoreCustomerAsync(dto.StoreId, normalizedEmail);
 
                 if (customer == null || !customer.IsActive || customer.IsDeleted)
                     return (true, "If this account exists and still needs verification, a new code has been sent.");
@@ -458,7 +475,12 @@ namespace onlineStore.Services.StoreCustomerAuth
                 }
 
                 if (await IsReservedForStoreOwnerAsync(dto.StoreId, normalizedEmail))
-                    return (true, GenericForgotPasswordMessage);
+                {
+                    return await _authService.ForgotPasswordAsync(new ForgotPasswordDto
+                    {
+                        Email = normalizedEmail
+                    });
+                }
 
                 var customer = await FindStoreCustomerAsync(dto.StoreId, normalizedEmail);
 
@@ -509,7 +531,14 @@ namespace onlineStore.Services.StoreCustomerAuth
                 }
 
                 if (await IsReservedForStoreOwnerAsync(dto.StoreId, normalizedEmail))
-                    return (false, "Invalid password reset data.");
+                {
+                    return await _authService.ResetPasswordAsync(new ResetPasswordDto
+                    {
+                        Email = normalizedEmail,
+                        Code = normalizedCode,
+                        NewPassword = dto.NewPassword
+                    });
+                }
 
                 var customer = await FindStoreCustomerAsync(dto.StoreId, normalizedEmail);
 
@@ -701,6 +730,24 @@ namespace onlineStore.Services.StoreCustomerAuth
 
             return (true, "Password set successfully.");
         }
+
+        private static StoreCustomerAuthResponseDto MapStoreOwnerAuthResponse(
+            AuthResponseDto authResponse,
+            Guid storeId) => new()
+        {
+            Success = authResponse.Success,
+            RequiresEmailVerification = authResponse.RequiresEmailVerification,
+            IsGuest = false,
+            Message = authResponse.Message,
+            Token = authResponse.Token,
+            StoreCustomerId = null,
+            StoreId = authResponse.StoreId ?? storeId,
+            Email = authResponse.Email,
+            FirstName = authResponse.FirstName,
+            LastName = authResponse.LastName,
+            AccountType = "StoreOwner",
+            ExpiresAt = authResponse.ExpiresAt
+        };
 
         private static StoreCustomerAuthResponseDto Success(
             StoreCustomer customer,

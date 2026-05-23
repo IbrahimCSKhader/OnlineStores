@@ -5,6 +5,7 @@ using onlineStore.Models;
 using onlineStore.Models.Subscriptions;
 using onlineStore.Security;
 using onlineStore.Services.Subscription;
+using onlineStore.Utilities;
 
 namespace onlineStore.Services.Store
 {
@@ -57,7 +58,7 @@ namespace onlineStore.Services.Store
             var stores = await query.ToListAsync();
 
             return stores
-                .Select(ToDto)
+                .Select(store => ToDto(store, CanViewVisitCount(store.OwnerId)))
                 .ToList();
 
 
@@ -73,7 +74,7 @@ namespace onlineStore.Services.Store
                 .OrderByDescending(s => s.CreatedAt)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            return store == null ? null : ToDto(store);
+            return store == null ? null : ToDto(store, includeVisitCount: true);
         }
 
         public async Task<StoreDto?> GetStoreByIdAsync(Guid id)
@@ -97,7 +98,9 @@ namespace onlineStore.Services.Store
 
             var store = await query.FirstOrDefaultAsync();
 
-            return store == null ? null : ToDto(store);
+            return store == null
+                ? null
+                : ToDto(store, CanViewVisitCount(store.OwnerId));
         }
 
         public async Task<StoreDto?> GetStoreBySlugAsync(string slug)
@@ -123,7 +126,40 @@ namespace onlineStore.Services.Store
 
             var store = await query.FirstOrDefaultAsync();
 
-            return store == null ? null : ToDto(store);
+            return store == null
+                ? null
+                : ToDto(store, CanViewVisitCount(store.OwnerId));
+        }
+
+        public async Task<StoreDto?> GetStoreByDomainAsync(string host)
+        {
+            var normalizedHost = StoreDomainNormalizer.NormalizeHost(host);
+
+            if (string.IsNullOrWhiteSpace(normalizedHost))
+                return null;
+
+            IQueryable<Models.Store> query = GetStoresWithContacts(asNoTracking: true)
+                .Where(s => s.CustomDomain == normalizedHost);
+
+            if (_currentUser.IsSuperAdmin)
+            {
+                // Super admin can view any store.
+            }
+            else if (_currentUser.IsStoreOwner && _currentUser.UserId.HasValue)
+            {
+                var currentOwnerId = _currentUser.UserId.Value;
+                query = query.Where(s => s.IsActive || s.OwnerId == currentOwnerId);
+            }
+            else
+            {
+                query = query.Where(s => s.IsActive);
+            }
+
+            var store = await query.FirstOrDefaultAsync();
+
+            return store == null
+                ? null
+                : ToDto(store, CanViewVisitCount(store.OwnerId));
         }
 
         //public async Task<StoreDto> CreateStoreAsync(CreateStoreDto dto)
@@ -205,6 +241,24 @@ namespace onlineStore.Services.Store
             if (dto.Description != null)
                 store.Description = NormalizeOptional(dto.Description);
 
+            if (dto.CustomDomain != null)
+            {
+                var normalizedCustomDomain = NormalizeCustomDomainOrThrow(dto.CustomDomain);
+
+                if (!string.Equals(store.CustomDomain, normalizedCustomDomain, StringComparison.OrdinalIgnoreCase))
+                {
+                    var customDomainExists = !string.IsNullOrWhiteSpace(normalizedCustomDomain) &&
+                        await _context.Stores
+                            .AsNoTracking()
+                            .AnyAsync(s => s.Id != id && s.CustomDomain == normalizedCustomDomain);
+
+                    if (customDomainExists)
+                        throw new ArgumentException("هذا الدومين مستخدم بالفعل من متجر آخر.");
+                }
+
+                store.CustomDomain = normalizedCustomDomain;
+            }
+
             if (dto.BusinessType != null)
                 store.BusinessType = NormalizeOptional(dto.BusinessType);
 
@@ -236,7 +290,7 @@ namespace onlineStore.Services.Store
             _logger.LogInformation(
                 "Store updated: {StoreId}", id);
 
-            return ToDto(store);
+            return ToDto(store, CanViewVisitCount(store.OwnerId));
         }
 
         public async Task<bool> DeleteStoreAsync(Guid id)
@@ -258,17 +312,18 @@ namespace onlineStore.Services.Store
             return true;
         }
 
-        private static StoreDto ToDto(Models.Store s) => new()
+        private static StoreDto ToDto(Models.Store s, bool includeVisitCount = false) => new()
         {
             Id = s.Id,
             Name = s.Name,
             Slug = s.Slug,
             Description = s.Description,
+            CustomDomain = s.CustomDomain,
             BusinessType = s.BusinessType,
             LogoUrl = s.LogoUrl,
             CoverImageUrl = s.CoverImageUrl,
             IsActive = s.IsActive,
-            VisitCount = s.VisitCount,
+            VisitCount = includeVisitCount ? s.VisitCount : 0,
             WhatsAppNumber = s.WhatsAppNumber,
             StoreStory = s.StoreStory,
             ThemeTemplate = StoreThemeTemplates.NormalizeOrDefault(s.ThemeTemplate),
@@ -310,11 +365,26 @@ namespace onlineStore.Services.Store
 
         public async Task<int?> GetStoreVisitCountAsync(Guid storeId)
         {
-            return await _context.Stores
+            var storeVisit = await _context.Stores
                 .AsNoTracking()
                 .Where(s => s.Id == storeId)
-                .Select(s => (int?)s.VisitCount)
+                .Select(s => new { s.OwnerId, s.VisitCount })
                 .FirstOrDefaultAsync();
+
+            if (storeVisit == null)
+                return null;
+
+            if (!CanViewVisitCount(storeVisit.OwnerId))
+            {
+                _logger.LogWarning(
+                    "Unauthorized store visit count access attempt. UserId: {UserId}, StoreId: {StoreId}",
+                    _currentUser.UserId,
+                    storeId);
+
+                throw new UnauthorizedAccessException("غير مصرح لك بعرض عدد زيارات هذا المتجر");
+            }
+
+            return storeVisit.VisitCount;
         }
         private async Task<string> SaveBrandingImageAsync(
             IFormFile file,
@@ -480,10 +550,12 @@ namespace onlineStore.Services.Store
             }
 
             var normalizedSlug = dto.Slug.Trim().ToLower();
+            var normalizedCustomDomain = NormalizeCustomDomainOrThrow(dto.CustomDomain);
 
             _logger.LogInformation(
-                "StoreService.CreateStoreAsync normalized identifiers. NormalizedSlug: {NormalizedSlug}, AuthenticatedUserId: {AuthenticatedUserId}, OwnerId: {OwnerId}",
+                "StoreService.CreateStoreAsync normalized identifiers. NormalizedSlug: {NormalizedSlug}, NormalizedCustomDomain: {NormalizedCustomDomain}, AuthenticatedUserId: {AuthenticatedUserId}, OwnerId: {OwnerId}",
                 normalizedSlug,
+                normalizedCustomDomain,
                 authenticatedUserId,
                 owner.Id);
 
@@ -497,6 +569,21 @@ namespace onlineStore.Services.Store
                     "StoreService.CreateStoreAsync found duplicate slug. NormalizedSlug: {NormalizedSlug}",
                     normalizedSlug);
                 throw new ArgumentException("sorry this link is used already");
+            }
+
+            if (!string.IsNullOrWhiteSpace(normalizedCustomDomain))
+            {
+                var customDomainExists = await _context.Stores
+                    .AsNoTracking()
+                    .AnyAsync(s => s.CustomDomain == normalizedCustomDomain);
+
+                if (customDomainExists)
+                {
+                    _logger.LogWarning(
+                        "StoreService.CreateStoreAsync found duplicate custom domain. NormalizedCustomDomain: {NormalizedCustomDomain}",
+                        normalizedCustomDomain);
+                    throw new ArgumentException("هذا الدومين مستخدم بالفعل من متجر آخر.");
+                }
             }
 
             List<StoreContactAccount> normalizedContactAccounts;
@@ -518,6 +605,7 @@ namespace onlineStore.Services.Store
                 Name = dto.Name.Trim(),
                 Slug = normalizedSlug,
                 Description = NormalizeOptional(dto.Description),
+                CustomDomain = normalizedCustomDomain,
                 BusinessType = NormalizeOptional(dto.BusinessType),
                 WhatsAppNumber = NormalizeOptional(dto.WhatsAppNumber),
                 StoreStory = NormalizeOptional(dto.StoreStory),
@@ -661,7 +749,7 @@ namespace onlineStore.Services.Store
                 normalizedContactAccounts.Count,
                 defaultPlan.Id);
 
-            return ToDto(store);
+            return ToDto(store, includeVisitCount: true);
         }
 
         private IQueryable<Models.Store> GetStoresWithContacts(bool asNoTracking = false)
@@ -813,6 +901,22 @@ namespace onlineStore.Services.Store
                     $"#{index}:Platform={account.Platform},Username={account.Username},SortOrder={account.SortOrder},Label={account.Label ?? "<null>"}"));
         }
 
+        private static string? NormalizeCustomDomainOrThrow(string? value)
+        {
+            if (value == null)
+                return null;
+
+            var trimmedValue = value.Trim();
+            if (string.IsNullOrWhiteSpace(trimmedValue))
+                return null;
+
+            var normalizedHost = StoreDomainNormalizer.NormalizeHost(trimmedValue);
+            if (string.IsNullOrWhiteSpace(normalizedHost))
+                throw new ArgumentException("صيغة الدومين غير صحيحة.");
+
+            return normalizedHost;
+        }
+
         private async Task EnsureCanManageStoreAsync(Guid storeId, CancellationToken cancellationToken = default)
         {
             if (!_currentUser.IsAuthenticated || !_currentUser.UserId.HasValue)
@@ -832,6 +936,16 @@ namespace onlineStore.Services.Store
 
                 throw new UnauthorizedAccessException("غير مصرح لك بإدارة هذا المتجر");
             }
+        }
+
+        private bool CanViewVisitCount(Guid ownerId)
+        {
+            if (_currentUser.IsSuperAdmin)
+                return true;
+
+            return _currentUser.IsStoreOwner &&
+                _currentUser.UserId.HasValue &&
+                _currentUser.UserId.Value == ownerId;
         }
     }
 }

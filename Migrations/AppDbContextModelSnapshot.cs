@@ -791,6 +791,11 @@ namespace onlineStore.Migrations
                     b.Property<int>("VisitCount")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("WholesalePrice")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
@@ -1081,6 +1086,10 @@ namespace onlineStore.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("CustomDomain")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -1130,6 +1139,10 @@ namespace onlineStore.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CustomDomain")
+                        .IsUnique()
+                        .HasFilter("[CustomDomain] IS NOT NULL");
+
                     b.HasIndex("OwnerId");
 
                     b.HasIndex("Slug")
@@ -1137,7 +1150,7 @@ namespace onlineStore.Migrations
 
                     b.ToTable("Stores", t =>
                         {
-                            t.HasCheckConstraint("CK_Stores_ThemeTemplate", "[ThemeTemplate] IN ('D', 'L', 'F')");
+                            t.HasCheckConstraint("CK_Stores_ThemeTemplate", "[ThemeTemplate] IN ('D', 'L', 'F', 'P')");
                         });
                 });
 

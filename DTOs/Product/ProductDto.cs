@@ -20,20 +20,44 @@ namespace onlineStore.DTOs.Product
         public bool IsWholesalePriceApplied { get; set; }
 
         public decimal? CompareAtPrice { get; set; }
+        public decimal? WholesalePrice { get; set; }
         public int StockQuantity { get; set; }
         public bool TrackInventory { get; set; }
 
         public bool IsInStock => !TrackInventory || StockQuantity > 0;
 
         public bool HasDiscount =>
-            CompareAtPrice.HasValue &&
-            CompareAtPrice.Value > 0m &&
-            OriginalPrice >= 0m &&
-            CompareAtPrice.Value > OriginalPrice;
+            (IsWholesalePriceApplied &&
+             OriginalPrice > 0m &&
+             FinalPrice >= 0m &&
+             OriginalPrice > FinalPrice) ||
+            (CompareAtPrice.HasValue &&
+             CompareAtPrice.Value > 0m &&
+             OriginalPrice >= 0m &&
+             CompareAtPrice.Value > OriginalPrice);
 
-        public decimal? DiscountPercentage => HasDiscount
-            ? Math.Round((1 - OriginalPrice / CompareAtPrice!.Value) * 100, 0)
-            : null;
+        public decimal? DiscountPercentage
+        {
+            get
+            {
+                if (IsWholesalePriceApplied &&
+                    OriginalPrice > 0m &&
+                    FinalPrice >= 0m &&
+                    OriginalPrice > FinalPrice)
+                {
+                    return Math.Round((1 - FinalPrice / OriginalPrice) * 100, 0);
+                }
+
+                if (CompareAtPrice.HasValue &&
+                    CompareAtPrice.Value > 0m &&
+                    CompareAtPrice.Value > OriginalPrice)
+                {
+                    return Math.Round((1 - OriginalPrice / CompareAtPrice.Value) * 100, 0);
+                }
+
+                return null;
+            }
+        }
 
         public string? ThumbnailUrl { get; set; }
         public ProductStatus Status { get; set; }

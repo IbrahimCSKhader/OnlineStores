@@ -12,6 +12,8 @@ namespace onlineStore.Services.Store
 
         Task<StoreDto?> GetStoreBySlugAsync(string slug);
 
+        Task<StoreDto?> GetStoreByDomainAsync(string host);
+
         Task<StoreDto> CreateStoreAsync(CreateStoreDto dto, string userId);
 
         Task<StoreDto?> UpdateStoreAsync(Guid id, UpdateStoreDto dto);

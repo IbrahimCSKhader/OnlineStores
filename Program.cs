@@ -35,10 +35,12 @@ var builder = WebApplication.CreateBuilder(args);
 var productionCorsOrigins = new HashSet<string>(
     (builder.Configuration
         .GetSection("Cors:AllowedOrigins")
-        .Get<string[]>() ?? ["https://onlinestoresfrontend.onrender.com", "http://localhost:5173"])
+        .Get<string[]>() ?? ["https://onlinestoresfrontend.onrender.com", "https://mawja.site", "http://localhost:5173"])
     .Where(origin => !string.IsNullOrWhiteSpace(origin))
     .Select(origin => origin.TrimEnd('/')),
     StringComparer.OrdinalIgnoreCase);
+
+Console.WriteLine("CORS allowed origins: " + string.Join(", ", productionCorsOrigins));
 
 static bool IsAllowedCorsOrigin(string origin, HashSet<string> allowedOrigins)
 {
@@ -57,6 +59,8 @@ static bool IsAllowedCorsOrigin(string origin, HashSet<string> allowedOrigins)
     return Uri.TryCreate(normalizedOrigin, UriKind.Absolute, out var uri)
         && uri.IsLoopback;
 }
+
+IStorefrontOriginService? storefrontOriginService = null;
 
 
 builder.Services.AddControllers()
@@ -79,6 +83,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 );
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IStoreOwnershipService, StoreOwnershipService>();
 builder.Services.AddScoped<IStoreAuthorizationService, StoreAuthorizationService>();
@@ -332,6 +337,9 @@ builder.Services.AddAuthentication(options =>
 
                 if (context.Properties.Items.TryGetValue("redirectTo", out var redirectTo) && !string.IsNullOrWhiteSpace(redirectTo))
                     query["redirectTo"] = redirectTo;
+
+                if (context.Properties.Items.TryGetValue("frontendOrigin", out var frontendOrigin) && !string.IsNullOrWhiteSpace(frontendOrigin))
+                    query["frontendOrigin"] = frontendOrigin;
             }
 
             var callbackUrl = QueryHelpers.AddQueryString(callbackPath, query);
@@ -357,7 +365,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("ProductionPolicy", policy =>
     {
         policy.SetIsOriginAllowed(origin =>
-              IsAllowedCorsOrigin(origin, productionCorsOrigins))
+              IsAllowedCorsOrigin(origin, productionCorsOrigins) ||
+              storefrontOriginService?.IsAllowedOrigin(origin) == true)
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -392,6 +401,7 @@ builder.Services.AddScoped<ICustomerStoreService, CustomerStoreService>();
 builder.Services.AddScoped<IStoreCustomerEmailWorkflowService, StoreCustomerEmailWorkflowService>();
 builder.Services.AddScoped<IStoreCustomerAuthService, StoreCustomerAuthService>();
 builder.Services.AddScoped<ISuperAdminDashboardService, SuperAdminDashboardService>();
+builder.Services.AddSingleton<IStorefrontOriginService, StorefrontOriginService>();
 var configuredDataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
 var dataProtectionKeysPath = configuredDataProtectionKeysPath;
 
@@ -413,6 +423,7 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
     .SetApplicationName("OnlineStoreApp");
 var app = builder.Build();
+storefrontOriginService = app.Services.GetRequiredService<IStorefrontOriginService>();
 Console.WriteLine("ContentRootPath: " + app.Environment.ContentRootPath);
 Console.WriteLine("WebRootPath: " + app.Environment.WebRootPath);
 Console.WriteLine("DataProtectionKeysPath: " + dataProtectionKeysPath);

@@ -6,6 +6,7 @@ namespace onlineStore.Services.Product
     {
         // Queries
         Task<List<ProductDto>> GetStoreProductsAsync(Guid storeId, Guid? userId = null);
+        Task<List<ProductDto>> GetStoreProductsForManagementAsync(Guid storeId);
         Task<List<ProductDto>> GetFeaturedProductsAsync(Guid storeId, Guid? userId = null);
         Task<List<ProductDto>> GetProductsByCategoryAsync(Guid categoryId, Guid? userId = null);
         Task<List<ProductDto>> GetProductsBySectionAsync(Guid sectionId, Guid? userId = null);

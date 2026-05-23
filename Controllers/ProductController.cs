@@ -34,6 +34,25 @@ namespace onlineStore.Controllers
             }
         }
 
+        [HttpGet("store/{storeId}/manage")]
+        [Authorize(Roles = "SuperAdmin,StoreOwner")]
+        public async Task<IActionResult> GetByStoreForManagement(Guid storeId)
+        {
+            try
+            {
+                var products = await _productService.GetStoreProductsForManagementAsync(storeId);
+                return Ok(products);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
+        }
+
         // GET api/product/featured/{storeId}
         [HttpGet("featured/{storeId}")]
         [AllowAnonymous]
