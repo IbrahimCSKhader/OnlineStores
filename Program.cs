@@ -26,6 +26,7 @@ using onlineStore.Services.Store;
 using onlineStore.Services.StoreCustomerAuth;
 using onlineStore.Services.Subscription;
 using onlineStore.Services.SuperAdminDashboard;
+using onlineStore.Services.SystemStorage;
 using onlineStore.Settings;
 using Scalar.AspNetCore;
 using System.Diagnostics;
@@ -357,7 +358,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("DevelopmentPolicy", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.SetIsOriginAllowed(origin =>
+              IsAllowedCorsOrigin(origin, productionCorsOrigins) ||
+              storefrontOriginService?.IsAllowedOrigin(origin) == true)
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -401,6 +404,7 @@ builder.Services.AddScoped<ICustomerStoreService, CustomerStoreService>();
 builder.Services.AddScoped<IStoreCustomerEmailWorkflowService, StoreCustomerEmailWorkflowService>();
 builder.Services.AddScoped<IStoreCustomerAuthService, StoreCustomerAuthService>();
 builder.Services.AddScoped<ISuperAdminDashboardService, SuperAdminDashboardService>();
+builder.Services.AddScoped<ISystemStorageService, SystemStorageService>();
 builder.Services.AddSingleton<IStorefrontOriginService, StorefrontOriginService>();
 var configuredDataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
 var dataProtectionKeysPath = configuredDataProtectionKeysPath;

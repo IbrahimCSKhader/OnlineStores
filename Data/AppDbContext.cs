@@ -28,6 +28,7 @@ namespace onlineStore.Data
         public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
         public DbSet<ProductAttribute> ProductAttributes => Set<ProductAttribute>();
         public DbSet<ProductAttributeValue> ProductAttributeValues => Set<ProductAttributeValue>();
+        public DbSet<ProductVariantAttributeValue> ProductVariantAttributeValues => Set<ProductVariantAttributeValue>();
         public DbSet<StoreContactAccount> StoreContactAccounts => Set<StoreContactAccount>();
         public DbSet<StoreCustomer> StoreCustomers => Set<StoreCustomer>();
         public DbSet<StoreCustomer> CustomerStores => Set<StoreCustomer>();
@@ -143,6 +144,30 @@ namespace onlineStore.Data
                 .HasForeignKey(p => p.SectionId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<ProductVariant>()
+                .HasOne(v => v.Product)
+                .WithMany(p => p.Variants)
+                .HasForeignKey(v => v.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ProductVariantAttributeValue>()
+                .HasOne(vav => vav.Variant)
+                .WithMany(v => v.AttributeValues)
+                .HasForeignKey(vav => vav.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ProductVariantAttributeValue>()
+                .HasOne(vav => vav.AttributeValue)
+                .WithMany(av => av.VariantValues)
+                .HasForeignKey(vav => vav.AttributeValueId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ProductImage>()
+                .HasOne(pi => pi.Variant)
+                .WithMany(v => v.Images)
+                .HasForeignKey(pi => pi.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Category العلاقات
             builder.Entity<Category>()
                 .HasOne(c => c.Store)
@@ -210,6 +235,7 @@ namespace onlineStore.Data
             builder.Entity<StoreSubscription>().HasQueryFilter(x => !x.IsDeleted);
             builder.Entity<Offer>().HasQueryFilter(x => !x.IsDeleted);
             builder.Entity<OfferItem>().HasQueryFilter(x => !x.IsDeleted);
+            builder.Entity<ProductVariantAttributeValue>().HasQueryFilter(x => !x.IsDeleted);
 
 
         
@@ -221,6 +247,25 @@ namespace onlineStore.Data
                 e.Property(p => p.WholesalePrice)
                     .HasColumnType("decimal(18,2)")
                     .HasDefaultValue(0m);
+            });
+
+            builder.Entity<ProductVariant>(e =>
+            {
+                e.Property(v => v.Description).HasMaxLength(1000);
+                e.Property(v => v.Price).HasColumnType("decimal(18,2)");
+                e.Property(v => v.CompareAtPrice).HasColumnType("decimal(18,2)");
+                e.Property(v => v.IsDefault).HasDefaultValue(false);
+                e.Property(v => v.IsActive).HasDefaultValue(true);
+                e.Property(v => v.SortOrder).HasDefaultValue(0);
+                e.HasIndex(v => new { v.ProductId, v.SKU })
+                    .IsUnique()
+                    .HasFilter("[SKU] IS NOT NULL");
+            });
+
+            builder.Entity<ProductVariantAttributeValue>(e =>
+            {
+                e.HasIndex(vav => new { vav.VariantId, vav.AttributeValueId })
+                    .IsUnique();
             });
 
             builder.Entity<Order>(e =>

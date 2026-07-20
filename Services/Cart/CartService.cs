@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using onlineStore.Data;
 using onlineStore.DTOs.Cart;
+using onlineStore.Models;
 using onlineStore.Models.CartModels;
 using onlineStore.Services.Pricing;
 
@@ -106,54 +107,29 @@ namespace onlineStore.Services.Cart
                     "Product found. ProductId: {ProductId}, ProductName: {ProductName}, TrackInventory: {TrackInventory}, StockQuantity: {StockQuantity}, Price: {Price}",
                     product.Id, product.Name, product.TrackInventory, product.StockQuantity, product.Price);
 
-                // 3) تحقق من النسخة إذا موجودة
-                int availableStock = product.StockQuantity;
-                decimal basePrice = product.Price;
+                // 3) Resolve the sellable unit. Frontend may omit VariantId, so use the default active variant.
+                var resolvedVariant = await ResolveActiveVariantForCartAsync(
+                    product.Id,
+                    dto.VariantId);
+                var availableStock = resolvedVariant.StockQuantity;
+                var basePrice = resolvedVariant.Price ?? product.Price;
+                var compareAtPrice = resolvedVariant.CompareAtPrice ?? product.CompareAtPrice;
 
-                if (dto.VariantId.HasValue)
-                {
-                    var variant = await _context.ProductVariants
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(v => v.Id == dto.VariantId.Value);
-
-                    if (variant == null)
-                    {
-                        _logger.LogWarning(
-                            "Variant not found. VariantId: {VariantId}",
-                            dto.VariantId.Value);
-
-                        throw new Exception("النسخة غير موجودة");
-                    }
-
-                    if (variant.ProductId != dto.ProductId)
-                    {
-                        _logger.LogWarning(
-                            "Variant does not belong to product. VariantId: {VariantId}, VariantProductId: {VariantProductId}, RequestedProductId: {RequestedProductId}",
-                            variant.Id, variant.ProductId, dto.ProductId);
-
-                        throw new Exception("النسخة لا تتبع هذا المنتج");
-                    }
-
-                    availableStock = variant.StockQuantity;
-                    basePrice = variant.PriceOverride ?? product.Price;
-
-                    _logger.LogInformation(
-                        "Variant found. VariantId: {VariantId}, VariantName: {VariantName}, StockQuantity: {StockQuantity}, BasePrice: {BasePrice}",
-                        variant.Id, variant.Name, variant.StockQuantity, basePrice);
-                }
-                else
-                {
-                    _logger.LogInformation(
-                        "No variant selected. Using product price and stock. ProductId: {ProductId}, BasePrice: {BasePrice}, AvailableStock: {AvailableStock}",
-                        product.Id, basePrice, availableStock);
-                }
+                _logger.LogInformation(
+                    "Variant resolved for cart add. ProductId: {ProductId}, RequestedVariantId: {RequestedVariantId}, ResolvedVariantId: {ResolvedVariantId}, VariantName: {VariantName}, StockQuantity: {StockQuantity}, BasePrice: {BasePrice}",
+                    product.Id,
+                    dto.VariantId,
+                    resolvedVariant.Id,
+                    resolvedVariant.Name,
+                    availableStock,
+                    basePrice);
 
                 // 4) ابحث عن العنصر الموجود مباشرة من جدول CartItems
                 var existingItem = await _context.CartItems
                     .FirstOrDefaultAsync(i =>
                         i.CartId == cart.Id &&
                         i.ProductId == dto.ProductId &&
-                        i.VariantId == dto.VariantId &&
+                        i.VariantId == resolvedVariant.Id &&
                         !i.IsDeleted);
 
                 if (existingItem != null)
@@ -185,8 +161,8 @@ namespace onlineStore.Services.Cart
                     if (product.TrackInventory && availableStock < dto.Quantity)
                     {
                         _logger.LogWarning(
-                            "Insufficient stock for new cart item. AvailableStock: {AvailableStock}, RequestedQuantity: {RequestedQuantity}, ProductId: {ProductId}, VariantId: {VariantId}",
-                            availableStock, dto.Quantity, dto.ProductId, dto.VariantId);
+                        "Insufficient stock for new cart item. AvailableStock: {AvailableStock}, RequestedQuantity: {RequestedQuantity}, ProductId: {ProductId}, VariantId: {VariantId}",
+                            availableStock, dto.Quantity, dto.ProductId, resolvedVariant.Id);
 
                         throw new Exception($"الكمية المتاحة {availableStock} فقط");
                     }
@@ -195,19 +171,19 @@ namespace onlineStore.Services.Cart
                         storeCustomerId,
                         dto.StoreId,
                         basePrice,
-                        product.CompareAtPrice,
-                        dto.VariantId.HasValue);
+                        compareAtPrice,
+                        resolvedVariant.Price.HasValue);
 
                     _logger.LogInformation(
                         "Final unit price resolved. StoreCustomerId: {StoreCustomerId}, StoreId: {StoreId}, ProductId: {ProductId}, VariantId: {VariantId}, UnitPrice: {UnitPrice}",
-                        storeCustomerId, dto.StoreId, dto.ProductId, dto.VariantId, unitPrice);
+                        storeCustomerId, dto.StoreId, dto.ProductId, resolvedVariant.Id, unitPrice);
 
                     var newItem = new CartItem
                     {
                         Id = Guid.NewGuid(),
                         CartId = cart.Id,
                         ProductId = dto.ProductId,
-                        VariantId = dto.VariantId,
+                        VariantId = resolvedVariant.Id,
                         Quantity = dto.Quantity,
                         UnitPrice = unitPrice,
                         CreatedAt = DateTime.UtcNow,
@@ -218,7 +194,7 @@ namespace onlineStore.Services.Cart
 
                     _logger.LogInformation(
                         "New cart item added to DbContext explicitly. CartItemId: {CartItemId}, CartId: {CartId}, ProductId: {ProductId}, VariantId: {VariantId}, Quantity: {Quantity}",
-                        newItem.Id, cart.Id, dto.ProductId, dto.VariantId, dto.Quantity);
+                        newItem.Id, cart.Id, dto.ProductId, resolvedVariant.Id, dto.Quantity);
                 }
 
                 _logger.LogInformation(
@@ -537,6 +513,73 @@ namespace onlineStore.Services.Cart
                 throw;
             }
         }
+
+        private async Task<ProductVariant> ResolveActiveVariantForCartAsync(
+            Guid productId,
+            Guid? requestedVariantId)
+        {
+            if (requestedVariantId.HasValue)
+            {
+                var requestedVariant = await _context.ProductVariants
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(v => v.Id == requestedVariantId.Value);
+
+                if (requestedVariant == null)
+                {
+                    _logger.LogWarning(
+                        "Requested cart variant not found. ProductId: {ProductId}, VariantId: {VariantId}",
+                        productId,
+                        requestedVariantId.Value);
+
+                    throw new Exception("النسخة غير موجودة");
+                }
+
+                if (requestedVariant.ProductId != productId)
+                {
+                    _logger.LogWarning(
+                        "Requested cart variant does not belong to product. ProductId: {ProductId}, VariantId: {VariantId}, VariantProductId: {VariantProductId}",
+                        productId,
+                        requestedVariant.Id,
+                        requestedVariant.ProductId);
+
+                    throw new Exception("النسخة لا تتبع هذا المنتج");
+                }
+
+                if (requestedVariant.IsDeleted || !requestedVariant.IsActive)
+                {
+                    _logger.LogWarning(
+                        "Requested cart variant is inactive or deleted. ProductId: {ProductId}, VariantId: {VariantId}, IsActive: {IsActive}, IsDeleted: {IsDeleted}",
+                        productId,
+                        requestedVariant.Id,
+                        requestedVariant.IsActive,
+                        requestedVariant.IsDeleted);
+
+                    throw new Exception("النسخة غير متاحة حالياً");
+                }
+
+                return requestedVariant;
+            }
+
+            var defaultVariant = await _context.ProductVariants
+                .AsNoTracking()
+                .Where(v => v.ProductId == productId && v.IsActive && !v.IsDeleted)
+                .OrderByDescending(v => v.IsDefault)
+                .ThenBy(v => v.SortOrder)
+                .ThenBy(v => v.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (defaultVariant == null)
+            {
+                _logger.LogWarning(
+                    "No active variant exists for cart product. ProductId: {ProductId}",
+                    productId);
+
+                throw new Exception("لا توجد نسخة متاحة لهذا المنتج");
+            }
+
+            return defaultVariant;
+        }
+
         // ════════════════════════════════════════════════════
         // Helper — Get Variant Price
         // ════════════════════════════════════════════════════
@@ -563,7 +606,7 @@ namespace onlineStore.Services.Cart
                     return productPrice;
                 }
 
-                var resolvedPrice = variant.PriceOverride ?? productPrice;
+                var resolvedPrice = variant.Price ?? productPrice;
 
                 _logger.LogInformation(
                     "GetVariantPriceAsync completed. VariantId: {VariantId}, ResolvedPrice: {ResolvedPrice}",
@@ -662,19 +705,28 @@ namespace onlineStore.Services.Cart
                     i.UnitPrice
                 }).ToList());
 
-            var items = cart.Items?.Select(i => new CartItemDto
+            var items = cart.Items?.Select(i =>
             {
-                Id = i.Id,
-                ProductId = i.ProductId,
-                ProductName = i.Product?.Name ?? "",
-                ProductThumbnail = i.Product?.ThumbnailUrl,
-                VariantId = i.VariantId,
-                VariantName = i.Variant?.Name,
-                Quantity = i.Quantity,
-                UnitPrice = i.UnitPrice,
-                AvailableStock = i.Variant != null
-                    ? i.Variant.StockQuantity
-                    : i.Product?.StockQuantity ?? 0
+                var displayVariant = ResolveDisplayVariant(i);
+
+                return new CartItemDto
+                {
+                    Id = i.Id,
+                    ProductId = i.ProductId,
+                    ProductName = i.Product?.Name ?? string.Empty,
+                    ProductThumbnail = ResolveProductImageUrl(i.Product),
+                    VariantId = i.VariantId,
+                    VariantName = displayVariant?.Name,
+                    VariantSKU = displayVariant?.SKU,
+                    VariantImageUrl = ResolveVariantImageUrl(displayVariant),
+                    EffectiveVariantImageUrl = ResolveEffectiveVariantImageUrl(displayVariant, i.Product),
+                    VariantAttributes = MapCartVariantAttributes(displayVariant),
+                    Quantity = i.Quantity,
+                    UnitPrice = i.UnitPrice,
+                    AvailableStock = i.VariantId.HasValue && i.Variant != null
+                        ? i.Variant.StockQuantity
+                        : i.Product?.StockQuantity ?? 0
+                };
             }).ToList() ?? new List<CartItemDto>();
             var customerDiscountPercentage = await GetStoreCustomerDiscountPercentageAsync(
                 cart.StoreCustomerId,
@@ -709,11 +761,33 @@ namespace onlineStore.Services.Cart
 
         private IQueryable<ShoppingCart> BuildCartQuery(bool asNoTracking)
         {
-            var query = _context.Carts
+            IQueryable<ShoppingCart> query = _context.Carts
                 .Include(c => c.Items.Where(i => !i.IsDeleted))
                     .ThenInclude(i => i.Product)
+                        .ThenInclude(p => p.Images)
+                .Include(c => c.Items.Where(i => !i.IsDeleted))
+                    .ThenInclude(i => i.Product)
+                        .ThenInclude(p => p.Variants.Where(v => !v.IsDeleted && v.IsActive))
+                            .ThenInclude(v => v.Images)
+                .Include(c => c.Items.Where(i => !i.IsDeleted))
+                    .ThenInclude(i => i.Product)
+                        .ThenInclude(p => p.Variants.Where(v => !v.IsDeleted && v.IsActive))
+                            .ThenInclude(v => v.AttributeValues)
+                                .ThenInclude(vav => vav.AttributeValue)
+                                    .ThenInclude(av => av.Attribute)
+                .Include(c => c.Items.Where(i => !i.IsDeleted))
+                    .ThenInclude(i => i.Variant)
+                        .ThenInclude(v => v!.Images)
                 .Include(c => c.Items.Where(i => !i.IsDeleted))
                     .ThenInclude(i => i.Variant);
+
+            query = query
+                .Include(c => c.Items.Where(i => !i.IsDeleted))
+                    .ThenInclude(i => i.Variant)
+                        .ThenInclude(v => v!.AttributeValues)
+                            .ThenInclude(vav => vav.AttributeValue)
+                                .ThenInclude(av => av.Attribute)
+                .AsSplitQuery();
 
             return asNoTracking ? query.AsNoTracking() : query;
         }
@@ -820,6 +894,76 @@ namespace onlineStore.Services.Cart
                                 && customer.IsActive)
                 .Select(customer => customer.DiscountPercentage)
                 .FirstOrDefaultAsync();
+        }
+
+        private static ProductVariant? ResolveDisplayVariant(CartItem item)
+        {
+            if (item.Variant != null)
+            {
+                return item.Variant;
+            }
+
+            return item.Product?.Variants?
+                .Where(v => v.IsActive && !v.IsDeleted)
+                .OrderByDescending(v => v.IsDefault)
+                .ThenBy(v => v.SortOrder)
+                .ThenBy(v => v.CreatedAt)
+                .FirstOrDefault();
+        }
+
+        private static string? ResolveProductImageUrl(onlineStore.Models.Product? product)
+        {
+            return product?.ThumbnailUrl
+                ?? product?.Images?
+                    .Where(i => i.VariantId == null && !i.IsDeleted)
+                    .OrderBy(i => i.DisplayOrder)
+                    .Select(i => i.Url)
+                    .FirstOrDefault();
+        }
+
+        private static string? ResolveEffectiveVariantImageUrl(
+            ProductVariant? variant,
+            onlineStore.Models.Product? product)
+        {
+            return FirstNonWhiteSpace(
+                variant?.ImageUrl,
+                ResolveVariantImageUrl(variant),
+                ResolveProductImageUrl(product));
+        }
+
+        private static string? ResolveVariantImageUrl(ProductVariant? variant)
+        {
+            return FirstNonWhiteSpace(
+                variant?.ImageUrl,
+                variant?.Images?
+                    .Where(i => !i.IsDeleted)
+                    .OrderBy(i => i.DisplayOrder)
+                    .Select(i => i.Url)
+                    .FirstOrDefault());
+        }
+
+        private static string? FirstNonWhiteSpace(params string?[] values)
+        {
+            return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        }
+
+        private static List<CartItemVariantAttributeDto> MapCartVariantAttributes(
+            ProductVariant? variant)
+        {
+            return variant?.AttributeValues?
+                .Where(vav => !vav.IsDeleted)
+                .OrderBy(vav => vav.AttributeValue.Attribute != null
+                    ? vav.AttributeValue.Attribute.Name
+                    : string.Empty)
+                .ThenBy(vav => vav.AttributeValue.Value)
+                .Select(vav => new CartItemVariantAttributeDto
+                {
+                    AttributeValueId = vav.AttributeValueId,
+                    AttributeId = vav.AttributeValue.AttributeId,
+                    AttributeName = vav.AttributeValue.Attribute?.Name ?? string.Empty,
+                    Value = vav.AttributeValue.Value
+                })
+                .ToList() ?? new List<CartItemVariantAttributeDto>();
         }
 
         private static decimal ResolvePriceBeforeStoreCustomerDiscount(

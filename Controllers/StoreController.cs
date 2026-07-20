@@ -13,13 +13,16 @@ namespace onlineStore.Controllers
     public class StoreController : ControllerBase
     {
         private readonly IStoreService _storeService;
+        private readonly IStorefrontOriginService _storefrontOriginService;
         private readonly ILogger<StoreController> _logger;
 
         public StoreController(
             IStoreService storeService,
+            IStorefrontOriginService storefrontOriginService,
             ILogger<StoreController> logger)
         {
             _storeService = storeService;
+            _storefrontOriginService = storefrontOriginService;
             _logger = logger;
         }
 
@@ -73,9 +76,14 @@ namespace onlineStore.Controllers
             [FromQuery] string? host = null,
             [FromQuery] string? slug = null)
         {
-            if (!string.IsNullOrWhiteSpace(host))
+            var resolvedHost = string.IsNullOrWhiteSpace(host)
+                ? _storefrontOriginService.GetCustomDomainHost(HttpContext)
+                : host;
+
+            if (!string.IsNullOrWhiteSpace(resolvedHost) &&
+                !_storefrontOriginService.IsPlatformHost(resolvedHost))
             {
-                var storeByDomain = await _storeService.GetStoreByDomainAsync(host);
+                var storeByDomain = await _storeService.GetStoreByDomainAsync(resolvedHost);
 
                 if (storeByDomain != null)
                     return Ok(storeByDomain);
@@ -93,7 +101,7 @@ namespace onlineStore.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "SuperAdmin")]
+        [AllowAnonymous]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Create([FromForm] CreateStoreDto dto)
         {
@@ -107,7 +115,7 @@ namespace onlineStore.Controllers
 
             await PopulateContactAccountsFromFormAsync(dto);
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? dto.OwnerId.ToString();
             var requestContactCount = dto.ContactAccounts?.Count ?? 0;
 
             _logger.LogInformation(
@@ -118,15 +126,6 @@ namespace onlineStore.Controllers
                 requestContactCount,
                 dto.Logo != null,
                 dto.CoverPage != null);
-
-            if (string.IsNullOrWhiteSpace(userId))
-            {
-                _logger.LogWarning(
-                    "StoreController.Create failed authentication. RequestedOwnerId: {RequestedOwnerId}, Slug: {Slug}",
-                    dto.OwnerId,
-                    dto.Slug);
-                return Unauthorized(new { message = "User is not authenticated" });
-            }
 
             try
             {

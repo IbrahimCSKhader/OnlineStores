@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using onlineStore.DTOs.Product;
 using onlineStore.Security;
 using onlineStore.Services.Product;
@@ -15,6 +16,11 @@ namespace onlineStore.Controllers
         public ProductController(IProductService productService)
         {
             _productService = productService;
+        }
+
+        private static string GetDatabaseErrorMessage(Exception ex)
+        {
+            return ex.GetBaseException()?.Message ?? ex.Message;
         }
 
         // GET api/product/store/{storeId}
@@ -168,6 +174,10 @@ namespace onlineStore.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+            catch (DbUpdateException ex)
+            {
+                return BadRequest(new { message = GetDatabaseErrorMessage(ex) });
+            }
             catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
@@ -200,6 +210,10 @@ namespace onlineStore.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+            catch (DbUpdateException ex)
+            {
+                return BadRequest(new { message = GetDatabaseErrorMessage(ex) });
+            }
             catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
@@ -224,6 +238,18 @@ namespace onlineStore.Controllers
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (DbUpdateException ex)
+            {
+                return BadRequest(new { message = GetDatabaseErrorMessage(ex) });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // POST api/product/image
@@ -243,6 +269,18 @@ namespace onlineStore.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (DbUpdateException ex)
+            {
+                return BadRequest(new { message = GetDatabaseErrorMessage(ex) });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -264,6 +302,10 @@ namespace onlineStore.Controllers
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         // POST api/product/{productId}/variant
@@ -282,6 +324,53 @@ namespace onlineStore.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (DbUpdateException ex)
+            {
+                return BadRequest(new { message = GetDatabaseErrorMessage(ex) });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // PUT api/product/variant/{variantId}
+        [HttpPut("variant/{variantId}")]
+        [Authorize(Roles = "SuperAdmin,StoreOwner")]
+        public async Task<IActionResult> UpdateVariant(Guid variantId, [FromBody] UpdateProductVariantDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var variant = await _productService.UpdateVariantAsync(variantId, dto);
+
+                if (variant == null)
+                    return NotFound(new { message = "النسخة غير موجودة" });
+
+                return Ok(variant);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (DbUpdateException ex)
+            {
+                return BadRequest(new { message = GetDatabaseErrorMessage(ex) });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -302,6 +391,10 @@ namespace onlineStore.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
 

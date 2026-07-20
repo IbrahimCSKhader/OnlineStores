@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations;
 namespace onlineStore.Models
 {
     [Index(nameof(ProductId))]
+    [Index(nameof(VariantId))]
     public class ProductImage : BaseEntity
     {
         [Required]
@@ -18,5 +19,8 @@ namespace onlineStore.Models
 
         public Guid ProductId { get; set; }
         public Product Product { get; set; } = default!;
+
+        public Guid? VariantId { get; set; }
+        public ProductVariant? Variant { get; set; }
     }
 }

@@ -3,6 +3,7 @@ using onlineStore.Data;
 using onlineStore.DTOs.Store;
 using onlineStore.Models;
 using onlineStore.Models.Subscriptions;
+using onlineStore.Models.Subscriptions.Enums;
 using onlineStore.Security;
 using onlineStore.Services.Subscription;
 using onlineStore.Utilities;
@@ -728,7 +729,7 @@ namespace onlineStore.Services.Store
 
             try
             {
-                await _subscriptionService.AssignPlanToStoreAsync(store.Id, defaultPlan.Id);
+                await AssignDefaultPlanToNewStoreAsync(store.Id, defaultPlan.Id, defaultPlan.Price, defaultPlan.Currency);
             }
             catch (Exception ex)
             {
@@ -750,6 +751,38 @@ namespace onlineStore.Services.Store
                 defaultPlan.Id);
 
             return ToDto(store, includeVisitCount: true);
+        }
+
+        private async Task AssignDefaultPlanToNewStoreAsync(
+            Guid storeId,
+            Guid planId,
+            decimal paidAmount,
+            string currency)
+        {
+            var now = DateTime.UtcNow;
+            var activeSubscriptions = await _context.StoreSubscriptions
+                .Where(s => s.StoreId == storeId && s.Status == SubscriptionStatus.Active)
+                .ToListAsync();
+
+            foreach (var activeSubscription in activeSubscriptions)
+            {
+                activeSubscription.Status = SubscriptionStatus.Expired;
+                activeSubscription.EndDate = now;
+            }
+
+            _context.StoreSubscriptions.Add(new StoreSubscription
+            {
+                StoreId = storeId,
+                SubscriptionPlanId = planId,
+                StartDate = now,
+                Status = SubscriptionStatus.Active,
+                PaidAmount = paidAmount,
+                Currency = currency,
+                IsAutoRenew = true,
+                CreatedAt = now
+            });
+
+            await _context.SaveChangesAsync();
         }
 
         private IQueryable<Models.Store> GetStoresWithContacts(bool asNoTracking = false)

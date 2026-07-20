@@ -4,5 +4,7 @@ namespace onlineStore.Services.Store
     {
         bool IsAllowedOrigin(string? origin);
         bool IsAllowedHost(string? host);
+        bool IsPlatformHost(string? host);
+        string? GetCustomDomainHost(HttpContext httpContext);
     }
 }

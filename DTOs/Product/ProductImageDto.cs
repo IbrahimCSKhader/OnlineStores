@@ -11,6 +11,7 @@ namespace onlineStore.DTOs.Product
         public string? AltText { get; set; }
         public int DisplayOrder { get; set; }
         public bool IsPrimary { get; set; }
+        public Guid? VariantId { get; set; }
     }
 
     public class AddProductImageDto
@@ -24,5 +25,7 @@ namespace onlineStore.DTOs.Product
 
         [Required]
         public Guid ProductId { get; set; }
+
+        public Guid? VariantId { get; set; }
     }
 }

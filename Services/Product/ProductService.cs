@@ -45,15 +45,11 @@ namespace onlineStore.Services.Product
         {
             var discountPercentage = await GetCustomerDiscountPercentageAsync(storeId, userId);
 
-            IQueryable<Models.Product> query = _context.Products
-                .AsNoTracking()
-                .Where(p => p.StoreId == storeId)
-                .Include(p => p.Category)
-                .Include(p => p.Section)
-                .Include(p => p.Images)
-                .Include(p => p.Variants)
-                .Include(p => p.AttributeValues)
-                    .ThenInclude(av => av.Attribute);
+            IQueryable<Models.Product> query = IncludeProductReadGraph(
+                _context.Products
+                    .AsNoTracking()
+                    .Where(p => p.StoreId == storeId &&
+                                p.Status == ProductStatus.Active));
 
             var products = await query
                 .OrderByDescending(p => p.CreatedAt)
@@ -66,15 +62,10 @@ namespace onlineStore.Services.Product
         {
             await EnsureCanManageStoreAsync(storeId);
 
-            var products = await _context.Products
-                .AsNoTracking()
-                .Where(p => p.StoreId == storeId)
-                .Include(p => p.Category)
-                .Include(p => p.Section)
-                .Include(p => p.Images)
-                .Include(p => p.Variants)
-                .Include(p => p.AttributeValues)
-                    .ThenInclude(av => av.Attribute)
+            var products = await IncludeProductReadGraph(
+                _context.Products
+                    .AsNoTracking()
+                    .Where(p => p.StoreId == storeId))
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
 
@@ -90,11 +81,11 @@ namespace onlineStore.Services.Product
         {
             var discountPercentage = await GetCustomerDiscountPercentageAsync(storeId, userId);
 
-            var products = await _context.Products
-                .AsNoTracking()
-                .Where(p => p.StoreId == storeId &&
-                            p.IsFeatured)
-                .Include(p => p.Images)
+            var products = await IncludeProductReadGraph(
+                _context.Products
+                    .AsNoTracking()
+                    .Where(p => p.StoreId == storeId &&
+                                p.IsFeatured))
                 .ToListAsync();
 
             products = products
@@ -111,15 +102,10 @@ namespace onlineStore.Services.Product
             Guid categoryId,
             Guid? userId = null)
         {
-            var products = await _context.Products
-                .AsNoTracking()
-                .Where(p => p.CategoryId == categoryId)
-                .Include(p => p.Category)
-                .Include(p => p.Section)
-                .Include(p => p.Images)
-                .Include(p => p.Variants)
-                .Include(p => p.AttributeValues)
-                    .ThenInclude(av => av.Attribute)
+            var products = await IncludeProductReadGraph(
+                _context.Products
+                    .AsNoTracking()
+                    .Where(p => p.CategoryId == categoryId))
                 .ToListAsync();
 
             var activeProducts = products
@@ -142,15 +128,10 @@ namespace onlineStore.Services.Product
             Guid sectionId,
             Guid? userId = null)
         {
-            var products = await _context.Products
-                .AsNoTracking()
-                .Where(p => p.SectionId == sectionId)
-                .Include(p => p.Category)
-                .Include(p => p.Section)
-                .Include(p => p.Images)
-                .Include(p => p.Variants)
-                .Include(p => p.AttributeValues)
-                    .ThenInclude(av => av.Attribute)
+            var products = await IncludeProductReadGraph(
+                _context.Products
+                    .AsNoTracking()
+                    .Where(p => p.SectionId == sectionId))
                 .ToListAsync();
 
             var activeProducts = products
@@ -173,15 +154,11 @@ namespace onlineStore.Services.Product
             Guid id,
             Guid? userId = null)
         {
-            var product = await _context.Products
-                .AsNoTracking()
-                .Include(p => p.Category)
-                .Include(p => p.Section)
-                .Include(p => p.Images)
-                .Include(p => p.Variants)
-                .Include(p => p.AttributeValues)
-                    .ThenInclude(av => av.Attribute)
-                .FirstOrDefaultAsync(p => p.Id == id);
+            var product = await IncludeProductReadGraph(
+                _context.Products
+                    .AsNoTracking())
+                .FirstOrDefaultAsync(p => p.Id == id &&
+                                          p.Status == ProductStatus.Active);
 
             if (product == null)
                 return null;
@@ -203,15 +180,11 @@ namespace onlineStore.Services.Product
 
             var normalizedSlug = slug.Trim().ToLowerInvariant();
 
-            var product = await _context.Products
-                .AsNoTracking()
-                .Include(p => p.Category)
-                .Include(p => p.Section)
-                .Include(p => p.Images)
-                .Include(p => p.Variants)
-                .Include(p => p.AttributeValues)
-                    .ThenInclude(av => av.Attribute)
-                .FirstOrDefaultAsync(p => p.Slug == normalizedSlug);
+            var product = await IncludeProductReadGraph(
+                _context.Products
+                    .AsNoTracking())
+                .FirstOrDefaultAsync(p => p.Slug == normalizedSlug &&
+                                          p.Status == ProductStatus.Active);
 
             if (product == null)
                 return null;
@@ -307,19 +280,33 @@ namespace onlineStore.Services.Product
 
             if (dto.Variants != null && dto.Variants.Any())
             {
+                var sortOrder = 0;
                 foreach (var variantDto in dto.Variants)
                 {
                     product.Variants.Add(new ProductVariant
                     {
                         Name = variantDto.Name.Trim(),
-                        SKU = variantDto.SKU?.Trim(),
-                        PriceOverride = variantDto.PriceOverride,
+                        SKU = null,
+                        Description = string.IsNullOrWhiteSpace(variantDto.Description)
+                            ? null
+                            : variantDto.Description.Trim(),
+                        Price = variantDto.Price,
+                        CompareAtPrice = variantDto.CompareAtPrice,
                         StockQuantity = variantDto.StockQuantity,
                         ImageUrl = variantDto.ImageUrl?.Trim(),
+                        IsDefault = sortOrder == 0,
                         IsActive = true,
+                        SortOrder = variantDto.SortOrder ?? sortOrder,
+                        ProductId = product.Id,
                         CreatedAt = DateTime.UtcNow
                     });
+
+                    sortOrder++;
                 }
+            }
+            else
+            {
+                product.Variants.Add(CreateDefaultVariant(product));
             }
 
             if (dto.AttributeValues != null && dto.AttributeValues.Any())
@@ -339,6 +326,7 @@ namespace onlineStore.Services.Product
             await _context.SaveChangesAsync();
 
             CreateProductFolder(dto.StoreId, product.Id);
+            CreateVariantFolders(dto.StoreId, product.Id, product.Variants);
 
             if (dto.Images != null && dto.Images.Any())
             {
@@ -348,7 +336,8 @@ namespace onlineStore.Services.Product
                         dto.StoreId,
                         product.Id,
                         dto.Images[i],
-                        i + 1);
+                        i + 1,
+                        variantId: null);
 
                     var productImage = new ProductImage
                     {
@@ -369,14 +358,9 @@ namespace onlineStore.Services.Product
                 await _context.SaveChangesAsync();
             }
 
-            var createdProduct = await _context.Products
-                .AsNoTracking()
-                .Include(p => p.Category)
-                .Include(p => p.Section)
-                .Include(p => p.Images)
-                .Include(p => p.Variants)
-                .Include(p => p.AttributeValues)
-                    .ThenInclude(av => av.Attribute)
+            var createdProduct = await IncludeProductReadGraph(
+                _context.Products
+                    .AsNoTracking())
                 .FirstAsync(p => p.Id == product.Id);
 
             _logger.LogInformation("Product created: {ProductName}", product.Name);
@@ -402,6 +386,8 @@ namespace onlineStore.Services.Product
                 return null;
 
             await EnsureCanManageStoreAsync(product.StoreId);
+
+            // Variant edits are handled through the dedicated variant endpoint.
 
             if (dto.Name != null)
                 product.Name = dto.Name.Trim();
@@ -506,14 +492,9 @@ namespace onlineStore.Services.Product
                 await _context.SaveChangesAsync();
             }
 
-            var updatedProduct = await _context.Products
-                .AsNoTracking()
-                .Include(p => p.Category)
-                .Include(p => p.Section)
-                .Include(p => p.Images)
-                .Include(p => p.Variants)
-                .Include(p => p.AttributeValues)
-                    .ThenInclude(av => av.Attribute)
+            var updatedProduct = await IncludeProductReadGraph(
+                _context.Products
+                    .AsNoTracking())
                 .FirstAsync(p => p.Id == id);
 
             _logger.LogInformation("Product updated: {ProductId}", id);
@@ -561,6 +542,19 @@ namespace onlineStore.Services.Product
 
             await EnsureCanManageStoreAsync(product.StoreId);
 
+            ProductVariant? variant = null;
+            if (dto.VariantId.HasValue)
+            {
+                variant = await _context.ProductVariants
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(v =>
+                        v.Id == dto.VariantId.Value &&
+                        v.ProductId == dto.ProductId);
+
+                if (variant == null)
+                    throw new InvalidOperationException("Variant does not belong to this product.");
+            }
+
             var canAddImage = await _subscriptionService.CanStoreAddImageAsync(dto.ProductId);
             if (!canAddImage)
             {
@@ -570,47 +564,46 @@ namespace onlineStore.Services.Product
             if (dto.Image == null || dto.Image.Length == 0)
                 throw new Exception("Invalid image");
 
+            var scopedImages = product.Images
+                .Where(i => i.VariantId == dto.VariantId)
+                .ToList();
+
             if (dto.IsPrimary)
             {
-                foreach (var existingImage in product.Images)
+                foreach (var existingImage in scopedImages)
                     existingImage.IsPrimary = false;
             }
 
             var displayOrder = dto.DisplayOrder > 0
                 ? dto.DisplayOrder
-                : (product.Images.Any() ? product.Images.Max(i => i.DisplayOrder) + 1 : 1);
+                : (scopedImages.Any() ? scopedImages.Max(i => i.DisplayOrder) + 1 : 1);
 
             var imageUrl = await SaveProductImageAsync(
                 product.StoreId,
                 product.Id,
                 dto.Image,
-                displayOrder);
+                displayOrder,
+                dto.VariantId);
 
             var image = new ProductImage
             {
                 Url = imageUrl,
                 AltText = dto.AltText?.Trim(),
                 DisplayOrder = displayOrder,
-                IsPrimary = dto.IsPrimary || !product.Images.Any(),
+                IsPrimary = dto.IsPrimary || !scopedImages.Any(),
                 ProductId = dto.ProductId,
+                VariantId = dto.VariantId,
                 CreatedAt = DateTime.UtcNow
             };
 
             _context.ProductImages.Add(image);
 
-            if (image.IsPrimary)
+            if (image.IsPrimary && !dto.VariantId.HasValue)
                 product.ThumbnailUrl = image.Url;
 
             await _context.SaveChangesAsync();
 
-            return new ProductImageDto
-            {
-                Id = image.Id,
-                Url = image.Url,
-                AltText = image.AltText,
-                DisplayOrder = image.DisplayOrder,
-                IsPrimary = image.IsPrimary
-            };
+            return ToImageDto(image);
         }
 
         // ════════════════════════════════════════════════════
@@ -632,6 +625,7 @@ namespace onlineStore.Services.Product
 
             var product = image.Product;
             var wasPrimary = image.IsPrimary;
+            var wasVariantImage = image.VariantId.HasValue;
 
             DeletePhysicalImage(image.Url);
 
@@ -639,7 +633,8 @@ namespace onlineStore.Services.Product
             await _context.SaveChangesAsync();
 
             var remainingImages = await _context.ProductImages
-                .Where(i => i.ProductId == product.Id)
+                .Where(i => i.ProductId == product.Id &&
+                            i.VariantId == image.VariantId)
                 .OrderBy(i => i.DisplayOrder)
                 .ToListAsync();
 
@@ -653,9 +648,10 @@ namespace onlineStore.Services.Product
                 if (newPrimary != null)
                 {
                     newPrimary.IsPrimary = true;
-                    product.ThumbnailUrl = newPrimary.Url;
+                    if (!wasVariantImage)
+                        product.ThumbnailUrl = newPrimary.Url;
                 }
-                else
+                else if (!wasVariantImage)
                 {
                     product.ThumbnailUrl = null;
                 }
@@ -682,36 +678,184 @@ namespace onlineStore.Services.Product
 
             await EnsureCanManageStoreAsync(product.StoreId);
 
+            var nextSortOrder = await _context.ProductVariants
+                .AsNoTracking()
+                .Where(v => v.ProductId == productId && !v.IsDeleted)
+                .Select(v => (int?)v.SortOrder)
+                .MaxAsync() ?? -1;
+
             var variant = new ProductVariant
             {
                 Name = dto.Name.Trim(),
-                SKU = dto.SKU?.Trim(),
-                PriceOverride = dto.PriceOverride,
+                SKU = null,
+                Description = string.IsNullOrWhiteSpace(dto.Description)
+                    ? null
+                    : dto.Description.Trim(),
+                Price = dto.Price,
+                CompareAtPrice = dto.CompareAtPrice,
                 StockQuantity = dto.StockQuantity,
                 ImageUrl = dto.ImageUrl?.Trim(),
                 IsActive = true,
+                SortOrder = dto.SortOrder ?? nextSortOrder + 1,
                 ProductId = productId,
                 CreatedAt = DateTime.UtcNow
             };
 
+            if (dto.AttributeValueIds?.Any() == true)
+            {
+                var duplicateAttributeValueId = dto.AttributeValueIds
+                    .GroupBy(id => id)
+                    .FirstOrDefault(group => group.Count() > 1)
+                    ?.Key;
+
+                if (duplicateAttributeValueId.HasValue)
+                    throw new InvalidOperationException("Duplicate attribute values are not allowed for the same variant.");
+
+                var attributeValues = await _context.ProductAttributeValues
+                    .Include(av => av.Attribute)
+                    .Where(av => dto.AttributeValueIds.Contains(av.Id))
+                    .ToListAsync();
+
+                if (attributeValues.Count != dto.AttributeValueIds.Count)
+                    throw new InvalidOperationException("One or more attribute values were not found.");
+
+                if (attributeValues.Any(av => av.ProductId != productId))
+                    throw new InvalidOperationException("One or more attribute values do not belong to this product.");
+
+                foreach (var attributeValue in attributeValues)
+                {
+                    variant.AttributeValues.Add(new ProductVariantAttributeValue
+                    {
+                        Variant = variant,
+                        AttributeValueId = attributeValue.Id,
+                        AttributeValue = attributeValue,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
             _context.ProductVariants.Add(variant);
             await _context.SaveChangesAsync();
+            CreateVariantFolder(product.StoreId, product.Id, variant.Id);
 
-            return new ProductVariantDto
-            {
-                Id = variant.Id,
-                Name = variant.Name,
-                SKU = variant.SKU,
-                PriceOverride = variant.PriceOverride,
-                StockQuantity = variant.StockQuantity,
-                ImageUrl = variant.ImageUrl,
-                IsActive = variant.IsActive
-            };
+            return ToVariantDto(variant, product);
         }
 
         // ════════════════════════════════════════════════════
         // Delete Variant
         // ════════════════════════════════════════════════════
+        // Update Variant
+        public async Task<ProductVariantDto?> UpdateVariantAsync(
+            Guid variantId,
+            UpdateProductVariantDto dto)
+        {
+            var variant = await _context.ProductVariants
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.Images)
+                .Include(v => v.Images)
+                .Include(v => v.AttributeValues)
+                    .ThenInclude(vav => vav.AttributeValue)
+                        .ThenInclude(av => av.Attribute)
+                .FirstOrDefaultAsync(v => v.Id == variantId);
+
+            if (variant == null || variant.IsDeleted)
+                return null;
+
+            await EnsureCanManageStoreAsync(variant.Product.StoreId);
+
+            if (string.IsNullOrWhiteSpace(dto.Name))
+                throw new InvalidOperationException("Variant name is required.");
+
+            if (dto.IsDefault == true && dto.IsActive == false)
+                throw new InvalidOperationException("Default variant must remain active.");
+
+            var normalizedSku = dto.SKU?.Trim();
+            await EnsureVariantSkuIsUniqueForStoreAsync(
+                variant.Product.StoreId,
+                normalizedSku,
+                variant.Id);
+
+            if (dto.IsActive.HasValue && !dto.IsActive.Value && variant.IsActive)
+                await EnsureVariantCanBeDisabledAsync(variant);
+
+            if (dto.IsDefault == true)
+            {
+                var defaultSiblings = await _context.ProductVariants
+                    .Where(v => v.ProductId == variant.ProductId &&
+                                v.Id != variant.Id &&
+                                !v.IsDeleted &&
+                                v.IsDefault)
+                    .ToListAsync();
+
+                foreach (var sibling in defaultSiblings)
+                {
+                    sibling.IsDefault = false;
+                    sibling.UpdatedAt = DateTime.UtcNow;
+                }
+
+                variant.IsDefault = true;
+                variant.IsActive = true;
+            }
+            else if (dto.IsDefault == false && variant.IsDefault)
+            {
+                var replacementDefault = await _context.ProductVariants
+                    .Where(v => v.ProductId == variant.ProductId &&
+                                v.Id != variant.Id &&
+                                !v.IsDeleted &&
+                                v.IsActive)
+                    .OrderBy(v => v.SortOrder)
+                    .ThenBy(v => v.CreatedAt)
+                    .FirstOrDefaultAsync();
+
+                if (replacementDefault == null)
+                    throw new InvalidOperationException("Cannot remove the default variant without another active default replacement.");
+
+                replacementDefault.IsDefault = true;
+                replacementDefault.UpdatedAt = DateTime.UtcNow;
+                variant.IsDefault = false;
+            }
+
+            variant.Name = dto.Name.Trim();
+            variant.SKU = string.IsNullOrWhiteSpace(normalizedSku) ? null : normalizedSku;
+            variant.Description = string.IsNullOrWhiteSpace(dto.Description)
+                ? null
+                : dto.Description.Trim();
+            variant.Price = dto.Price;
+            variant.CompareAtPrice = dto.CompareAtPrice;
+            if (dto.StockQuantity.HasValue)
+                variant.StockQuantity = dto.StockQuantity.Value;
+            variant.ImageUrl = string.IsNullOrWhiteSpace(dto.ImageUrl)
+                ? null
+                : dto.ImageUrl.Trim();
+
+            if (dto.SortOrder.HasValue)
+                variant.SortOrder = dto.SortOrder.Value;
+
+            if (dto.IsActive.HasValue)
+                variant.IsActive = dto.IsActive.Value;
+
+            if (dto.AttributeValueIds != null)
+                await SyncVariantAttributeValuesAsync(
+                    variant.Id,
+                    variant.ProductId,
+                    dto.AttributeValueIds);
+
+            variant.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            var updatedVariant = await _context.ProductVariants
+                .AsNoTracking()
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.Images)
+                .Include(v => v.Images)
+                .Include(v => v.AttributeValues)
+                    .ThenInclude(vav => vav.AttributeValue)
+                        .ThenInclude(av => av.Attribute)
+                .FirstAsync(v => v.Id == variant.Id);
+
+            return ToVariantDto(updatedVariant, updatedVariant.Product);
+        }
+
         public async Task<bool> DeleteVariantAsync(Guid variantId)
         {
             var variant = await _context.ProductVariants
@@ -723,7 +867,37 @@ namespace onlineStore.Services.Product
 
             await EnsureCanManageStoreAsync(variant.Product.StoreId);
 
-            _context.ProductVariants.Remove(variant);
+            if (variant.IsDeleted)
+                return false;
+
+            var activeVariants = await _context.ProductVariants
+                .Where(v => v.ProductId == variant.ProductId &&
+                            !v.IsDeleted &&
+                            v.IsActive)
+                .OrderBy(v => v.SortOrder)
+                .ThenBy(v => v.CreatedAt)
+                .ToListAsync();
+
+            if (variant.IsActive && activeVariants.Count <= 1)
+                throw new InvalidOperationException("Cannot delete the last active variant for this product.");
+
+            if (variant.IsDefault)
+            {
+                var replacementDefault = activeVariants
+                    .FirstOrDefault(v => v.Id != variant.Id);
+
+                if (replacementDefault == null)
+                    throw new InvalidOperationException("Cannot delete the default variant without another active default replacement.");
+
+                replacementDefault.IsDefault = true;
+                replacementDefault.UpdatedAt = DateTime.UtcNow;
+            }
+
+            variant.IsDefault = false;
+            variant.IsActive = false;
+            variant.IsDeleted = true;
+            variant.UpdatedAt = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
 
             return true;
@@ -761,14 +935,157 @@ namespace onlineStore.Services.Product
             if (product == null)
                 return null;
 
-            await EnsureCanManageStoreAsync(product.StoreId);
-
             return product.VisitCount;
         }
 
         // ════════════════════════════════════════════════════
         // Paths Helpers
         // ════════════════════════════════════════════════════
+        private async Task EnsureVariantSkusAreUniqueForStoreAsync(
+            Guid storeId,
+            IEnumerable<CreateProductVariantDto> variants)
+        {
+            var normalizedSkus = variants
+                .Select(v => v.SKU?.Trim())
+                .Where(sku => !string.IsNullOrWhiteSpace(sku))
+                .Cast<string>()
+                .ToList();
+
+            var duplicateSkuInRequest = normalizedSkus
+                .GroupBy(sku => sku, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault(group => group.Count() > 1)
+                ?.Key;
+
+            if (!string.IsNullOrWhiteSpace(duplicateSkuInRequest))
+                throw new InvalidOperationException("This variant SKU is already used in this request.");
+
+            foreach (var sku in normalizedSkus)
+                await EnsureVariantSkuIsUniqueForStoreAsync(storeId, sku, excludeVariantId: null);
+        }
+
+        private async Task EnsureVariantSkuIsUniqueForStoreAsync(
+            Guid storeId,
+            string? sku,
+            Guid? excludeVariantId)
+        {
+            var normalizedSku = sku?.Trim();
+            if (string.IsNullOrWhiteSpace(normalizedSku))
+                return;
+
+            var skuExists = await _context.ProductVariants
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .AnyAsync(v =>
+                    v.SKU == normalizedSku &&
+                    !v.IsDeleted &&
+                    !v.Product.IsDeleted &&
+                    v.Product.StoreId == storeId &&
+                    (!excludeVariantId.HasValue || v.Id != excludeVariantId.Value));
+
+            if (skuExists)
+                throw new InvalidOperationException("This variant SKU is already used in this store.");
+        }
+
+        private async Task EnsureVariantCanBeDisabledAsync(ProductVariant variant)
+        {
+            var activeVariants = await _context.ProductVariants
+                .Where(v => v.ProductId == variant.ProductId &&
+                            !v.IsDeleted &&
+                            v.IsActive)
+                .OrderBy(v => v.SortOrder)
+                .ThenBy(v => v.CreatedAt)
+                .ToListAsync();
+
+            if (activeVariants.Count <= 1)
+                throw new InvalidOperationException("Cannot disable the last active variant for this product.");
+
+            if (!variant.IsDefault)
+                return;
+
+            var replacementDefault = activeVariants
+                .FirstOrDefault(v => v.Id != variant.Id);
+
+            if (replacementDefault == null)
+                throw new InvalidOperationException("Cannot disable the default variant without another active default replacement.");
+
+            replacementDefault.IsDefault = true;
+            replacementDefault.UpdatedAt = DateTime.UtcNow;
+            variant.IsDefault = false;
+        }
+
+        private async Task<List<ProductAttributeValue>> LoadValidatedAttributeValuesAsync(
+            Guid productId,
+            IEnumerable<Guid> attributeValueIds)
+        {
+            var ids = attributeValueIds.ToList();
+            var duplicateAttributeValueId = ids
+                .GroupBy(id => id)
+                .FirstOrDefault(group => group.Count() > 1)
+                ?.Key;
+
+            if (duplicateAttributeValueId.HasValue)
+                throw new InvalidOperationException("Duplicate attribute values are not allowed for the same variant.");
+
+            if (!ids.Any())
+                return new List<ProductAttributeValue>();
+
+            var attributeValues = await _context.ProductAttributeValues
+                .Include(av => av.Attribute)
+                .Where(av => ids.Contains(av.Id))
+                .ToListAsync();
+
+            if (attributeValues.Count != ids.Count)
+                throw new InvalidOperationException("One or more attribute values were not found.");
+
+            if (attributeValues.Any(av => av.ProductId != productId))
+                throw new InvalidOperationException("One or more attribute values do not belong to this product.");
+
+            return attributeValues;
+        }
+
+        private async Task SyncVariantAttributeValuesAsync(
+            Guid variantId,
+            Guid productId,
+            IEnumerable<Guid> attributeValueIds)
+        {
+            var attributeValues = await LoadValidatedAttributeValuesAsync(
+                productId,
+                attributeValueIds);
+            var desiredIds = attributeValues
+                .Select(av => av.Id)
+                .ToHashSet();
+
+            var existingMappings = await _context.ProductVariantAttributeValues
+                .IgnoreQueryFilters()
+                .Where(vav => vav.VariantId == variantId)
+                .ToListAsync();
+
+            foreach (var mapping in existingMappings)
+            {
+                if (desiredIds.Contains(mapping.AttributeValueId))
+                {
+                    mapping.IsDeleted = false;
+                    mapping.UpdatedAt = DateTime.UtcNow;
+                    desiredIds.Remove(mapping.AttributeValueId);
+                }
+                else if (!mapping.IsDeleted)
+                {
+                    mapping.IsDeleted = true;
+                    mapping.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+
+            foreach (var attributeValueId in desiredIds)
+            {
+                _context.ProductVariantAttributeValues.Add(new ProductVariantAttributeValue
+                {
+                    VariantId = variantId,
+                    AttributeValueId = attributeValueId,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
         private string GetStoreFolderPath(Guid storeId)
         {
             var rootPath = _environment.ContentRootPath;
@@ -803,19 +1120,75 @@ namespace onlineStore.Services.Product
         {
             var productsFolder = GetProductsFolderPath(storeId);
             var productFolder = GetProductFolderPath(storeId, productId);
+            var variantsFolder = GetProductVariantsFolderPath(storeId, productId);
 
             if (!Directory.Exists(productsFolder))
                 Directory.CreateDirectory(productsFolder);
 
             if (!Directory.Exists(productFolder))
                 Directory.CreateDirectory(productFolder);
+
+            if (!Directory.Exists(variantsFolder))
+                Directory.CreateDirectory(variantsFolder);
+        }
+
+        private string GetProductVariantsFolderPath(Guid storeId, Guid productId)
+        {
+            return Path.Combine(
+                GetProductFolderPath(storeId, productId),
+                "variants"
+            );
+        }
+
+        private string GetVariantFolderPath(Guid storeId, Guid productId, Guid variantId)
+        {
+            return Path.Combine(
+                GetProductVariantsFolderPath(storeId, productId),
+                variantId.ToString()
+            );
+        }
+
+        private void CreateVariantFolder(Guid storeId, Guid productId, Guid variantId)
+        {
+            var variantFolder = GetVariantFolderPath(storeId, productId, variantId);
+
+            if (!Directory.Exists(variantFolder))
+                Directory.CreateDirectory(variantFolder);
+        }
+
+        private void CreateVariantFolders(
+            Guid storeId,
+            Guid productId,
+            IEnumerable<ProductVariant> variants)
+        {
+            foreach (var variant in variants)
+                CreateVariantFolder(storeId, productId, variant.Id);
+        }
+
+        private static ProductVariant CreateDefaultVariant(Models.Product product)
+        {
+            return new ProductVariant
+            {
+                Name = "Default",
+                SKU = null,
+                Price = null,
+                CompareAtPrice = null,
+                StockQuantity = product.StockQuantity,
+                ImageUrl = product.ThumbnailUrl,
+                IsDefault = true,
+                IsActive = true,
+                SortOrder = 0,
+                ProductId = product.Id,
+                CreatedAt = DateTime.UtcNow
+            };
         }
 
         private async Task<string> SaveProductImageAsync(
             Guid storeId,
             Guid productId,
             IFormFile file,
-            int imageIndex)
+            int imageIndex,
+            Guid? variantId = null)
         {
             if (file == null || file.Length == 0)
                 throw new Exception("الصورة غير صالحة");
@@ -830,19 +1203,24 @@ namespace onlineStore.Services.Product
             if (file.Length > maxFileSize)
                 throw new Exception("Image size must not exceed 5 MB");
 
-            var productFolder = GetProductFolderPath(storeId, productId);
+            var uploadFolder = variantId.HasValue
+                ? GetVariantFolderPath(storeId, productId, variantId.Value)
+                : GetProductFolderPath(storeId, productId);
 
-            if (!Directory.Exists(productFolder))
-                Directory.CreateDirectory(productFolder);
+            if (!Directory.Exists(uploadFolder))
+                Directory.CreateDirectory(uploadFolder);
 
             var fileName = $"{imageIndex}{extension}";
-            var filePath = Path.Combine(productFolder, fileName);
+            var filePath = Path.Combine(uploadFolder, fileName);
 
             if (File.Exists(filePath))
                 File.Delete(filePath);
 
             using var stream = new FileStream(filePath, FileMode.Create);
             await file.CopyToAsync(stream);
+
+            if (variantId.HasValue)
+                return $"/uploads/stores/{storeId}/products/{productId}/variants/{variantId.Value}/{fileName}";
 
             return $"/uploads/stores/{storeId}/products/{productId}/{fileName}";
         }
@@ -971,6 +1349,89 @@ namespace onlineStore.Services.Product
             return product.Price;
         }
 
+        private static IQueryable<Models.Product> IncludeProductReadGraph(
+            IQueryable<Models.Product> query)
+        {
+            return query
+                .Include(p => p.Category)
+                .Include(p => p.Section)
+                .Include(p => p.Images)
+                .Include(p => p.Variants)
+                    .ThenInclude(v => v.Images)
+                .Include(p => p.Variants)
+                    .ThenInclude(v => v.AttributeValues)
+                        .ThenInclude(vav => vav.AttributeValue)
+                            .ThenInclude(av => av.Attribute)
+                .Include(p => p.AttributeValues)
+                    .ThenInclude(av => av.Attribute);
+        }
+
+        private static ProductImageDto ToImageDto(ProductImage image)
+        {
+            return new ProductImageDto
+            {
+                Id = image.Id,
+                Url = image.Url,
+                AltText = image.AltText,
+                DisplayOrder = image.DisplayOrder,
+                IsPrimary = image.IsPrimary,
+                VariantId = image.VariantId
+            };
+        }
+
+        private static ProductVariantDto ToVariantDto(
+            ProductVariant variant,
+            Models.Product product)
+        {
+            var variantImageUrl = variant.Images?
+                .OrderBy(i => i.DisplayOrder)
+                .Select(i => i.Url)
+                .FirstOrDefault();
+            var productImageUrl = product.Images?
+                .Where(i => i.VariantId == null)
+                .OrderBy(i => i.DisplayOrder)
+                .Select(i => i.Url)
+                .FirstOrDefault();
+
+            return new ProductVariantDto
+            {
+                Id = variant.Id,
+                ProductId = variant.ProductId,
+                Name = variant.Name,
+                SKU = variant.SKU,
+                Description = variant.Description,
+                Price = variant.Price,
+                CompareAtPrice = variant.CompareAtPrice,
+                EffectivePrice = variant.Price ?? product.Price,
+                EffectiveCompareAtPrice = variant.CompareAtPrice ?? product.CompareAtPrice,
+                StockQuantity = variant.StockQuantity,
+                ImageUrl = variant.ImageUrl,
+                EffectiveImageUrl = variant.ImageUrl
+                    ?? variantImageUrl
+                    ?? product.ThumbnailUrl
+                    ?? productImageUrl,
+                IsDefault = variant.IsDefault,
+                IsActive = variant.IsActive,
+                SortOrder = variant.SortOrder,
+                AttributeValues = variant.AttributeValues?
+                    .OrderBy(vav => vav.AttributeValue.Attribute != null
+                        ? vav.AttributeValue.Attribute.Name
+                        : string.Empty)
+                    .ThenBy(vav => vav.AttributeValue.Value)
+                    .Select(vav => new VariantAttributeValueDto
+                    {
+                        AttributeValueId = vav.AttributeValueId,
+                        AttributeId = vav.AttributeValue.AttributeId,
+                        AttributeName = vav.AttributeValue.Attribute?.Name ?? string.Empty,
+                        Value = vav.AttributeValue.Value
+                    }).ToList() ?? new List<VariantAttributeValueDto>(),
+                Images = variant.Images?
+                    .OrderBy(i => i.DisplayOrder)
+                    .Select(ToImageDto)
+                    .ToList() ?? new List<ProductImageDto>()
+            };
+        }
+
         private static ProductDto ToDto(
             Models.Product p,
             decimal discountPercentage = 0m,
@@ -987,6 +1448,24 @@ namespace onlineStore.Services.Product
                 finalPrice = priceBeforeStoreCustomerDiscount -
                              (priceBeforeStoreCustomerDiscount * discountPercentage / 100m);
             }
+
+            var variants = (p.Variants ?? new List<ProductVariant>())
+                .Where(v => !v.IsDeleted && (includeManagementFields || v.IsActive))
+                .OrderBy(v => v.SortOrder)
+                .ThenByDescending(v => v.IsDefault)
+                .ThenBy(v => v.Name)
+                .ToList();
+
+            var activeVariants = variants
+                .Where(v => v.IsActive)
+                .ToList();
+            var defaultVariant = activeVariants.FirstOrDefault(v => v.IsDefault)
+                ?? activeVariants.FirstOrDefault();
+            var hasVariants = activeVariants.Count > 1 ||
+                activeVariants.Any(v => !v.IsDefault);
+            var effectiveStockQuantity = activeVariants.Any()
+                ? activeVariants.Sum(v => v.StockQuantity)
+                : p.StockQuantity;
 
             return new ProductDto
             {
@@ -1017,34 +1496,25 @@ namespace onlineStore.Services.Product
                 SectionName = p.Section?.Name,
                 VisitCount = p.VisitCount,
                 CreatedAt = p.CreatedAt,
+                HasVariants = hasVariants,
+                DefaultVariantId = defaultVariant?.Id,
+                EffectiveStockQuantity = effectiveStockQuantity,
 
                 Images = p.Images?
+                    .Where(i => i.VariantId == null)
                     .OrderBy(i => i.DisplayOrder)
-                    .Select(i => new ProductImageDto
-                    {
-                        Id = i.Id,
-                        Url = i.Url,
-                        AltText = i.AltText,
-                        DisplayOrder = i.DisplayOrder,
-                        IsPrimary = i.IsPrimary
-                    }).ToList() ?? new List<ProductImageDto>(),
+                    .Select(ToImageDto)
+                    .ToList() ?? new List<ProductImageDto>(),
 
-                Variants = p.Variants?
-                    .Select(v => new ProductVariantDto
-                    {
-                        Id = v.Id,
-                        Name = v.Name,
-                        SKU = v.SKU,
-                        PriceOverride = v.PriceOverride,
-                        StockQuantity = v.StockQuantity,
-                        ImageUrl = v.ImageUrl,
-                        IsActive = v.IsActive
-                    }).ToList() ?? new List<ProductVariantDto>(),
+                Variants = variants
+                    .Select(v => ToVariantDto(v, p))
+                    .ToList(),
 
                 AttributeValues = p.AttributeValues?
                     .Select(av => new ProductAttributeValueDto
                     {
                         Id = av.Id,
+                        AttributeId = av.AttributeId,
                         AttributeName = av.Attribute?.Name ?? "",
                         Value = av.Value
                     }).ToList() ?? new List<ProductAttributeValueDto>()

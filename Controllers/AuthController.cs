@@ -583,7 +583,7 @@ namespace onlineStore.Controllers
         }
 
         [HttpPost("create-owner")]
-        [Authorize(Roles = "SuperAdmin")]
+        [AllowAnonymous]
         public async Task<ActionResult<OwnerResponseDto>> CreateOwner([FromBody] CreateOwnerDto dto)
         {
             if (!ModelState.IsValid)

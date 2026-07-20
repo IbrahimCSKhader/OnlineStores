@@ -28,6 +28,7 @@ namespace onlineStore.Services.Product
 
         // Variants
         Task<ProductVariantDto> AddVariantAsync(Guid productId, CreateProductVariantDto dto);
+        Task<ProductVariantDto?> UpdateVariantAsync(Guid variantId, UpdateProductVariantDto dto);
         Task<bool> DeleteVariantAsync(Guid variantId);
     }
 }

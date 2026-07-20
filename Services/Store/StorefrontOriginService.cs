@@ -62,6 +62,32 @@ namespace onlineStore.Services.Store
             return allowedCustomDomainHosts.Contains(normalizedHost);
         }
 
+        public bool IsPlatformHost(string? host)
+        {
+            var normalizedHost = StoreDomainNormalizer.NormalizeHost(host);
+            if (string.IsNullOrWhiteSpace(normalizedHost))
+                return true;
+
+            if (_configuredHosts.Contains(normalizedHost))
+                return true;
+
+            return IsLoopbackHost(normalizedHost);
+        }
+
+        public string? GetCustomDomainHost(HttpContext httpContext)
+        {
+            var normalizedHost = StoreDomainNormalizer.NormalizeHost(httpContext?.Request.Host.Host);
+            if (string.IsNullOrWhiteSpace(normalizedHost))
+                return null;
+
+            if (IsPlatformHost(normalizedHost))
+                return null;
+
+            return GetAllowedCustomDomainHosts().Contains(normalizedHost)
+                ? normalizedHost
+                : null;
+        }
+
         private HashSet<string> GetAllowedCustomDomainHosts()
         {
             return _memoryCache.GetOrCreate(
@@ -136,6 +162,13 @@ namespace onlineStore.Services.Store
                 hosts.Add(frontendHost);
 
             return hosts;
+        }
+
+        private static bool IsLoopbackHost(string host)
+        {
+            return string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(host, "127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(host, "::1", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

@@ -24,7 +24,7 @@ namespace onlineStore.DTOs.Product
         public int StockQuantity { get; set; }
         public bool TrackInventory { get; set; }
 
-        public bool IsInStock => !TrackInventory || StockQuantity > 0;
+        public bool IsInStock => !TrackInventory || EffectiveStockQuantity > 0;
 
         public bool HasDiscount =>
             (IsWholesalePriceApplied &&
@@ -76,5 +76,8 @@ namespace onlineStore.DTOs.Product
         public List<ProductImageDto> Images { get; set; } = new();
         public List<ProductVariantDto> Variants { get; set; } = new();
         public List<ProductAttributeValueDto> AttributeValues { get; set; } = new();
+        public bool HasVariants { get; set; }
+        public Guid? DefaultVariantId { get; set; }
+        public int EffectiveStockQuantity { get; set; }
     }
 }

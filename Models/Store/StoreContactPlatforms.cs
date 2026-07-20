@@ -9,6 +9,7 @@ namespace onlineStore.Models
         public const string Facebook = "Facebook";
         public const string Snapchat = "Snapchat";
         public const string WhatsApp = "WhatsApp";
+        public const string YouTube = "YouTube";
 
         private static readonly string[] SupportedPlatforms =
         {
@@ -16,7 +17,8 @@ namespace onlineStore.Models
             TikTok,
             Facebook,
             Snapchat,
-            WhatsApp
+            WhatsApp,
+            YouTube
         };
 
         public static IReadOnlyList<string> All => SupportedPlatforms;
@@ -37,7 +39,7 @@ namespace onlineStore.Models
 
             if (normalizedPlatform == null)
                 throw new Exception(
-                    "Unsupported contact platform. Allowed platforms are Instagram, TikTok, Facebook, Snapchat, WhatsApp.");
+                    "Unsupported contact platform. Allowed platforms are Instagram, TikTok, Facebook, Snapchat, WhatsApp, YouTube.");
 
             return normalizedPlatform;
         }
@@ -60,6 +62,9 @@ namespace onlineStore.Models
                 return normalizedUsername;
             }
 
+            if (normalizedPlatform == YouTube)
+                return NormalizeYouTubeUsername(normalizedUsername);
+
             return normalizedUsername.TrimStart('@');
         }
 
@@ -75,8 +80,35 @@ namespace onlineStore.Models
                 Facebook => $"https://www.facebook.com/{normalizedUsername}",
                 Snapchat => $"https://www.snapchat.com/add/{normalizedUsername}",
                 WhatsApp => $"https://wa.me/{normalizedUsername}",
+                YouTube => BuildYouTubeUrl(normalizedUsername),
                 _ => throw new Exception("Unsupported contact platform.")
             };
+        }
+
+        private static string NormalizeYouTubeUsername(string username)
+        {
+            var normalizedUsername = Regex.Replace(username, "^https?://(www\\.)?", string.Empty, RegexOptions.IgnoreCase);
+            normalizedUsername = Regex.Replace(normalizedUsername, "^m\\.youtube\\.com/", string.Empty, RegexOptions.IgnoreCase);
+            normalizedUsername = Regex.Replace(normalizedUsername, "^youtube\\.com/", string.Empty, RegexOptions.IgnoreCase);
+            normalizedUsername = Regex.Replace(normalizedUsername, "^youtu\\.be/", string.Empty, RegexOptions.IgnoreCase);
+            normalizedUsername = normalizedUsername.Split('?', '#')[0].Trim('/');
+
+            if (string.IsNullOrWhiteSpace(normalizedUsername))
+                throw new Exception("YouTube account is required.");
+
+            return normalizedUsername.TrimStart('@');
+        }
+
+        private static string BuildYouTubeUrl(string username)
+        {
+            if (username.StartsWith("channel/", StringComparison.OrdinalIgnoreCase) ||
+                username.StartsWith("c/", StringComparison.OrdinalIgnoreCase) ||
+                username.StartsWith("user/", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"https://www.youtube.com/{username}";
+            }
+
+            return $"https://www.youtube.com/@{username.TrimStart('@')}";
         }
     }
 }

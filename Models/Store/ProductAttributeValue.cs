@@ -16,5 +16,8 @@ namespace onlineStore.Models
 
         public Guid AttributeId { get; set; }
         public ProductAttribute Attribute { get; set; } = default!;
+
+        public ICollection<ProductVariantAttributeValue> VariantValues { get; set; } =
+            new List<ProductVariantAttributeValue>();
     }
 }

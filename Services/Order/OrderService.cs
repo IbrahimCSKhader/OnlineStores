@@ -2,6 +2,7 @@
 using onlineStore.Data;
 using onlineStore.DTOs.Order;
 using onlineStore.Models;
+using onlineStore.Models.CartModels;
 using onlineStore.Models.Enums;
 using onlineStore.Models.Orders;
 using onlineStore.Security;
@@ -83,8 +84,12 @@ namespace onlineStore.Services.Order
                     var carts = await _context.Carts
                         .Include(c => c.Items.Where(i => !i.IsDeleted))
                             .ThenInclude(i => i.Product)
+                                .ThenInclude(p => p.Variants.Where(v => !v.IsDeleted && v.IsActive))
+                        .Include(c => c.Items.Where(i => !i.IsDeleted))
+                            .ThenInclude(i => i.Product)
                         .Include(c => c.Items.Where(i => !i.IsDeleted))
                             .ThenInclude(i => i.Variant)
+                        .AsSplitQuery()
                         .Where(c =>
                             c.StoreCustomerId == storeCustomerId &&
                             c.StoreId == dto.StoreId)
@@ -130,6 +135,8 @@ namespace onlineStore.Services.Order
                             item.UnitPrice
                         }).ToList());
 
+                    var resolvedCartItems = new Dictionary<Guid, ResolvedOrderCartItem>();
+
                     foreach (var item in cartItems)
                     {
                         if (item.Product == null)
@@ -138,13 +145,24 @@ namespace onlineStore.Services.Order
                         if (item.Product.StoreId != dto.StoreId)
                             throw new Exception("يوجد عنصر لا ينتمي لهذا المتجر");
 
-                        var availableStock = item.Variant != null
-                            ? item.Variant.StockQuantity
+                        var resolvedVariant = ResolveVariantForOrderCartItem(item);
+                        var availableStock = resolvedVariant != null
+                            ? resolvedVariant.StockQuantity
                             : item.Product.StockQuantity;
 
                         if (item.Product.TrackInventory && availableStock < item.Quantity)
                             throw new Exception(
                                 $"الكمية المتاحة من المنتج {item.Product.Name} هي {availableStock} فقط");
+
+                        var unitPrice = ResolveOrderCartItemUnitPrice(
+                            item.Product,
+                            resolvedVariant,
+                            customerDiscountPercentage);
+
+                        item.UnitPrice = unitPrice;
+                        resolvedCartItems[item.Id] = new ResolvedOrderCartItem(
+                            resolvedVariant,
+                            unitPrice);
                     }
 
                     var pricing = await _cartPricingService.CalculatePricingAsync(
@@ -210,27 +228,20 @@ namespace onlineStore.Services.Order
 
                     foreach (var cartItem in cartItems)
                     {
+                        var resolvedCartItem = resolvedCartItems[cartItem.Id];
                         var orderItem = new OrderItem
                         {
                             ProductId = cartItem.ProductId,
                             ProductName = cartItem.Product?.Name?.Trim() ?? "Unknown Product",
-                            VariantId = cartItem.VariantId,
-                            VariantName = cartItem.Variant?.Name?.Trim(),
+                            VariantId = resolvedCartItem.Variant?.Id,
+                            VariantName = resolvedCartItem.Variant?.Name?.Trim(),
                             Quantity = cartItem.Quantity,
-                            UnitPrice = cartItem.UnitPrice,
-                            TotalPrice = cartItem.UnitPrice * cartItem.Quantity,
+                            UnitPrice = resolvedCartItem.UnitPrice,
+                            TotalPrice = resolvedCartItem.UnitPrice * cartItem.Quantity,
                             CreatedAt = DateTime.UtcNow
                         };
 
                         order.Items.Add(orderItem);
-
-                        if (cartItem.Product != null && cartItem.Product.TrackInventory)
-                        {
-                            if (cartItem.Variant != null)
-                                cartItem.Variant.StockQuantity -= cartItem.Quantity;
-                            else
-                                cartItem.Product.StockQuantity -= cartItem.Quantity;
-                        }
                     }
 
                     _context.Orders.Add(order);
@@ -334,12 +345,7 @@ namespace onlineStore.Services.Order
                 storeCustomerId,
                 orderId);
 
-            var order = await _context.Orders
-                .AsNoTracking()
-                .Include(o => o.Coupon)
-                .Include(o => o.StoreCustomer)
-                .Include(o => o.Items)
-                .AsSplitQuery()
+            var order = await BuildOrderDetailsQuery(asNoTracking: true)
                 .FirstOrDefaultAsync(o => o.StoreCustomerId == storeCustomerId && o.Id == orderId);
 
             _logger.LogInformation(
@@ -407,12 +413,7 @@ namespace onlineStore.Services.Order
 
             await EnsureCanAccessStoreOrdersAsync(storeId);
 
-            var order = await _context.Orders
-                .AsNoTracking()
-                .Include(o => o.Coupon)
-                .Include(o => o.StoreCustomer)
-                .Include(o => o.Items)
-                .AsSplitQuery()
+            var order = await BuildOrderDetailsQuery(asNoTracking: true)
                 .FirstOrDefaultAsync(o => o.StoreId == storeId && o.Id == orderId);
 
             _logger.LogInformation(
@@ -446,8 +447,12 @@ namespace onlineStore.Services.Order
                     var order = await _context.Orders
                         .Include(o => o.Items)
                             .ThenInclude(i => i.Product)
+                                .ThenInclude(p => p.Variants.Where(v => !v.IsDeleted && v.IsActive))
+                        .Include(o => o.Items)
+                            .ThenInclude(i => i.Product)
                         .Include(o => o.Items)
                             .ThenInclude(i => i.Variant)
+                                .ThenInclude(v => v!.Images)
                         .FirstOrDefaultAsync(o => o.Id == orderId);
 
                     if (order == null)
@@ -502,16 +507,25 @@ namespace onlineStore.Services.Order
             if (previousStatus == nextStatus)
                 return;
 
-            if (nextStatus == OrderStatus.Cancelled)
+            var hadInventoryReserved = IsInventoryReservedStatus(previousStatus);
+            var shouldReserveInventory = IsInventoryReservedStatus(nextStatus);
+
+            if (!hadInventoryReserved && shouldReserveInventory)
             {
-                RestoreInventoryForCancelledOrder(order);
+                ReserveInventoryForConfirmedOrder(order);
                 return;
             }
 
-            if (previousStatus == OrderStatus.Cancelled)
+            if (hadInventoryReserved && !shouldReserveInventory)
             {
-                ReserveInventoryForReactivatedOrder(order);
+                RestoreInventoryForCancelledOrder(order);
             }
+        }
+
+        private static bool IsInventoryReservedStatus(OrderStatus status)
+        {
+            return status != OrderStatus.Pending &&
+                status != OrderStatus.Cancelled;
         }
 
         private void RestoreInventoryForCancelledOrder(Models.Orders.Order order)
@@ -551,45 +565,80 @@ namespace onlineStore.Services.Order
             }
         }
 
-        private void ReserveInventoryForReactivatedOrder(Models.Orders.Order order)
+        private void ReserveInventoryForConfirmedOrder(Models.Orders.Order order)
         {
             foreach (var item in order.Items)
             {
                 if (item.Product == null)
                 {
                     throw new InvalidOperationException(
-                        $"لا يمكن إعادة تفعيل الطلب لأن المنتج {BuildInventoryItemLabel(item)} لم يعد موجودًا.");
+                        $"لا يمكن تأكيد الطلب لأن المنتج {BuildInventoryItemLabel(item)} لم يعد موجودًا.");
                 }
 
                 if (!item.Product.TrackInventory)
                     continue;
 
-                if (item.VariantId.HasValue)
+                var inventoryVariant = ResolveInventoryVariantForOrderItem(item);
+                if (inventoryVariant != null)
                 {
-                    if (item.Variant == null)
+                    if (inventoryVariant.StockQuantity < item.Quantity)
                     {
                         throw new InvalidOperationException(
-                            $"لا يمكن إعادة تفعيل الطلب لأن المتغير {BuildInventoryItemLabel(item)} لم يعد موجودًا.");
+                            $"لا يمكن تأكيد الطلب لأن الكمية المتاحة من {BuildInventoryItemLabel(item)} هي {inventoryVariant.StockQuantity} فقط.");
                     }
 
-                    if (item.Variant.StockQuantity < item.Quantity)
+                    if (!item.VariantId.HasValue)
                     {
-                        throw new InvalidOperationException(
-                            $"لا يمكن إعادة تفعيل الطلب لأن الكمية المتاحة من {BuildInventoryItemLabel(item)} هي {item.Variant.StockQuantity} فقط.");
+                        item.VariantId = inventoryVariant.Id;
+                        item.VariantName ??= inventoryVariant.Name?.Trim();
+                        item.Variant = inventoryVariant;
                     }
 
-                    item.Variant.StockQuantity -= item.Quantity;
+                    inventoryVariant.StockQuantity -= item.Quantity;
                     continue;
                 }
 
                 if (item.Product.StockQuantity < item.Quantity)
                 {
                     throw new InvalidOperationException(
-                        $"لا يمكن إعادة تفعيل الطلب لأن الكمية المتاحة من {BuildInventoryItemLabel(item)} هي {item.Product.StockQuantity} فقط.");
+                        $"لا يمكن تأكيد الطلب لأن الكمية المتاحة من {BuildInventoryItemLabel(item)} هي {item.Product.StockQuantity} فقط.");
                 }
 
                 item.Product.StockQuantity -= item.Quantity;
             }
+        }
+
+        private static ProductVariant? ResolveInventoryVariantForOrderItem(OrderItem item)
+        {
+            if (item.VariantId.HasValue)
+            {
+                var variant = item.Variant
+                    ?? item.Product?.Variants.FirstOrDefault(v => v.Id == item.VariantId.Value);
+
+                if (variant == null)
+                {
+                    throw new InvalidOperationException(
+                        $"لا يمكن تأكيد الطلب لأن المتغير {BuildInventoryItemLabel(item)} لم يعد موجودًا.");
+                }
+
+                if (variant.ProductId != item.ProductId)
+                {
+                    throw new InvalidOperationException(
+                        $"لا يمكن تأكيد الطلب لأن المتغير {BuildInventoryItemLabel(item)} لا يتبع المنتج.");
+                }
+
+                if (variant.IsDeleted || !variant.IsActive)
+                {
+                    throw new InvalidOperationException(
+                        $"لا يمكن تأكيد الطلب لأن المتغير {BuildInventoryItemLabel(item)} غير متاح حالياً.");
+                }
+
+                return variant;
+            }
+
+            return item.Product == null
+                ? null
+                : ResolveDefaultActiveVariant(item.Product);
         }
 
         private static string BuildInventoryItemLabel(OrderItem item)
@@ -602,6 +651,81 @@ namespace onlineStore.Services.Order
             return string.IsNullOrWhiteSpace(variantName)
                 ? productName
                 : $"{productName} - {variantName}";
+        }
+
+        private static ProductVariant? ResolveVariantForOrderCartItem(CartItem item)
+        {
+            if (item.VariantId.HasValue)
+            {
+                var variant = item.Variant
+                    ?? item.Product?.Variants.FirstOrDefault(v => v.Id == item.VariantId.Value);
+
+                if (variant == null)
+                {
+                    throw new Exception("النسخة المرتبطة بالسلة غير موجودة");
+                }
+
+                if (variant.ProductId != item.ProductId)
+                {
+                    throw new Exception("النسخة المرتبطة بالسلة لا تتبع المنتج");
+                }
+
+                if (variant.IsDeleted || !variant.IsActive)
+                {
+                    throw new Exception("النسخة المرتبطة بالسلة غير متاحة حالياً");
+                }
+
+                return variant;
+            }
+
+            return ResolveDefaultActiveVariant(item.Product);
+        }
+
+        private static ProductVariant? ResolveDefaultActiveVariant(onlineStore.Models.Product product)
+        {
+            return product.Variants?
+                .Where(v => v.IsActive && !v.IsDeleted)
+                .OrderByDescending(v => v.IsDefault)
+                .ThenBy(v => v.SortOrder)
+                .ThenBy(v => v.CreatedAt)
+                .FirstOrDefault();
+        }
+
+        private static decimal ResolveOrderCartItemUnitPrice(
+            onlineStore.Models.Product product,
+            ProductVariant? variant,
+            decimal customerDiscountPercentage)
+        {
+            var price = variant?.Price ?? product.Price;
+
+            if (customerDiscountPercentage <= 0m)
+            {
+                return price;
+            }
+
+            var compareAtPrice = variant?.CompareAtPrice ?? product.CompareAtPrice;
+            var variantPriceApplied = variant?.Price.HasValue == true;
+            var priceBeforeDiscount = ResolvePriceBeforeStoreCustomerDiscount(
+                price,
+                compareAtPrice,
+                variantPriceApplied);
+
+            return priceBeforeDiscount - (priceBeforeDiscount * customerDiscountPercentage / 100m);
+        }
+
+        private static decimal ResolvePriceBeforeStoreCustomerDiscount(
+            decimal price,
+            decimal? compareAtPrice,
+            bool variantPriceApplied)
+        {
+            if (!variantPriceApplied &&
+                compareAtPrice.HasValue &&
+                compareAtPrice.Value > price)
+            {
+                return compareAtPrice.Value;
+            }
+
+            return price;
         }
 
         private async Task<CouponEntity> ValidateCouponAsync(
@@ -695,12 +819,7 @@ namespace onlineStore.Services.Order
                 "order=> get-order-dto-by-id:start OrderId={OrderId}",
                 orderId);
 
-            var order = await _context.Orders
-                .AsNoTracking()
-                .Include(o => o.Coupon)
-                .Include(o => o.StoreCustomer)
-                .Include(o => o.Items)
-                .AsSplitQuery()
+            var order = await BuildOrderDetailsQuery(asNoTracking: true)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
             _logger.LogInformation(
@@ -709,6 +828,71 @@ namespace onlineStore.Services.Order
                 order != null,
                 order == null ? null : ToOrderLogModel(MapOrderToDto(order)));
             return order == null ? null : MapOrderToDto(order);
+        }
+
+        private IQueryable<Models.Orders.Order> BuildOrderDetailsQuery(bool asNoTracking)
+        {
+            var query = _context.Orders
+                .Include(o => o.Coupon)
+                .Include(o => o.StoreCustomer)
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Product)
+                        .ThenInclude(p => p.Images)
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Variant)
+                        .ThenInclude(v => v!.Images)
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Variant)
+                        .ThenInclude(v => v!.AttributeValues)
+                            .ThenInclude(vav => vav.AttributeValue)
+                                .ThenInclude(av => av.Attribute)
+                .AsSplitQuery();
+
+            return asNoTracking ? query.AsNoTracking() : query;
+        }
+
+        private static string? ResolveProductImageUrl(onlineStore.Models.Product? product)
+        {
+            return product?.ThumbnailUrl
+                ?? product?.Images?
+                    .Where(i => i.VariantId == null && !i.IsDeleted)
+                    .OrderBy(i => i.DisplayOrder)
+                    .Select(i => i.Url)
+                    .FirstOrDefault();
+        }
+
+        private static string? ResolveEffectiveVariantImageUrl(
+            ProductVariant? variant,
+            onlineStore.Models.Product? product)
+        {
+            var variantImageUrl = variant?.Images?
+                .Where(i => !i.IsDeleted)
+                .OrderBy(i => i.DisplayOrder)
+                .Select(i => i.Url)
+                .FirstOrDefault();
+
+            return variant?.ImageUrl
+                ?? variantImageUrl
+                ?? ResolveProductImageUrl(product);
+        }
+
+        private static List<OrderItemVariantAttributeDto> MapOrderVariantAttributes(
+            ProductVariant? variant)
+        {
+            return variant?.AttributeValues?
+                .Where(vav => !vav.IsDeleted)
+                .OrderBy(vav => vav.AttributeValue.Attribute != null
+                    ? vav.AttributeValue.Attribute.Name
+                    : string.Empty)
+                .ThenBy(vav => vav.AttributeValue.Value)
+                .Select(vav => new OrderItemVariantAttributeDto
+                {
+                    AttributeValueId = vav.AttributeValueId,
+                    AttributeId = vav.AttributeValue.AttributeId,
+                    AttributeName = vav.AttributeValue.Attribute?.Name ?? string.Empty,
+                    Value = vav.AttributeValue.Value
+                })
+                .ToList() ?? new List<OrderItemVariantAttributeDto>();
         }
 
         private static OrderDto MapOrderToDto(Models.Orders.Order order)
@@ -744,7 +928,11 @@ namespace onlineStore.Services.Order
                     ProductId = i.ProductId,
                     ProductName = i.ProductName,
                     VariantId = i.VariantId,
-                    VariantName = i.VariantName,
+                    VariantName = i.VariantName ?? i.Variant?.Name,
+                    VariantSKU = i.Variant?.SKU,
+                    VariantImageUrl = i.Variant?.ImageUrl,
+                    EffectiveVariantImageUrl = ResolveEffectiveVariantImageUrl(i.Variant, i.Product),
+                    VariantAttributes = MapOrderVariantAttributes(i.Variant),
                     Quantity = i.Quantity,
                     UnitPrice = i.UnitPrice,
                     TotalPrice = i.TotalPrice
@@ -930,5 +1118,9 @@ namespace onlineStore.Services.Order
                 order.CreatedAt
             };
         }
+
+        private sealed record ResolvedOrderCartItem(
+            ProductVariant? Variant,
+            decimal UnitPrice);
     }
 }
