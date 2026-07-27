@@ -97,18 +97,15 @@ namespace onlineStore.Services.Product
         {
             var discountPercentage = await GetCustomerDiscountPercentageAsync(storeId, userId);
 
-            var products = await IncludeProductReadGraph(
-                _context.Products
-                    .AsNoTracking()
-                    .Where(p => p.StoreId == storeId &&
-                                p.IsFeatured))
-                .ToListAsync();
+            var query = _context.Products
+                .AsNoTracking()
+                .Where(p => p.StoreId == storeId &&
+                            p.IsFeatured &&
+                            p.Status == ProductStatus.Active)
+                .OrderByDescending(p => p.CreatedAt)
+                .Take(12);
 
-            products = products
-                .Where(p => p.Status == ProductStatus.Active)
-                .ToList();
-
-            return products.Select(p => ToDto(p, discountPercentage)).ToList();
+            return await ToCatalogProductDtosAsync(query, discountPercentage);
         }
 
         // ════════════════════════════════════════════════════
@@ -1462,17 +1459,135 @@ namespace onlineStore.Services.Product
             var page = filters.NormalizedPage;
             var pageSize = filters.NormalizedPageSize;
             var totalCount = await query.CountAsync();
-            var products = await IncludeProductReadGraph(
-                    ApplyProductSorting(query, filters.Sort)
-                        .Skip((page - 1) * pageSize)
-                        .Take(pageSize))
-                .AsSplitQuery()
-                .ToListAsync();
-            var items = products
-                .Select(p => ToDto(p, discountPercentage))
-                .ToList();
+            var pageQuery = ApplyProductSorting(query, filters.Sort)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize);
+            var items = await ToCatalogProductDtosAsync(pageQuery, discountPercentage);
 
             return PagedResultDto<ProductDto>.Create(items, page, pageSize, totalCount);
+        }
+
+        private static Task<List<ProductDto>> ToCatalogProductDtosAsync(
+            IQueryable<Models.Product> query,
+            decimal discountPercentage)
+        {
+            return query
+                .Select(p => new ProductDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Slug = p.Slug,
+                    SKU = p.SKU,
+                    Description = p.Description,
+                    ShortDescription = p.ShortDescription,
+
+                    Price = discountPercentage > 0m
+                        ? ((p.CompareAtPrice.HasValue && p.CompareAtPrice.Value > p.Price)
+                            ? p.CompareAtPrice.Value
+                            : p.Price) -
+                          (((p.CompareAtPrice.HasValue && p.CompareAtPrice.Value > p.Price)
+                              ? p.CompareAtPrice.Value
+                              : p.Price) * discountPercentage / 100m)
+                        : p.Price,
+                    OriginalPrice = discountPercentage > 0m
+                        ? ((p.CompareAtPrice.HasValue && p.CompareAtPrice.Value > p.Price)
+                            ? p.CompareAtPrice.Value
+                            : p.Price)
+                        : p.Price,
+                    FinalPrice = discountPercentage > 0m
+                        ? ((p.CompareAtPrice.HasValue && p.CompareAtPrice.Value > p.Price)
+                            ? p.CompareAtPrice.Value
+                            : p.Price) -
+                          (((p.CompareAtPrice.HasValue && p.CompareAtPrice.Value > p.Price)
+                              ? p.CompareAtPrice.Value
+                              : p.Price) * discountPercentage / 100m)
+                        : p.Price,
+                    AppliedDiscountPercentage = discountPercentage,
+                    IsWholesalePriceApplied = discountPercentage > 0m,
+
+                    CompareAtPrice = discountPercentage > 0m ? null : p.CompareAtPrice,
+                    WholesalePrice = null,
+                    StockQuantity = p.StockQuantity,
+                    TrackInventory = p.TrackInventory,
+                    ThumbnailUrl = p.ThumbnailUrl,
+                    Status = p.Status,
+                    IsFeatured = p.IsFeatured,
+                    StoreId = p.StoreId,
+                    CategoryId = p.CategoryId,
+                    CategoryName = p.Category.Name,
+                    SectionId = p.SectionId,
+                    SectionName = p.Section.Name,
+                    VisitCount = p.VisitCount,
+                    CreatedAt = p.CreatedAt,
+                    HasVariants =
+                        p.Variants.Count(v => !v.IsDeleted && v.IsActive) > 1 ||
+                        p.Variants.Any(v => !v.IsDeleted && v.IsActive && !v.IsDefault),
+                    DefaultVariantId = p.Variants
+                        .Where(v => !v.IsDeleted && v.IsActive)
+                        .OrderByDescending(v => v.IsDefault)
+                        .ThenBy(v => v.SortOrder)
+                        .ThenBy(v => v.Name)
+                        .Select(v => (Guid?)v.Id)
+                        .FirstOrDefault(),
+                    EffectiveStockQuantity = p.Variants.Any(v => !v.IsDeleted && v.IsActive)
+                        ? p.Variants
+                            .Where(v => !v.IsDeleted && v.IsActive)
+                            .Sum(v => v.StockQuantity)
+                        : p.StockQuantity,
+
+                    Images = p.Images
+                        .Where(i => i.VariantId == null)
+                        .OrderByDescending(i => i.IsPrimary)
+                        .ThenBy(i => i.DisplayOrder)
+                        .Take(1)
+                        .Select(i => new ProductImageDto
+                        {
+                            Id = i.Id,
+                            Url = i.Url,
+                            AltText = i.AltText,
+                            DisplayOrder = i.DisplayOrder,
+                            IsPrimary = i.IsPrimary,
+                            VariantId = i.VariantId
+                        })
+                        .ToList(),
+
+                    Variants = p.Variants
+                        .Where(v => !v.IsDeleted && v.IsActive)
+                        .OrderBy(v => v.SortOrder)
+                        .ThenByDescending(v => v.IsDefault)
+                        .ThenBy(v => v.Name)
+                        .Select(v => new ProductVariantDto
+                        {
+                            Id = v.Id,
+                            ProductId = v.ProductId,
+                            Name = v.Name,
+                            SKU = v.SKU,
+                            Description = v.Description,
+                            Price = v.Price,
+                            CompareAtPrice = v.CompareAtPrice,
+                            EffectivePrice = v.Price ?? p.Price,
+                            EffectiveCompareAtPrice = v.CompareAtPrice ?? p.CompareAtPrice,
+                            StockQuantity = v.StockQuantity,
+                            ImageUrl = v.ImageUrl,
+                            EffectiveImageUrl = v.ImageUrl
+                                ?? p.ThumbnailUrl
+                                ?? p.Images
+                                    .Where(i => i.VariantId == null)
+                                    .OrderByDescending(i => i.IsPrimary)
+                                    .ThenBy(i => i.DisplayOrder)
+                                    .Select(i => i.Url)
+                                    .FirstOrDefault(),
+                            IsDefault = v.IsDefault,
+                            IsActive = v.IsActive,
+                            SortOrder = v.SortOrder,
+                            AttributeValues = new List<VariantAttributeValueDto>(),
+                            Images = new List<ProductImageDto>()
+                        })
+                        .ToList(),
+
+                    AttributeValues = new List<ProductAttributeValueDto>()
+                })
+                .ToListAsync();
         }
 
         private static IQueryable<Models.Product> IncludeProductReadGraph(
