@@ -6,9 +6,10 @@ namespace onlineStore.Models
         public const string L = "L";
         public const string F = "F";
         public const string P = "P";
+        public const string B = "B";
 
 
-        public static readonly string[] AllowedValues = [Default, L, F,P];
+        public static readonly string[] AllowedValues = [Default, L, F, P, B];
 
         public static bool IsValid(string? value)
         {
