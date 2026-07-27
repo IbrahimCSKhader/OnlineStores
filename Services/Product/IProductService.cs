@@ -1,4 +1,5 @@
-﻿using onlineStore.DTOs.Product;
+using onlineStore.DTOs.Common;
+using onlineStore.DTOs.Product;
 
 namespace onlineStore.Services.Product
 {
@@ -10,6 +11,9 @@ namespace onlineStore.Services.Product
         Task<List<ProductDto>> GetFeaturedProductsAsync(Guid storeId, Guid? userId = null);
         Task<List<ProductDto>> GetProductsByCategoryAsync(Guid categoryId, Guid? userId = null);
         Task<List<ProductDto>> GetProductsBySectionAsync(Guid sectionId, Guid? userId = null);
+        Task<PagedResultDto<ProductDto>> GetStoreProductsPageAsync(Guid storeId, ProductQueryDto query, Guid? userId = null);
+        Task<PagedResultDto<ProductDto>> GetProductsByCategoryPageAsync(Guid categoryId, ProductQueryDto query, Guid? userId = null);
+        Task<PagedResultDto<ProductDto>> GetProductsBySectionPageAsync(Guid sectionId, ProductQueryDto query, Guid? userId = null);
         Task<ProductDto?> GetProductByIdAsync(Guid id, Guid? userId = null);
         Task<ProductDto?> GetProductBySlugAsync(string slug, Guid? userId = null);
 

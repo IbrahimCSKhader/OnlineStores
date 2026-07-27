@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using onlineStore.Data;
+using onlineStore.DTOs.Common;
 using onlineStore.DTOs.Product;
 using onlineStore.Models;
 using onlineStore.Models.Enums;
@@ -56,6 +57,21 @@ namespace onlineStore.Services.Product
                 .ToListAsync();
 
             return products.Select(p => ToDto(p, discountPercentage)).ToList();
+        }
+
+        public async Task<PagedResultDto<ProductDto>> GetStoreProductsPageAsync(
+            Guid storeId,
+            ProductQueryDto query,
+            Guid? userId = null)
+        {
+            var discountPercentage = await GetCustomerDiscountPercentageAsync(storeId, userId);
+            var productQuery = ApplyPublicProductFilters(
+                _context.Products
+                    .AsNoTracking()
+                    .Where(p => p.StoreId == storeId && p.Status == ProductStatus.Active),
+                query);
+
+            return await BuildPagedProductsAsync(productQuery, query, discountPercentage);
         }
 
         public async Task<List<ProductDto>> GetStoreProductsForManagementAsync(Guid storeId)
@@ -124,6 +140,26 @@ namespace onlineStore.Services.Product
         // ════════════════════════════════════════════════════
         // Get Products By Section
         // ════════════════════════════════════════════════════
+        public async Task<PagedResultDto<ProductDto>> GetProductsByCategoryPageAsync(
+            Guid categoryId,
+            ProductQueryDto query,
+            Guid? userId = null)
+        {
+            var productQuery = ApplyPublicProductFilters(
+                _context.Products
+                    .AsNoTracking()
+                    .Where(p => p.CategoryId == categoryId && p.Status == ProductStatus.Active),
+                query);
+            var storeId = await productQuery
+                .Select(p => (Guid?)p.StoreId)
+                .FirstOrDefaultAsync();
+            var discountPercentage = storeId.HasValue
+                ? await GetCustomerDiscountPercentageAsync(storeId.Value, userId)
+                : 0m;
+
+            return await BuildPagedProductsAsync(productQuery, query, discountPercentage);
+        }
+
         public async Task<List<ProductDto>> GetProductsBySectionAsync(
             Guid sectionId,
             Guid? userId = null)
@@ -150,6 +186,26 @@ namespace onlineStore.Services.Product
         // ════════════════════════════════════════════════════
         // Get Product By Id
         // ════════════════════════════════════════════════════
+        public async Task<PagedResultDto<ProductDto>> GetProductsBySectionPageAsync(
+            Guid sectionId,
+            ProductQueryDto query,
+            Guid? userId = null)
+        {
+            var productQuery = ApplyPublicProductFilters(
+                _context.Products
+                    .AsNoTracking()
+                    .Where(p => p.SectionId == sectionId && p.Status == ProductStatus.Active),
+                query);
+            var storeId = await productQuery
+                .Select(p => (Guid?)p.StoreId)
+                .FirstOrDefaultAsync();
+            var discountPercentage = storeId.HasValue
+                ? await GetCustomerDiscountPercentageAsync(storeId.Value, userId)
+                : 0m;
+
+            return await BuildPagedProductsAsync(productQuery, query, discountPercentage);
+        }
+
         public async Task<ProductDto?> GetProductByIdAsync(
             Guid id,
             Guid? userId = null)
@@ -1347,6 +1403,76 @@ namespace onlineStore.Services.Product
             }
 
             return product.Price;
+        }
+
+        private static IQueryable<Models.Product> ApplyPublicProductFilters(
+            IQueryable<Models.Product> query,
+            ProductQueryDto? filters)
+        {
+            if (filters == null)
+                return query;
+
+            var keyword = filters.Search?.Trim();
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var pattern = $"%{keyword}%";
+                query = query.Where(p =>
+                    EF.Functions.Like(p.Name, pattern) ||
+                    (p.Description != null && EF.Functions.Like(p.Description, pattern)) ||
+                    (p.ShortDescription != null && EF.Functions.Like(p.ShortDescription, pattern)) ||
+                    (p.SKU != null && EF.Functions.Like(p.SKU, pattern)));
+            }
+
+            if (filters.OnlyInStock == true)
+            {
+                query = query.Where(p =>
+                    !p.TrackInventory ||
+                    p.StockQuantity > 0 ||
+                    p.Variants.Any(v => !v.IsDeleted && v.IsActive && v.StockQuantity > 0));
+            }
+
+            if (filters.MinPrice.HasValue)
+                query = query.Where(p => p.Price >= filters.MinPrice.Value);
+
+            if (filters.MaxPrice.HasValue)
+                query = query.Where(p => p.Price <= filters.MaxPrice.Value);
+
+            return query;
+        }
+
+        private static IQueryable<Models.Product> ApplyProductSorting(
+            IQueryable<Models.Product> query,
+            string? sort)
+        {
+            return (sort ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "price-asc" => query.OrderBy(p => p.Price).ThenByDescending(p => p.CreatedAt),
+                "price-desc" => query.OrderByDescending(p => p.Price).ThenByDescending(p => p.CreatedAt),
+                "alphabetical" => query.OrderBy(p => p.Name).ThenByDescending(p => p.CreatedAt),
+                "popular" => query.OrderByDescending(p => p.VisitCount).ThenByDescending(p => p.CreatedAt),
+                _ => query.OrderByDescending(p => p.CreatedAt)
+            };
+        }
+
+        private async Task<PagedResultDto<ProductDto>> BuildPagedProductsAsync(
+            IQueryable<Models.Product> query,
+            ProductQueryDto filters,
+            decimal discountPercentage)
+        {
+            var page = filters.NormalizedPage;
+            var pageSize = filters.NormalizedPageSize;
+            var totalCount = await query.CountAsync();
+            var products = await IncludeProductReadGraph(
+                    ApplyProductSorting(query, filters.Sort)
+                        .Skip((page - 1) * pageSize)
+                        .Take(pageSize))
+                .AsSplitQuery()
+                .ToListAsync();
+            var items = products
+                .Select(p => ToDto(p, discountPercentage))
+                .ToList();
+
+            return PagedResultDto<ProductDto>.Create(items, page, pageSize, totalCount);
         }
 
         private static IQueryable<Models.Product> IncludeProductReadGraph(

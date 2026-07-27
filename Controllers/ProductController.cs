@@ -26,11 +26,17 @@ namespace onlineStore.Controllers
         // GET api/product/store/{storeId}
         [HttpGet("store/{storeId}")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetByStore(Guid storeId)
+        public async Task<IActionResult> GetByStore(Guid storeId, [FromQuery] ProductQueryDto query)
         {
             try
             {
                 var userId = GetUserIdOrNull();
+                if (query.RequiresPagedResponse)
+                {
+                    var pagedProducts = await _productService.GetStoreProductsPageAsync(storeId, query, userId);
+                    return Ok(pagedProducts);
+                }
+
                 var products = await _productService.GetStoreProductsAsync(storeId, userId);
                 return Ok(products);
             }
@@ -79,11 +85,17 @@ namespace onlineStore.Controllers
         // GET api/product/category/{categoryId}
         [HttpGet("category/{categoryId}")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetByCategory(Guid categoryId)
+        public async Task<IActionResult> GetByCategory(Guid categoryId, [FromQuery] ProductQueryDto query)
         {
             try
             {
                 var userId = GetUserIdOrNull();
+                if (query.RequiresPagedResponse)
+                {
+                    var pagedProducts = await _productService.GetProductsByCategoryPageAsync(categoryId, query, userId);
+                    return Ok(pagedProducts);
+                }
+
                 var products = await _productService.GetProductsByCategoryAsync(categoryId, userId);
                 return Ok(products);
             }
@@ -96,11 +108,17 @@ namespace onlineStore.Controllers
         // GET api/product/section/{sectionId}
         [HttpGet("section/{sectionId}")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetBySection(Guid sectionId)
+        public async Task<IActionResult> GetBySection(Guid sectionId, [FromQuery] ProductQueryDto query)
         {
             try
             {
                 var userId = GetUserIdOrNull();
+                if (query.RequiresPagedResponse)
+                {
+                    var pagedProducts = await _productService.GetProductsBySectionPageAsync(sectionId, query, userId);
+                    return Ok(pagedProducts);
+                }
+
                 var products = await _productService.GetProductsBySectionAsync(sectionId, userId);
                 return Ok(products);
             }

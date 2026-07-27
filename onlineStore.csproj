@@ -22,4 +22,11 @@
 		<PackageReference Include="Scalar.AspNetCore" Version="2.13.13" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<Compile Remove="onlineStore.Tests\**\*.cs" />
+		<Content Remove="onlineStore.Tests\**\*" />
+		<EmbeddedResource Remove="onlineStore.Tests\**\*" />
+		<None Remove="onlineStore.Tests\**\*" />
+	</ItemGroup>
+
 </Project>
