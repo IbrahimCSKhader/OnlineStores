@@ -1,10 +1,14 @@
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using onlineStore.Data;
 
 #nullable disable
 
 namespace onlineStore.Migrations
 {
     /// <inheritdoc />
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260727170000_AllowBlackStoreThemeTemplate")]
     public partial class AllowBlackStoreThemeTemplate : Migration
     {
         /// <inheritdoc />
