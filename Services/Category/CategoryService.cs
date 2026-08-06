@@ -81,6 +81,7 @@ namespace onlineStore.Services.Category
                 Name = name,
                 Slug = finalSlug,
                 Description = dto.Description?.Trim(),
+                ImageUrl = NormalizeOptionalUrl(dto.ImageUrl),
                 DisplayOrder = dto.DisplayOrder,
                 StoreId = dto.StoreId,
                 IsActive = true,
@@ -111,6 +112,9 @@ namespace onlineStore.Services.Category
 
             if (dto.Description != null)
                 category.Description = dto.Description.Trim();
+
+            if (dto.ImageUrl != null)
+                category.ImageUrl = NormalizeOptionalUrl(dto.ImageUrl);
 
             if (dto.DisplayOrder.HasValue)
                 category.DisplayOrder = dto.DisplayOrder.Value;
@@ -180,12 +184,19 @@ namespace onlineStore.Services.Category
             return normalized;
         }
 
+        private static string? NormalizeOptionalUrl(string? value)
+        {
+            var normalized = value?.Trim();
+            return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
+        }
+
         private static CategoryDto ToDto(Models.Category c) => new()
         {
             Id = c.Id,
             Name = c.Name,
             Slug = c.Slug,
             Description = c.Description,
+            ImageUrl = c.ImageUrl,
             DisplayOrder = c.DisplayOrder,
             IsActive = c.IsActive,
             StoreId = c.StoreId,
