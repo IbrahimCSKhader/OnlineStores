@@ -204,7 +204,7 @@ namespace onlineStore.Data
                 entity.ToTable(t =>
                     t.HasCheckConstraint(
                         "CK_Stores_ThemeTemplate",
-                        "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U')"));
+                        "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U', 'N', 'V', 'Y', 'E', 'R')"));
             });
 
             builder.Entity<StoreContactAccount>()

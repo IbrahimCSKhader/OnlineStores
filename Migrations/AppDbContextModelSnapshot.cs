@@ -1214,7 +1214,7 @@ namespace onlineStore.Migrations
 
                     b.ToTable("Stores", t =>
                         {
-                            t.HasCheckConstraint("CK_Stores_ThemeTemplate", "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U')");
+                            t.HasCheckConstraint("CK_Stores_ThemeTemplate", "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U', 'N', 'V', 'Y', 'E', 'R')");
                         });
                 });
 

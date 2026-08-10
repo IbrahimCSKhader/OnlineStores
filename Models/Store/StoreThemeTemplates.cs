@@ -8,9 +8,15 @@ namespace onlineStore.Models
         public const string P = "P";
         public const string B = "B";
         public const string Blue = "U";
+        public const string Brown = "N";
+        public const string Purple = "V";
+        public const string Gold = "Y";
+        public const string DeepGreen = "E";
+        public const string Red = "R";
 
 
-        public static readonly string[] AllowedValues = [Default, L, F, P, B, Blue];
+        public static readonly string[] AllowedValues =
+            [Default, L, F, P, B, Blue, Brown, Purple, Gold, DeepGreen, Red];
 
         public static bool IsValid(string? value)
         {
