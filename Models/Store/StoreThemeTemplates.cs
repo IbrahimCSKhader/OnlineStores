@@ -36,6 +36,17 @@ namespace onlineStore.Models
             return IsValid(normalizedValue) ? normalizedValue : Default;
         }
 
+        public static string NormalizeForResponse(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return Default;
+
+            // The database constraint is the source of truth for persisted templates.
+            // Preserve its normalized value so an older API allow-list cannot silently
+            // downgrade a newly added template to the default theme.
+            return value.Trim().ToUpperInvariant();
+        }
+
         public static string NormalizeOrThrow(string? value, string? paramName = null)
         {
             if (string.IsNullOrWhiteSpace(value))

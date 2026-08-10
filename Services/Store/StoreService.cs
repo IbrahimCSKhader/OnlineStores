@@ -327,7 +327,7 @@ namespace onlineStore.Services.Store
             VisitCount = includeVisitCount ? s.VisitCount : 0,
             WhatsAppNumber = s.WhatsAppNumber,
             StoreStory = s.StoreStory,
-            ThemeTemplate = StoreThemeTemplates.NormalizeOrDefault(s.ThemeTemplate),
+            ThemeTemplate = StoreThemeTemplates.NormalizeForResponse(s.ThemeTemplate),
             ContactAccounts = s.ContactAccounts
                 .Where(c => !c.IsDeleted)
                 .OrderBy(c => c.SortOrder)
