@@ -7,6 +7,7 @@ using onlineStore.Models.Enums;
 using onlineStore.Models.Orders;
 using onlineStore.Security;
 using onlineStore.Services.Pricing;
+using onlineStore.Services.Rewards;
 using CouponEntity = onlineStore.Models.Discounts.Coupon;
 
 namespace onlineStore.Services.Order
@@ -207,6 +208,8 @@ namespace onlineStore.Services.Order
                     if (totalAmount < 0)
                         totalAmount = 0;
 
+                    var pointsEarned = PurchasePointsPolicy.CalculatePointsFromCartItems(cartItems);
+
                     var order = new Models.Orders.Order
                     {
                         OrderNumber = GenerateOrderNumber(),
@@ -215,6 +218,7 @@ namespace onlineStore.Services.Order
                         SubTotal = subTotal,
                         DiscountAmount = discountAmount,
                         TotalAmount = totalAmount,
+                        PointsEarned = pointsEarned,
                         CustomerNotes = dto.CustomerNotes?.Trim(),
                         DeliveryAddress = dto.DeliveryAddress.Trim(),
                         DeliveryCity = dto.DeliveryCity.Trim(),
@@ -248,6 +252,17 @@ namespace onlineStore.Services.Order
 
                     if (coupon != null)
                         coupon.UsageCount += 1;
+
+                    var storeCustomer = await _context.StoreCustomers
+                        .FirstOrDefaultAsync(customer =>
+                            customer.Id == storeCustomerId &&
+                            customer.StoreId == dto.StoreId &&
+                            customer.IsActive);
+
+                    if (storeCustomer == null)
+                        throw new UnauthorizedAccessException("العميل لا يملك صلاحية الوصول إلى هذا المتجر");
+
+                    storeCustomer.PurchasePoints += pointsEarned;
 
                     _context.CartItems.RemoveRange(cartItems);
 
@@ -314,11 +329,13 @@ namespace onlineStore.Services.Order
                     SubTotal = o.SubTotal,
                     DiscountAmount = o.DiscountAmount,
                     TotalAmount = o.TotalAmount,
+                    PointsEarned = o.PointsEarned,
                     StoreCustomerId = o.StoreCustomerId,
                     CustomerName = (o.StoreCustomer.FirstName + " " + o.StoreCustomer.LastName).Trim(),
                     CustomerEmail = o.StoreCustomer.Email,
                     CustomerPhone = o.StoreCustomer.Phone,
                     CustomerDiscountPercentage = o.StoreCustomer.DiscountPercentage,
+                    CustomerPurchasePoints = o.StoreCustomer.PurchasePoints,
                     ItemsCount = o.Items.Count(),
                     StoreId = o.StoreId,
                     CouponId = o.CouponId,
@@ -336,6 +353,73 @@ namespace onlineStore.Services.Order
                 orders.Select(ToOrderSummaryLogModel).ToList());
 
             return orders;
+        }
+
+        public async Task<CustomerPurchasePointsDto?> GetUserPurchasePointsAsync(Guid storeCustomerId)
+        {
+            _logger.LogInformation(
+                "order=> get-user-purchase-points:start StoreCustomerId={StoreCustomerId}",
+                storeCustomerId);
+
+            var customer = await _context.StoreCustomers
+                .AsNoTracking()
+                .Where(c => c.Id == storeCustomerId && c.IsActive)
+                .Select(c => new
+                {
+                    c.Id,
+                    c.StoreId,
+                    c.PurchasePoints
+                })
+                .FirstOrDefaultAsync();
+
+            if (customer == null)
+            {
+                _logger.LogWarning(
+                    "order=> get-user-purchase-points:not-found StoreCustomerId={StoreCustomerId}",
+                    storeCustomerId);
+                return null;
+            }
+
+            var totalOrders = await _context.Orders
+                .AsNoTracking()
+                .Where(o => o.StoreCustomerId == storeCustomerId)
+                .CountAsync();
+
+            var totalPurchasedItems = await _context.OrderItems
+                .AsNoTracking()
+                .Where(i => i.Order.StoreCustomerId == storeCustomerId)
+                .SumAsync(i => (int?)i.Quantity) ?? 0;
+
+            var recentPointsEarned = await _context.Orders
+                .AsNoTracking()
+                .Where(o => o.StoreCustomerId == storeCustomerId)
+                .OrderByDescending(o => o.CreatedAt)
+                .Select(o => (int?)o.PointsEarned)
+                .FirstOrDefaultAsync() ?? 0;
+
+            var lastOrderAt = await _context.Orders
+                .AsNoTracking()
+                .Where(o => o.StoreCustomerId == storeCustomerId)
+                .MaxAsync(o => (DateTime?)o.CreatedAt);
+
+            var result = new CustomerPurchasePointsDto
+            {
+                StoreCustomerId = customer.Id,
+                StoreId = customer.StoreId,
+                PurchasePoints = customer.PurchasePoints,
+                PointsPerProduct = PurchasePointsPolicy.PointsPerProduct,
+                TotalOrders = totalOrders,
+                TotalPurchasedItems = totalPurchasedItems,
+                RecentPointsEarned = recentPointsEarned,
+                LastOrderAt = lastOrderAt
+            };
+
+            _logger.LogInformation(
+                "order=> get-user-purchase-points:result StoreCustomerId={StoreCustomerId} Points={Points}",
+                storeCustomerId,
+                result.PurchasePoints);
+
+            return result;
         }
 
         public async Task<OrderDto?> GetUserOrderByIdAsync(Guid storeCustomerId, Guid orderId)
@@ -380,11 +464,13 @@ namespace onlineStore.Services.Order
                     SubTotal = o.SubTotal,
                     DiscountAmount = o.DiscountAmount,
                     TotalAmount = o.TotalAmount,
+                    PointsEarned = o.PointsEarned,
                     StoreCustomerId = o.StoreCustomerId,
                     CustomerName = (o.StoreCustomer.FirstName + " " + o.StoreCustomer.LastName).Trim(),
                     CustomerEmail = o.StoreCustomer.Email,
                     CustomerPhone = o.StoreCustomer.Phone,
                     CustomerDiscountPercentage = o.StoreCustomer.DiscountPercentage,
+                    CustomerPurchasePoints = o.StoreCustomer.PurchasePoints,
                     ItemsCount = o.Items.Count(),
                     StoreId = o.StoreId,
                     CouponId = o.CouponId,
@@ -906,6 +992,7 @@ namespace onlineStore.Services.Order
                 SubTotal = order.SubTotal,
                 DiscountAmount = order.DiscountAmount,
                 TotalAmount = order.TotalAmount,
+                PointsEarned = order.PointsEarned,
                 CustomerNotes = order.CustomerNotes,
                 StoreNotes = order.StoreNotes,
                 DeliveryAddress = order.DeliveryAddress,

@@ -13,12 +13,14 @@ namespace onlineStore.DTOs.Order
         public decimal SubTotal { get; set; }
         public decimal DiscountAmount { get; set; }
         public decimal TotalAmount { get; set; }
+        public int PointsEarned { get; set; }
 
         public Guid StoreCustomerId { get; set; }
         public string? CustomerName { get; set; }
         public string? CustomerEmail { get; set; }
         public string? CustomerPhone { get; set; }
         public decimal CustomerDiscountPercentage { get; set; }
+        public int CustomerPurchasePoints { get; set; }
 
         public int ItemsCount { get; set; }
         public Guid StoreId { get; set; }

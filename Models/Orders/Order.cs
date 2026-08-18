@@ -28,6 +28,8 @@ namespace onlineStore.Models.Orders
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalAmount { get; set; }
 
+        public int PointsEarned { get; set; }
+
         [MaxLength(1000)]
         public string? CustomerNotes { get; set; }
 

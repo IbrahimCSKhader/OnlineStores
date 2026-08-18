@@ -8,6 +8,7 @@ namespace onlineStore.Services.Order
 
         Task<List<OrderSummaryDto>> GetUserOrdersAsync(Guid storeCustomerId);
         Task<OrderDto?> GetUserOrderByIdAsync(Guid storeCustomerId, Guid orderId);
+        Task<CustomerPurchasePointsDto?> GetUserPurchasePointsAsync(Guid storeCustomerId);
 
         Task<List<OrderSummaryDto>> GetStoreOrdersAsync(Guid storeId);
         Task<OrderDto?> GetStoreOrderByIdAsync(Guid storeId, Guid orderId);

@@ -130,6 +130,42 @@ namespace onlineStore.Controllers
             return Ok(orders);
         }
 
+        [HttpGet("my-points")]
+        [Authorize(Policy = "StoreCustomerOnly")]
+        public async Task<IActionResult> GetMyPoints()
+        {
+            _logger.LogInformation("order=> controller:get-my-points:start");
+            var storeCustomer = GetStoreCustomerContext();
+            if (storeCustomer == null)
+            {
+                _logger.LogWarning("order=> controller:get-my-points:missing-store-customer-context");
+                return Unauthorized();
+            }
+
+            var points = await _orderService.GetUserPurchasePointsAsync(
+                storeCustomer.Value.StoreCustomerId);
+
+            if (points == null)
+            {
+                _logger.LogWarning(
+                    "order=> controller:get-my-points:not-found StoreCustomerId={StoreCustomerId}",
+                    storeCustomer.Value.StoreCustomerId);
+                return NotFound(new { message = "Customer points record does not exist" });
+            }
+
+            if (points.StoreId != storeCustomer.Value.StoreId)
+            {
+                _logger.LogWarning(
+                    "order=> controller:get-my-points:forbidden TokenStoreId={TokenStoreId} PointsStoreId={PointsStoreId} StoreCustomerId={StoreCustomerId}",
+                    storeCustomer.Value.StoreId,
+                    points.StoreId,
+                    storeCustomer.Value.StoreCustomerId);
+                return Forbid();
+            }
+
+            return Ok(points);
+        }
+
       
         [HttpGet("my-orders/{orderId}")]
         [Authorize(Policy = "StoreCustomerOnly")]

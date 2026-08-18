@@ -71,6 +71,7 @@ namespace onlineStore.Services.CustomerStore
                     Email = x.Email,
                     Phone = x.Phone,
                     DiscountPercentage = x.DiscountPercentage,
+                    PurchasePoints = x.PurchasePoints,
                     IsActive = x.IsActive,
                     CreatedAt = x.CreatedAt
                 })
@@ -95,6 +96,7 @@ namespace onlineStore.Services.CustomerStore
                     Email = x.Email,
                     Phone = x.Phone,
                     DiscountPercentage = x.DiscountPercentage,
+                    PurchasePoints = x.PurchasePoints,
                     IsActive = x.IsActive,
                     CreatedAt = x.CreatedAt,
                     UpdatedAt = x.UpdatedAt
@@ -270,6 +272,7 @@ namespace onlineStore.Services.CustomerStore
             Email = entity.Email,
             Phone = entity.Phone,
             DiscountPercentage = entity.DiscountPercentage,
+            PurchasePoints = entity.PurchasePoints,
             IsActive = entity.IsActive,
             CreatedAt = entity.CreatedAt,
             UpdatedAt = entity.UpdatedAt

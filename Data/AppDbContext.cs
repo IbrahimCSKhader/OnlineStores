@@ -273,6 +273,7 @@ namespace onlineStore.Data
                 e.Property(o => o.SubTotal).HasColumnType("decimal(18,2)");
                 e.Property(o => o.DiscountAmount).HasColumnType("decimal(18,2)");
                 e.Property(o => o.TotalAmount).HasColumnType("decimal(18,2)");
+                e.Property(o => o.PointsEarned).HasDefaultValue(0);
             });
 
             builder.Entity<OrderItem>(e =>
@@ -342,6 +343,7 @@ namespace onlineStore.Data
             builder.Entity<StoreCustomer>(e =>
             {
                 e.Property(x => x.DiscountPercentage).HasColumnType("decimal(5,2)");
+                e.Property(x => x.PurchasePoints).HasDefaultValue(0);
             });
 
             builder.Entity<StoreCustomer>()

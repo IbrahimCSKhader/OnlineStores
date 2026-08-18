@@ -43,6 +43,8 @@ namespace onlineStore.Models
         [Range(0, 100)]
         public decimal DiscountPercentage { get; set; }
 
+        public int PurchasePoints { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         public ICollection<ShoppingCart> Carts { get; set; } = new List<ShoppingCart>();
