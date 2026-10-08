@@ -24,6 +24,10 @@
 
 	<ItemGroup>
 		<Compile Remove="onlineStore.Tests\**\*.cs" />
+		<Compile Remove="artifacts\**\*.cs" />
+		<Content Remove="artifacts\**\*" />
+		<EmbeddedResource Remove="artifacts\**\*" />
+		<None Remove="artifacts\**\*" />
 		<Content Remove="onlineStore.Tests\**\*" />
 		<EmbeddedResource Remove="onlineStore.Tests\**\*" />
 		<None Remove="onlineStore.Tests\**\*" />

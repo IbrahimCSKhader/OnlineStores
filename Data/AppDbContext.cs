@@ -19,6 +19,7 @@ namespace onlineStore.Data
         public AppDbContext(DbContextOptions<AppDbContext> options)
            : base(options) { }
         public DbSet<Store> Stores => Set<Store>();
+        public DbSet<StoreRegistrationVisit> StoreRegistrationVisits => Set<StoreRegistrationVisit>();
 
         public DbSet<Category> Categories => Set<Category>();
         public DbSet<Section> Sections => Set<Section>();

@@ -1344,6 +1344,20 @@ namespace onlineStore.Migrations
                     b.ToTable("CustomerStores", (string)null);
                 });
 
+            modelBuilder.Entity("onlineStore.Models.StoreRegistrationVisit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("VisitedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("StoreRegistrationVisits");
+                });
+
             modelBuilder.Entity("onlineStore.Models.Subscriptions.StoreSubscription", b =>
                 {
                     b.Property<Guid>("Id")

@@ -1,0 +1,372 @@
+{
+  "style-wave/basic-cotton-tee": {
+    "Name": "تيشيرت قطن كلاسيكي",
+    "Description": "تيشيرت قطن كلاسيكي، بالمقاسات والألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "بيج فاتح - XS",
+      "بيج فاتح - S",
+      "بيج فاتح - M",
+      "بيج فاتح - L"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1001_Male_ClassicOrganicTee-OysterGrey_2_e92a5e48-88f6-4a80-a242-846a2d5b8b6e.jpg?v=1745495492&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1001_Male_ClassicOrganicTee-OysterGrey_2_e92a5e48-88f6-4a80-a242-846a2d5b8b6e.jpg?v=1745495492&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1001_Male_ClassicOrganicTee-OysterGrey_2_e92a5e48-88f6-4a80-a242-846a2d5b8b6e.jpg?v=1745495492&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1001_Male_ClassicOrganicTee-OysterGrey_2_e92a5e48-88f6-4a80-a242-846a2d5b8b6e.jpg?v=1745495492&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://colorfulstandard.com/products/classic-organic-tee-t-shirt-oyster-grey-male"
+  },
+  "style-wave/oversized-graphic-tee": {
+    "Name": "تيشيرت قطن واسع",
+    "Description": "تيشيرت قطن واسع، بالمقاسات والألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "أزرق نيلي - XS",
+      "أزرق نيلي - S",
+      "أزرق نيلي - M",
+      "أزرق نيلي - L"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS2056_Oversized-Organic-T-Shirt_FadedIndigo_M_1.jpg?v=1774964208&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS2056_Oversized-Organic-T-Shirt_FadedIndigo_M_1.jpg?v=1774964208&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS2056_Oversized-Organic-T-Shirt_FadedIndigo_M_1.jpg?v=1774964208&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS2056_Oversized-Organic-T-Shirt_FadedIndigo_M_1.jpg?v=1774964208&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://colorfulstandard.com/products/oversized-organic-t-shirt-faded-indigo-male"
+  },
+  "style-wave/ribbed-long-sleeve": {
+    "Name": "تيشيرت طويل الأكمام",
+    "Description": "تيشيرت طويل الأكمام، بالمقاسات والألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "أزرق نيلي - XS",
+      "أزرق نيلي - S",
+      "أزرق نيلي - M",
+      "أزرق نيلي - L"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1003_Oversized-Organic-LS-T-Shirt_FadedIndigo_M_1.jpg?v=1775036858&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1003_Oversized-Organic-LS-T-Shirt_FadedIndigo_M_1.jpg?v=1775036858&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1003_Oversized-Organic-LS-T-Shirt_FadedIndigo_M_1.jpg?v=1775036858&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1003_Oversized-Organic-LS-T-Shirt_FadedIndigo_M_1.jpg?v=1775036858&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://colorfulstandard.com/products/oversized-organic-ls-t-shirt-faded-indigo-male"
+  },
+  "style-wave/linen-summer-shirt": {
+    "Name": "تيشيرت قطن ثقيل",
+    "Description": "تيشيرت قطن ثقيل، بالمقاسات والألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "أسود - XS",
+      "أسود - S",
+      "أسود - M",
+      "أسود - L"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1021_Heavy-Organic-Boxy-Tee_DeepBlack_1.jpg?v=1783081141&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1021_Heavy-Organic-Boxy-Tee_DeepBlack_1.jpg?v=1783081141&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1021_Heavy-Organic-Boxy-Tee_DeepBlack_1.jpg?v=1783081141&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1021_Heavy-Organic-Boxy-Tee_DeepBlack_1.jpg?v=1783081141&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://colorfulstandard.com/products/heavy-organic-boxy-tee-deep-black-male"
+  },
+  "style-wave/premium-zip-hoodie": {
+    "Name": "هودي قطن واسع",
+    "Description": "هودي قطن واسع، بالمقاسات والألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "بيج فاتح - XS",
+      "بيج فاتح - S",
+      "بيج فاتح - M",
+      "بيج فاتح - L"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1015_Male_OrganicOversizedHood-OysterGrey_2_e59cbcb9-db11-4cb1-8deb-41dc08cf34de.jpg?v=1745579705&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1015_Male_OrganicOversizedHood-OysterGrey_2_e59cbcb9-db11-4cb1-8deb-41dc08cf34de.jpg?v=1745579705&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1015_Male_OrganicOversizedHood-OysterGrey_2_e59cbcb9-db11-4cb1-8deb-41dc08cf34de.jpg?v=1745579705&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1015_Male_OrganicOversizedHood-OysterGrey_2_e59cbcb9-db11-4cb1-8deb-41dc08cf34de.jpg?v=1745579705&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://colorfulstandard.com/products/organic-oversized-hood-oyster-grey-male"
+  },
+  "style-wave/cropped-denim-jacket": {
+    "Name": "سويت شيرت واسع",
+    "Description": "سويت شيرت واسع، بالمقاسات والألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "كاكي - XS",
+      "كاكي - S",
+      "كاكي - M",
+      "كاكي - L"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1012_Organic-Oversized-Crew_FadedKhaki_M_1.jpg?v=1774965929&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1012_Organic-Oversized-Crew_FadedKhaki_M_1.jpg?v=1774965929&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1012_Organic-Oversized-Crew_FadedKhaki_M_1.jpg?v=1774965929&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1012_Organic-Oversized-Crew_FadedKhaki_M_1.jpg?v=1774965929&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://colorfulstandard.com/products/organic-oversized-crew-faded-khaki-male"
+  },
+  "style-wave/puffer-light-jacket": {
+    "Name": "هودي قطن كلاسيكي",
+    "Description": "هودي قطن كلاسيكي، بالمقاسات والألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "أزرق نيلي - XS",
+      "أزرق نيلي - S",
+      "أزرق نيلي - M",
+      "أزرق نيلي - L"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1006_Classic-Organic-Hood_FadedIndigo_M_1.jpg?v=1774963299&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1006_Classic-Organic-Hood_FadedIndigo_M_1.jpg?v=1774963299&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1006_Classic-Organic-Hood_FadedIndigo_M_1.jpg?v=1774963299&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1006_Classic-Organic-Hood_FadedIndigo_M_1.jpg?v=1774963299&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://colorfulstandard.com/products/classic-organic-hood-faded-indigo-male"
+  },
+  "style-wave/wide-leg-jeans": {
+    "Name": "بنطال رياضي مريح",
+    "Description": "بنطال رياضي مريح، بالمقاسات والألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "كاكي - XS",
+      "كاكي - S",
+      "كاكي - M",
+      "كاكي - L"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1019_Male_OrganicSweatpants_2-FadedKhaki_2.jpg?v=1773228824&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1019_Male_OrganicSweatpants_2-FadedKhaki_2.jpg?v=1773228824&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1019_Male_OrganicSweatpants_2-FadedKhaki_2.jpg?v=1773228824&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1019_Male_OrganicSweatpants_2-FadedKhaki_2.jpg?v=1773228824&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://colorfulstandard.com/products/organic-relaxed-sweatpants-faded-khaki-male"
+  },
+  "style-wave/tailored-straight-pants": {
+    "Name": "بنطال رياضي مستقيم",
+    "Description": "بنطال رياضي مستقيم، بالمقاسات والألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "أحمر هادئ - XS",
+      "أحمر هادئ - S",
+      "أحمر هادئ - M",
+      "أحمر هادئ - L"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1018_Organic-Straightleg-Sweatpants_FadedRed_M_1.jpg?v=1776344908&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1018_Organic-Straightleg-Sweatpants_FadedRed_M_1.jpg?v=1776344908&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1018_Organic-Straightleg-Sweatpants_FadedRed_M_1.jpg?v=1776344908&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1018_Organic-Straightleg-Sweatpants_FadedRed_M_1.jpg?v=1776344908&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://colorfulstandard.com/products/organic-straight-leg-sweatpants-faded-red-male"
+  },
+  "style-wave/pleated-midi-skirt": {
+    "Name": "بنطال قطن مستقيم",
+    "Description": "بنطال قطن مستقيم، بالمقاسات والألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "كاكي - XS",
+      "كاكي - S",
+      "كاكي - M",
+      "كاكي - L"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1018_Male_OrganicStraight_Leg_Pants-FadedKhaki_2.jpg?v=1773228324&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1018_Male_OrganicStraight_Leg_Pants-FadedKhaki_2.jpg?v=1773228324&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1018_Male_OrganicStraight_Leg_Pants-FadedKhaki_2.jpg?v=1773228324&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1018_Male_OrganicStraight_Leg_Pants-FadedKhaki_2.jpg?v=1773228324&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://colorfulstandard.com/products/organic-straight-leg-sweatpants-faded-khaki-male"
+  },
+  "style-wave/casual-knit-dress": {
+    "Name": "بنطال قطن نيلي",
+    "Description": "بنطال قطن نيلي، بالمقاسات والألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "أزرق نيلي - XS",
+      "أزرق نيلي - S",
+      "أزرق نيلي - M",
+      "أزرق نيلي - L"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1011_Organic-Sweatpants_FadedIndigo_M_1_4c498c66-418a-4e24-8238-9ef6fb9f236e.jpg?v=1774963347&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1011_Organic-Sweatpants_FadedIndigo_M_1_4c498c66-418a-4e24-8238-9ef6fb9f236e.jpg?v=1774963347&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1011_Organic-Sweatpants_FadedIndigo_M_1_4c498c66-418a-4e24-8238-9ef6fb9f236e.jpg?v=1774963347&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1011_Organic-Sweatpants_FadedIndigo_M_1_4c498c66-418a-4e24-8238-9ef6fb9f236e.jpg?v=1774963347&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://colorfulstandard.com/products/organic-sweatpants-faded-indigo-male"
+  },
+  "style-wave/athletic-jogger-set": {
+    "Name": "سويت شيرت قطن",
+    "Description": "سويت شيرت قطن، بالمقاسات والألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "بيج فاتح - XS",
+      "بيج فاتح - S",
+      "بيج فاتح - M",
+      "بيج فاتح - L"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1012_Male_OrganicOversizedCrew-OysterGrey_2_a2fb78c1-e772-43d4-8679-b1f907f463d4.jpg?v=1745568773&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1012_Male_OrganicOversizedCrew-OysterGrey_2_a2fb78c1-e772-43d4-8679-b1f907f463d4.jpg?v=1745568773&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1012_Male_OrganicOversizedCrew-OysterGrey_2_a2fb78c1-e772-43d4-8679-b1f907f463d4.jpg?v=1745568773&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0053/5615/9064/files/CS1012_Male_OrganicOversizedCrew-OysterGrey_2_a2fb78c1-e772-43d4-8679-b1f907f463d4.jpg?v=1745568773&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://colorfulstandard.com/products/organic-oversized-crew-oyster-grey-male"
+  },
+  "mug-mood/classic-ceramic-mug": {
+    "Name": "كوب سيراميك MUI",
+    "Description": "كوب سيراميك MUI بسعة 260ml، بالألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "بيج رملي - 260ml",
+      "بني - 260ml"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/21178_t_001_c167496f-d004-4bd6-a1c5-45ee150e1f5d.jpg?v=1770747695&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/21192_t_001_62233ec5-56ae-42fb-99a5-47143f14d28f.jpg?v=1770747695&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://www.kinto-usa.com/products/21178"
+  },
+  "mug-mood/matte-latte-mug": {
+    "Name": "كوب وصحن MUI",
+    "Description": "كوب وصحن MUI بسعة 300ml، بالألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "بيج رملي - 300ml",
+      "بني - 300ml"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/21182_t_001_d5ee9c42-6573-4d4c-ac95-d51be8fe640b.jpg?v=1770747702&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/21196_t_001_6088a44b-edf4-4b98-bef3-adf659d1396d.jpg?v=1770747702&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://www.kinto-usa.com/products/21182"
+  },
+  "mug-mood/espresso-cup-set": {
+    "Name": "كوب Espresso مع صحن",
+    "Description": "كوب Espresso مع صحن بسعة 90ml، بالألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "بيج رملي - 90ml",
+      "بني - 90ml"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/21180_t_001_46043c06-937d-45cb-8157-e5ea0da87cd0.jpg?v=1770747687&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/21194_t_001_7b3b68f2-55f0-4f79-9c1a-2a5f08402a10.jpg?v=1770747687&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://www.kinto-usa.com/products/21180"
+  },
+  "mug-mood/glass-tea-cup": {
+    "Name": "كوب شاي زجاجي CAST",
+    "Description": "كوب شاي زجاجي CAST بسعة 220ml، بالألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "شفاف - 220ml"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/products/8437.jpg?v=1550833195&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://www.kinto-usa.com/products/8437"
+  },
+  "mug-mood/insulated-travel-tumbler": {
+    "Name": "كوب سفر TO GO بغطاء",
+    "Description": "كوب سفر TO GO بغطاء بسعة 360ml، بالألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "أبيض - 360ml",
+      "كاكي - 360ml",
+      "أسود - 360ml"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/20441_001_24ba95a4-0b49-48ab-ac6a-fb758796c9c9.jpg?v=1709228134&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/20444_001_59e147cc-c470-49d4-b7ae-1f9c1fccee2f.jpg?v=1709228134&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/20446_001_9db7b77a-f625-4c1e-9da5-ef7e5e76bdd8.jpg?v=1709228134&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://www.kinto-usa.com/products/20441"
+  },
+  "mug-mood/stainless-steel-tumbler": {
+    "Name": "كوب حراري TRAIL ستانلس ستيل",
+    "Description": "كوب حراري TRAIL ستانلس ستيل بسعة 580ml، بالألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "أبيض - 580ml",
+      "بيج رملي - 580ml",
+      "ash green - 580ml"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/20211_t_001.jpg?v=1691446478&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/20212_t_001.jpg?v=1691446478&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/20213_t_001.jpg?v=1691446478&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://www.kinto-usa.com/products/20211"
+  },
+  "mug-mood/sport-water-cup": {
+    "Name": "كوب ماء WATER TUMBLER",
+    "Description": "كوب ماء WATER TUMBLER بسعة 550ml، بالألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "أبيض - 550ml",
+      "خمري - 550ml",
+      "أخضر غامق - 550ml"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/20151_t_001_a6b34466-7192-4f60-93e2-7652a824d2a2.jpg?v=1756399350&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/20153_t_001_0d2db008-8975-476f-ae47-7710ba443973.jpg?v=1756399349&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/20154_t_001_1ef06d81-ff52-42bf-8982-81d548a45deb.jpg?v=1756399350&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://www.kinto-usa.com/products/20151"
+  },
+  "mug-mood/minimal-desk-mug": {
+    "Name": "كوب زجاجي LUX للمكتب",
+    "Description": "كوب زجاجي LUX للمكتب بسعة 360ml، بالألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "شفاف - 360ml",
+      "دخاني - 360ml",
+      "عنبر - 360ml"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/21532_t_001_7855329b-afd0-48d3-891b-a776588fc28f.jpg?v=1781818789&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/21534_t_001_84f5435d-0a4e-43a4-a77e-1af0ac0c72e4.jpg?v=1781818789&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/21533_t_001_575ce837-aa98-42e9-bab7-1f5ab3866098.jpg?v=1781818789&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://www.kinto-usa.com/products/21532"
+  },
+  "mug-mood/heart-gift-mug": {
+    "Name": "كوب زجاجي LUX للهدايا",
+    "Description": "كوب زجاجي LUX للهدايا بسعة 280ml، بالألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "شفاف - 280ml",
+      "دخاني - 280ml",
+      "عنبر - 280ml"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/21517_t_001_3e42f1fd-cecb-43b6-bb7c-a1ac0c3ad2d8.jpg?v=1778536531&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/21519_t_001.jpg?v=1778536531&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/21518_t_001.jpg?v=1778536531&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://www.kinto-usa.com/products/21517"
+  },
+  "mug-mood/custom-name-mug": {
+    "Name": "كوب وصحن زجاجي UNITEA",
+    "Description": "كوب وصحن زجاجي UNITEA بسعة 230ml، بالألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "glass - 230ml"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/products/8330_d1b366b1-c79c-4de2-80f1-468ce06968f6.jpg?v=1683577700&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://www.kinto-usa.com/products/8330"
+  },
+  "mug-mood/speckled-handmade-mug": {
+    "Name": "كوب قهوة سيراميك CLK",
+    "Description": "كوب قهوة سيراميك CLK بسعة 180ml، بالألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "أبيض - 180ml",
+      "beige - 180ml",
+      "أسود - 180ml"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/products/21889.jpg?v=1550561998&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/products/21890.jpg?v=1550561998&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/products/21892.jpg?v=1550561998&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://www.kinto-usa.com/products/21889"
+  },
+  "mug-mood/kids-color-cup": {
+    "Name": "كوب أطفال BONBO بقشة",
+    "Description": "كوب أطفال BONBO بقشة بسعة 260ml، بالألوان الموضحة في الخيارات.",
+    "VariantNames": [
+      "أزرق رمادي - 260ml",
+      "earth orange - 260ml",
+      "ivory - 260ml"
+    ],
+    "VariantImageUrls": [
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/26450_t_001.jpg?v=1724354261&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/26452_t_001.jpg?v=1724354261&width=1200&format=jpg",
+      "https://cdn.shopify.com/s/files/1/0146/0862/9808/files/26449_t_002_3a701b07-04c4-4a86-83d6-636b730ce42b.jpg?v=1724354261&width=1200&format=jpg"
+    ],
+    "SourceUrl": "https://www.kinto-usa.com/products/26450"
+  }
+}

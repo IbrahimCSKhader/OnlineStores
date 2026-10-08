@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="700" viewBox="0 0 900 700" role="img" aria-label="Game Console Controller Closeup">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
+    </linearGradient>
+    <linearGradient id="device" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#f0abfc"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#0f172a" flood-opacity="0.26"/>
+    </filter>
+  </defs>
+  <rect width="900" height="700" rx="34" fill="url(#bg)"/>
+  <rect x="70" y="64" width="760" height="572" rx="28" fill="#ffffff" opacity="0.10"/>
+  <g filter="url(#shadow)">
+        <rect x="282" y="226" width="336" height="184" rx="44" fill="url(#device)" stroke="#ede9fe" stroke-width="12"/>
+    <circle cx="374" cy="318" r="38" fill="#111827" opacity="0.75"/>
+    <rect x="358" y="308" width="32" height="10" rx="5" fill="#f5d0fe"/>
+    <rect x="369" y="297" width="10" height="32" rx="5" fill="#f5d0fe"/>
+    <circle cx="530" cy="298" r="15" fill="#f0abfc"/>
+    <circle cx="568" cy="336" r="15" fill="#c4b5fd"/>
+  </g>
+  <text x="450" y="565" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="800" fill="#ffffff">Game Console Controller Closeup</text>
+  <text x="450" y="613" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#e5f2ff">Gaming</text>
+</svg>

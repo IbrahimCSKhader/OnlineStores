@@ -33,6 +33,8 @@ using System.Diagnostics;
 using System.Security.Claims;
 using System.Text;
 var builder = WebApplication.CreateBuilder(args);
+var seedOnly = args.Contains("--seed-only", StringComparer.OrdinalIgnoreCase);
+var repairLifestylePhotos = args.Contains("--repair-lifestyle-photos", StringComparer.OrdinalIgnoreCase);
 var productionCorsOrigins = new HashSet<string>(
     (builder.Configuration
         .GetSection("Cors:AllowedOrigins")
@@ -624,6 +626,14 @@ app.UseAuthorization();
 app.MapControllers();
 
 
+if (repairLifestylePhotos)
+{
+    using var repairScope = app.Services.CreateScope();
+    await LifestyleSeedData.RepairPhotosAsync(
+        repairScope.ServiceProvider.GetRequiredService<AppDbContext>(), app.Environment.WebRootPath);
+    return;
+}
+
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider
@@ -641,8 +651,13 @@ using (var scope = app.Services.CreateScope())
         .GetRequiredService<RoleManager<AppRole>>();
 
     await SeedRolesAndAdmin(userManager, roleManager);
+    await ElectroPulseSeedData.SeedAsync(context, userManager, app.Environment.WebRootPath);
+    await LifestyleSeedData.SeedAsync(context, userManager, app.Environment.WebRootPath);
     await EnsureStoreOwnerRolesForAssignedStores(context, userManager);
 }
+
+if (seedOnly)
+    return;
 
 app.Run();
 
