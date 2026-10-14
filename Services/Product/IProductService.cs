@@ -6,16 +6,16 @@ namespace onlineStore.Services.Product
     public interface IProductService
     {
         // Queries
-        Task<List<ProductDto>> GetStoreProductsAsync(Guid storeId, Guid? userId = null);
+        Task<List<ProductDto>> GetStoreProductsAsync(Guid storeId, Guid? userId = null, string? language = null);
         Task<List<ProductDto>> GetStoreProductsForManagementAsync(Guid storeId);
-        Task<List<ProductDto>> GetFeaturedProductsAsync(Guid storeId, Guid? userId = null);
-        Task<List<ProductDto>> GetProductsByCategoryAsync(Guid categoryId, Guid? userId = null);
-        Task<List<ProductDto>> GetProductsBySectionAsync(Guid sectionId, Guid? userId = null);
+        Task<List<ProductDto>> GetFeaturedProductsAsync(Guid storeId, Guid? userId = null, string? language = null);
+        Task<List<ProductDto>> GetProductsByCategoryAsync(Guid categoryId, Guid? userId = null, string? language = null);
+        Task<List<ProductDto>> GetProductsBySectionAsync(Guid sectionId, Guid? userId = null, string? language = null);
         Task<PagedResultDto<ProductDto>> GetStoreProductsPageAsync(Guid storeId, ProductQueryDto query, Guid? userId = null);
         Task<PagedResultDto<ProductDto>> GetProductsByCategoryPageAsync(Guid categoryId, ProductQueryDto query, Guid? userId = null);
         Task<PagedResultDto<ProductDto>> GetProductsBySectionPageAsync(Guid sectionId, ProductQueryDto query, Guid? userId = null);
-        Task<ProductDto?> GetProductByIdAsync(Guid id, Guid? userId = null);
-        Task<ProductDto?> GetProductBySlugAsync(string slug, Guid? userId = null);
+        Task<ProductDto?> GetProductByIdAsync(Guid id, Guid? userId = null, string? language = null);
+        Task<ProductDto?> GetProductBySlugAsync(string slug, Guid? userId = null, string? language = null);
 
         // Commands
         Task<ProductDto> CreateProductAsync(CreateProductDto dto);

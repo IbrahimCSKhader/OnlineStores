@@ -48,9 +48,12 @@ namespace onlineStore.Controllers
 
         [HttpGet("{id}")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetById(Guid id)
+        public async Task<IActionResult> GetById(
+            Guid id,
+            [FromQuery] string? language = null,
+            [FromQuery] string? lang = null)
         {
-            var store = await _storeService.GetStoreByIdAsync(id);
+            var store = await _storeService.GetStoreByIdAsync(id, language ?? lang);
 
             if (store == null)
                 return NotFound(new { message = "sorry the store doesnt exist" });
@@ -60,9 +63,12 @@ namespace onlineStore.Controllers
 
         [HttpGet("slug/{slug}")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetBySlug(string slug)
+        public async Task<IActionResult> GetBySlug(
+            string slug,
+            [FromQuery] string? language = null,
+            [FromQuery] string? lang = null)
         {
-            var store = await _storeService.GetStoreBySlugAsync(slug);
+            var store = await _storeService.GetStoreBySlugAsync(slug, language ?? lang);
 
             if (store == null)
                 return NotFound(new { message = "المتجر غير موجود" });
@@ -74,8 +80,11 @@ namespace onlineStore.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ResolveStore(
             [FromQuery] string? host = null,
-            [FromQuery] string? slug = null)
+            [FromQuery] string? slug = null,
+            [FromQuery] string? language = null,
+            [FromQuery] string? lang = null)
         {
+            var requestedLanguage = language ?? lang;
             var resolvedHost = string.IsNullOrWhiteSpace(host)
                 ? _storefrontOriginService.GetCustomDomainHost(HttpContext)
                 : host;
@@ -83,7 +92,7 @@ namespace onlineStore.Controllers
             if (!string.IsNullOrWhiteSpace(resolvedHost) &&
                 !_storefrontOriginService.IsPlatformHost(resolvedHost))
             {
-                var storeByDomain = await _storeService.GetStoreByDomainAsync(resolvedHost);
+                var storeByDomain = await _storeService.GetStoreByDomainAsync(resolvedHost, requestedLanguage);
 
                 if (storeByDomain != null)
                     return Ok(storeByDomain);
@@ -91,7 +100,7 @@ namespace onlineStore.Controllers
 
             if (!string.IsNullOrWhiteSpace(slug))
             {
-                var storeBySlug = await _storeService.GetStoreBySlugAsync(slug);
+                var storeBySlug = await _storeService.GetStoreBySlugAsync(slug, requestedLanguage);
 
                 if (storeBySlug != null)
                     return Ok(storeBySlug);

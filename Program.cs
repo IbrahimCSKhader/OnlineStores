@@ -34,7 +34,9 @@ using System.Security.Claims;
 using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 var seedOnly = args.Contains("--seed-only", StringComparer.OrdinalIgnoreCase);
+var skipStartupSeed = args.Contains("--skip-startup-seed", StringComparer.OrdinalIgnoreCase);
 var repairLifestylePhotos = args.Contains("--repair-lifestyle-photos", StringComparer.OrdinalIgnoreCase);
+var repairAlsujoodAssets = args.Contains("--repair-alsujood-assets", StringComparer.OrdinalIgnoreCase);
 var productionCorsOrigins = new HashSet<string>(
     (builder.Configuration
         .GetSection("Cors:AllowedOrigins")
@@ -401,6 +403,7 @@ builder.Services.AddScoped<ICartPricingService, CartPricingService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
+builder.Services.AddScoped<IStorefrontTranslationService, StorefrontTranslationService>();
 builder.Services.AddScoped<ISectionService, SectionService>();
 builder.Services.AddScoped<ICustomerStoreService, CustomerStoreService>();
 builder.Services.AddScoped<IStoreCustomerEmailWorkflowService, StoreCustomerEmailWorkflowService>();
@@ -634,10 +637,19 @@ if (repairLifestylePhotos)
     return;
 }
 
-using (var scope = app.Services.CreateScope())
+if (repairAlsujoodAssets)
 {
+    using var repairScope = app.Services.CreateScope();
+    await LifestyleSeedData.RepairAlsujoodAssetsAsync(
+        repairScope.ServiceProvider.GetRequiredService<AppDbContext>(), app.Environment.WebRootPath);
+    return;
+}
+
+if (!skipStartupSeed)
+{
+    using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider
-        .GetRequiredService<AppDbContext>();
+            .GetRequiredService<AppDbContext>();
 
     var subscriptionService = scope.ServiceProvider
         .GetRequiredService<ISubscriptionService>();

@@ -2,6 +2,7 @@
 using onlineStore.Data;
 using onlineStore.DTOs.Category;
 using onlineStore.Security;
+using onlineStore.Services.Store;
 using System.Text.RegularExpressions;
 
 namespace onlineStore.Services.Category
@@ -12,41 +13,54 @@ namespace onlineStore.Services.Category
         private readonly ILogger<CategoryService> _logger;
         private readonly ICurrentUserService _currentUser;
         private readonly IStoreAuthorizationService _storeAuthorizationService;
+        private readonly IStorefrontTranslationService _translationService;
 
         public CategoryService(
             AppDbContext context,
             ICurrentUserService currentUser,
             IStoreAuthorizationService storeAuthorizationService,
+            IStorefrontTranslationService translationService,
             ILogger<CategoryService> logger)
         {
             _context = context;
             _currentUser = currentUser;
             _storeAuthorizationService = storeAuthorizationService;
+            _translationService = translationService;
             _logger = logger;
         }
 
         public async Task<List<CategoryDto>> GetStoreCategoriesAsync(
             Guid storeId,
+            string? language = null,
             CancellationToken cancellationToken = default)
         {
-            return await _context.Categories
+            var categories = await _context.Categories
                 .AsNoTracking()
                 .Where(c => c.StoreId == storeId)
                 .OrderBy(c => c.DisplayOrder)
                 .ThenBy(c => c.Name)
                 .Select(c => ToDto(c))
                 .ToListAsync(cancellationToken);
+
+            await _translationService.ApplyCategoriesAsync(storeId, categories, language, cancellationToken);
+            return categories;
         }
 
         public async Task<CategoryDto?> GetCategoryByIdAsync(
             Guid id,
+            string? language = null,
             CancellationToken cancellationToken = default)
         {
             var category = await _context.Categories
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
-            return category == null ? null : ToDto(category);
+            if (category == null)
+                return null;
+
+            var dto = ToDto(category);
+            await _translationService.ApplyCategoriesAsync(category.StoreId, [dto], language, cancellationToken);
+            return dto;
         }
 
         public async Task<CategoryDto> CreateCategoryAsync(

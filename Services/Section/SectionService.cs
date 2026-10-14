@@ -2,6 +2,7 @@
 using onlineStore.Data;
 using onlineStore.DTOs.Section;
 using onlineStore.Security;
+using onlineStore.Services.Store;
 
 namespace onlineStore.Services.Section
 {
@@ -11,41 +12,54 @@ namespace onlineStore.Services.Section
         private readonly ILogger<SectionService> _logger;
         private readonly ICurrentUserService _currentUser;
         private readonly IStoreAuthorizationService _storeAuthorizationService;
+        private readonly IStorefrontTranslationService _translationService;
 
         public SectionService(
             AppDbContext context,
             ILogger<SectionService> logger,
             ICurrentUserService currentUser,
-            IStoreAuthorizationService storeAuthorizationService)
+            IStoreAuthorizationService storeAuthorizationService,
+            IStorefrontTranslationService translationService)
         {
             _context = context;
             _logger = logger;
             _currentUser = currentUser;
             _storeAuthorizationService = storeAuthorizationService;
+            _translationService = translationService;
         }
 
         public async Task<List<SectionDto>> GetStoreSectionsAsync(
             Guid storeId,
+            string? language = null,
             CancellationToken cancellationToken = default)
         {
-            return await _context.Sections
+            var sections = await _context.Sections
                 .AsNoTracking()
                 .Where(s => s.StoreId == storeId)
                 .OrderBy(s => s.DisplayOrder)
                 .ThenBy(s => s.Name)
                 .Select(s => ToDto(s))
                 .ToListAsync(cancellationToken);
+
+            await _translationService.ApplySectionsAsync(storeId, sections, language, cancellationToken);
+            return sections;
         }
 
         public async Task<SectionDto?> GetSectionByIdAsync(
             Guid id,
+            string? language = null,
             CancellationToken cancellationToken = default)
         {
             var section = await _context.Sections
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
-            return section == null ? null : ToDto(section);
+            if (section == null)
+                return null;
+
+            var dto = ToDto(section);
+            await _translationService.ApplySectionsAsync(section.StoreId, [dto], language, cancellationToken);
+            return dto;
         }
 
         public async Task<SectionDto> CreateSectionAsync(

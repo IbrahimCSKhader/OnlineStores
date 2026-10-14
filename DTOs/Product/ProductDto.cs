@@ -1,4 +1,5 @@
 ﻿// DTOs/Product/ProductDto.cs
+using onlineStore.Models;
 using onlineStore.Models.Enums;
 
 namespace onlineStore.DTOs.Product
@@ -79,5 +80,6 @@ namespace onlineStore.DTOs.Product
         public bool HasVariants { get; set; }
         public Guid? DefaultVariantId { get; set; }
         public int EffectiveStockQuantity { get; set; }
+        public string Language { get; set; } = StoreLanguages.Arabic;
     }
 }

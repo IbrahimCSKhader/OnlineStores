@@ -1,4 +1,6 @@
-﻿namespace onlineStore.DTOs.Category
+using onlineStore.Models;
+
+namespace onlineStore.DTOs.Category
 {
     public class CategoryDto
     {
@@ -11,5 +13,6 @@
         public bool IsActive { get; set; }
         public Guid StoreId { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string Language { get; set; } = StoreLanguages.Arabic;
     }
 }

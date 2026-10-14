@@ -8,11 +8,11 @@ namespace onlineStore.Services.Store
 
         Task<StoreDto?> GetOwnedStoreAsync(CancellationToken cancellationToken = default);
 
-        Task<StoreDto?> GetStoreByIdAsync(Guid id);
+        Task<StoreDto?> GetStoreByIdAsync(Guid id, string? language = null);
 
-        Task<StoreDto?> GetStoreBySlugAsync(string slug);
+        Task<StoreDto?> GetStoreBySlugAsync(string slug, string? language = null);
 
-        Task<StoreDto?> GetStoreByDomainAsync(string host);
+        Task<StoreDto?> GetStoreByDomainAsync(string host, string? language = null);
 
         Task<StoreDto> CreateStoreAsync(CreateStoreDto dto, string userId);
 

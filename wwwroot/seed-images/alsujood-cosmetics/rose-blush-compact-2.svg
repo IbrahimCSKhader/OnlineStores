@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-label="بلاشر Rose Compact">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#9f1239"/>
+      <stop offset="100%" stop-color="#fb923c"/>
+    </linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="28" stdDeviation="30" flood-color="#111827" flood-opacity="0.26"/></filter>
+  </defs>
+  <rect width="1200" height="900" rx="42" fill="url(#bg)"/>
+  <rect x="84" y="80" width="1032" height="650" rx="42" fill="#ffffff" opacity="0.15"/>
+  <g filter="url(#shadow)">
+        <circle cx="600" cy="430" r="214" fill="#fdba74" stroke="#ffffff" stroke-width="16"/>
+    <circle cx="600" cy="430" r="132" fill="#7c2d12" opacity="0.84"/>
+    <path d="M486 430h228" stroke="#ffffff" stroke-width="28" stroke-linecap="round" opacity="0.45"/>
+    <circle cx="600" cy="430" r="54" fill="#ffffff" opacity="0.30"/>
+  </g>
+  <text x="600" y="792" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="900" fill="#ffffff">بلاشر Rose Compact</text>
+  <text x="600" y="842" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#fff1f2">خوخي</text>
+</svg>

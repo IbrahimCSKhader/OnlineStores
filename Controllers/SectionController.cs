@@ -17,18 +17,24 @@ public class SectionController : ControllerBase
 
     [HttpGet("store/{storeId}")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetByStore(Guid storeId)
+    public async Task<IActionResult> GetByStore(
+        Guid storeId,
+        [FromQuery] string? language = null,
+        [FromQuery] string? lang = null)
     {
         var sections = await _sectionService
-            .GetStoreSectionsAsync(storeId);
+            .GetStoreSectionsAsync(storeId, language ?? lang);
         return Ok(sections);
     }
 
     [HttpGet("{id}")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<IActionResult> GetById(
+        Guid id,
+        [FromQuery] string? language = null,
+        [FromQuery] string? lang = null)
     {
-        var section = await _sectionService.GetSectionByIdAsync(id);
+        var section = await _sectionService.GetSectionByIdAsync(id, language ?? lang);
         if (section == null)
             return NotFound(new { message = "this section does not exist" });
         return Ok(section);

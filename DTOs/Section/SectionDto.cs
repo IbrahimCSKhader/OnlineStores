@@ -1,4 +1,6 @@
-﻿namespace onlineStore.DTOs.Section
+using onlineStore.Models;
+
+namespace onlineStore.DTOs.Section
 {
     public class SectionDto
     {
@@ -10,5 +12,6 @@
         public bool IsActive { get; set; }
         public Guid StoreId { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string Language { get; set; } = StoreLanguages.Arabic;
     }
 }

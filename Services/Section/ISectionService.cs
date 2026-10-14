@@ -6,10 +6,12 @@ namespace onlineStore.Services.Section
     {
         Task<List<SectionDto>> GetStoreSectionsAsync(
             Guid storeId,
+            string? language = null,
             CancellationToken cancellationToken = default);
 
         Task<SectionDto?> GetSectionByIdAsync(
             Guid id,
+            string? language = null,
             CancellationToken cancellationToken = default);
 
         Task<SectionDto> CreateSectionAsync(

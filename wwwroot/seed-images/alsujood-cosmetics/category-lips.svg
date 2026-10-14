@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-label="شفاه">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4c0519"/>
+      <stop offset="100%" stop-color="#be123c"/>
+    </linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#111827" flood-opacity="0.26"/></filter>
+  </defs>
+  <rect width="1200" height="900" rx="42" fill="url(#bg)"/>
+  <rect x="88" y="86" width="1024" height="620" rx="38" fill="#ffffff" opacity="0.14"/>
+    <g filter="url(#shadow)">
+    <rect x="322" y="278" width="116" height="334" rx="40" fill="#ffffff"/>
+    <rect x="344" y="206" width="72" height="94" rx="22" fill="#f7d8df"/>
+    <path d="M364 206c22-80 44-80 66 0" fill="#9f1239"/>
+    <rect x="520" y="190" width="172" height="430" rx="54" fill="#ffffff"/>
+    <rect x="556" y="132" width="100" height="82" rx="28" fill="#f7d8df"/>
+    <rect x="562" y="334" width="88" height="42" rx="21" fill="#9f1239" opacity="0.82"/>
+    <circle cx="820" cy="462" r="126" fill="#ffffff"/>
+    <circle cx="820" cy="462" r="72" fill="#f7d8df"/>
+    <path d="M760 462h120" stroke="#9f1239" stroke-width="24" stroke-linecap="round" opacity="0.7"/>
+  </g>
+  <text x="600" y="775" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="900" fill="#ffffff">شفاه</text>
+  <text x="600" y="830" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" fill="#f8fafc">روج، جلوس، تنت، وبلسم بدرجات واضحة.</text>
+</svg>

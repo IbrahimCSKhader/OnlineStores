@@ -18,6 +18,7 @@ namespace onlineStore.Services.Store
         private readonly IStoreAuthorizationService _storeAuthorizationService;
         private readonly IStoreAccountBoundaryService _storeAccountBoundaryService;
         private readonly ISubscriptionService _subscriptionService;
+        private readonly IStorefrontTranslationService _translationService;
         private readonly IWebHostEnvironment _environment;
 
         public StoreService(
@@ -27,6 +28,7 @@ namespace onlineStore.Services.Store
             IStoreAuthorizationService storeAuthorizationService,
             IStoreAccountBoundaryService storeAccountBoundaryService,
             ISubscriptionService subscriptionService,
+            IStorefrontTranslationService translationService,
             IWebHostEnvironment environment)
         {
             _context = context;
@@ -35,6 +37,7 @@ namespace onlineStore.Services.Store
             _storeAuthorizationService = storeAuthorizationService;
             _storeAccountBoundaryService = storeAccountBoundaryService;
             _subscriptionService = subscriptionService;
+            _translationService = translationService;
             _environment = environment;
         }
 
@@ -78,7 +81,7 @@ namespace onlineStore.Services.Store
             return store == null ? null : ToDto(store, includeVisitCount: true);
         }
 
-        public async Task<StoreDto?> GetStoreByIdAsync(Guid id)
+        public async Task<StoreDto?> GetStoreByIdAsync(Guid id, string? language = null)
         {
             IQueryable<Models.Store> query = GetStoresWithContacts(asNoTracking: true)
                 .Where(s => s.Id == id);
@@ -99,12 +102,15 @@ namespace onlineStore.Services.Store
 
             var store = await query.FirstOrDefaultAsync();
 
-            return store == null
-                ? null
-                : ToDto(store, CanViewVisitCount(store.OwnerId));
+            if (store == null)
+                return null;
+
+            var dto = ToDto(store, CanViewVisitCount(store.OwnerId));
+            await _translationService.ApplyStoreAsync(dto, language);
+            return dto;
         }
 
-        public async Task<StoreDto?> GetStoreBySlugAsync(string slug)
+        public async Task<StoreDto?> GetStoreBySlugAsync(string slug, string? language = null)
         {
             var normalizedSlug = slug.Trim().ToLower();
 
@@ -127,12 +133,15 @@ namespace onlineStore.Services.Store
 
             var store = await query.FirstOrDefaultAsync();
 
-            return store == null
-                ? null
-                : ToDto(store, CanViewVisitCount(store.OwnerId));
+            if (store == null)
+                return null;
+
+            var dto = ToDto(store, CanViewVisitCount(store.OwnerId));
+            await _translationService.ApplyStoreAsync(dto, language);
+            return dto;
         }
 
-        public async Task<StoreDto?> GetStoreByDomainAsync(string host)
+        public async Task<StoreDto?> GetStoreByDomainAsync(string host, string? language = null)
         {
             var normalizedHost = StoreDomainNormalizer.NormalizeHost(host);
 
@@ -158,9 +167,12 @@ namespace onlineStore.Services.Store
 
             var store = await query.FirstOrDefaultAsync();
 
-            return store == null
-                ? null
-                : ToDto(store, CanViewVisitCount(store.OwnerId));
+            if (store == null)
+                return null;
+
+            var dto = ToDto(store, CanViewVisitCount(store.OwnerId));
+            await _translationService.ApplyStoreAsync(dto, language);
+            return dto;
         }
 
         //public async Task<StoreDto> CreateStoreAsync(CreateStoreDto dto)
@@ -280,6 +292,9 @@ namespace onlineStore.Services.Store
                     dto.ThemeTemplate,
                     nameof(dto.ThemeTemplate));
 
+            if (dto.Language != null)
+                store.Language = StoreLanguages.NormalizeOrDefault(dto.Language);
+
             if (dto.IsActive != null)
                 store.IsActive = dto.IsActive.Value;
 
@@ -328,6 +343,7 @@ namespace onlineStore.Services.Store
             WhatsAppNumber = s.WhatsAppNumber,
             StoreStory = s.StoreStory,
             ThemeTemplate = StoreThemeTemplates.NormalizeForResponse(s.ThemeTemplate),
+            Language = StoreLanguages.NormalizeOrDefault(s.Language),
             ContactAccounts = s.ContactAccounts
                 .Where(c => !c.IsDeleted)
                 .OrderBy(c => c.SortOrder)
@@ -613,6 +629,7 @@ namespace onlineStore.Services.Store
                 ThemeTemplate = StoreThemeTemplates.NormalizeOrThrow(
                     dto.ThemeTemplate,
                     nameof(dto.ThemeTemplate)),
+                Language = StoreLanguages.NormalizeOrDefault(dto.Language),
                 OwnerId = owner.Id,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,

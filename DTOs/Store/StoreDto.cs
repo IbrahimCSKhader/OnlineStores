@@ -15,6 +15,8 @@ namespace onlineStore.DTOs.Store
         public string? WhatsAppNumber { get; set; }
         public string? StoreStory { get; set; }
         public string ThemeTemplate { get; set; } = StoreThemeTemplates.Default;
+        public string Language { get; set; } = StoreLanguages.Arabic;
+        public IReadOnlyList<string> SupportedLanguages { get; set; } = StoreLanguages.Supported;
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public int VisitCount { get; set; }

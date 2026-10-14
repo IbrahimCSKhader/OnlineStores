@@ -40,10 +40,15 @@ namespace onlineStore.Models
 
         [Required, MaxLength(1)]
         public string ThemeTemplate { get; set; } = StoreThemeTemplates.Default;
+
+        [Required, MaxLength(1)]
+        public string Language { get; set; } = StoreLanguages.Arabic;
+
         public int VisitCount { get; set; } = 0;
         
         public ICollection<Category> Categories { get; set; } = new List<Category>();
         public ICollection<Section> Sections { get; set; } = new List<Section>();
+        public ICollection<StoreTranslation> Translations { get; set; } = new List<StoreTranslation>();
         public ICollection<StoreContactAccount> ContactAccounts { get; set; } = new List<StoreContactAccount>();
         public ICollection<StoreSubscription> StoreSubscriptions { get; set; } = new List<StoreSubscription>();
         public ICollection<Offer> Offers { get; set; } = new List<Offer>();

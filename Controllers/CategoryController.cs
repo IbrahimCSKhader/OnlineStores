@@ -22,10 +22,13 @@ public class CategoryController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> GetByStore(
         Guid storeId,
+        [FromQuery] string? language,
+        [FromQuery] string? lang,
         CancellationToken cancellationToken)
     {
         var categories = await _categoryService.GetStoreCategoriesAsync(
             storeId,
+            language ?? lang,
             cancellationToken);
 
         return Ok(categories);
@@ -35,10 +38,13 @@ public class CategoryController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> GetById(
         Guid id,
+        [FromQuery] string? language,
+        [FromQuery] string? lang,
         CancellationToken cancellationToken)
     {
         var category = await _categoryService.GetCategoryByIdAsync(
             id,
+            language ?? lang,
             cancellationToken);
 
         if (category == null)

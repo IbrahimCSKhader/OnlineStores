@@ -37,7 +37,7 @@ namespace onlineStore.Controllers
                     return Ok(pagedProducts);
                 }
 
-                var products = await _productService.GetStoreProductsAsync(storeId, userId);
+                var products = await _productService.GetStoreProductsAsync(storeId, userId, query.RequestedLanguage);
                 return Ok(products);
             }
             catch (Exception ex)
@@ -68,12 +68,15 @@ namespace onlineStore.Controllers
         // GET api/product/featured/{storeId}
         [HttpGet("featured/{storeId}")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetFeatured(Guid storeId)
+        public async Task<IActionResult> GetFeatured(
+            Guid storeId,
+            [FromQuery] string? language = null,
+            [FromQuery] string? lang = null)
         {
             try
             {
                 var userId = GetUserIdOrNull();
-                var products = await _productService.GetFeaturedProductsAsync(storeId, userId);
+                var products = await _productService.GetFeaturedProductsAsync(storeId, userId, language ?? lang);
                 return Ok(products);
             }
             catch (Exception ex)
@@ -96,7 +99,7 @@ namespace onlineStore.Controllers
                     return Ok(pagedProducts);
                 }
 
-                var products = await _productService.GetProductsByCategoryAsync(categoryId, userId);
+                var products = await _productService.GetProductsByCategoryAsync(categoryId, userId, query.RequestedLanguage);
                 return Ok(products);
             }
             catch (Exception ex)
@@ -119,7 +122,7 @@ namespace onlineStore.Controllers
                     return Ok(pagedProducts);
                 }
 
-                var products = await _productService.GetProductsBySectionAsync(sectionId, userId);
+                var products = await _productService.GetProductsBySectionAsync(sectionId, userId, query.RequestedLanguage);
                 return Ok(products);
             }
             catch (Exception ex)
@@ -131,12 +134,15 @@ namespace onlineStore.Controllers
         // GET api/product/{id}
         [HttpGet("{id}")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetById(Guid id)
+        public async Task<IActionResult> GetById(
+            Guid id,
+            [FromQuery] string? language = null,
+            [FromQuery] string? lang = null)
         {
             try
             {
                 var userId = GetUserIdOrNull();
-                var product = await _productService.GetProductByIdAsync(id, userId);
+                var product = await _productService.GetProductByIdAsync(id, userId, language ?? lang);
 
                 if (product == null)
                     return NotFound(new { message = "المنتج غير موجود" });
@@ -152,12 +158,15 @@ namespace onlineStore.Controllers
         // GET api/product/slug/{slug}
         [HttpGet("slug/{slug}")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetBySlug(string slug)
+        public async Task<IActionResult> GetBySlug(
+            string slug,
+            [FromQuery] string? language = null,
+            [FromQuery] string? lang = null)
         {
             try
             {
                 var userId = GetUserIdOrNull();
-                var product = await _productService.GetProductBySlugAsync(slug, userId);
+                var product = await _productService.GetProductBySlugAsync(slug, userId, language ?? lang);
 
                 if (product == null)
                     return NotFound(new { message = "المنتج غير موجود" });

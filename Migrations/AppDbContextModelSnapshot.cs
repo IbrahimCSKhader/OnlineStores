@@ -1169,6 +1169,13 @@ namespace onlineStore.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1)
+                        .HasColumnType("nvarchar(1)")
+                        .HasDefaultValue("A");
+
                     b.Property<string>("LogoUrl")
                         .HasColumnType("nvarchar(max)");
 
@@ -1219,6 +1226,8 @@ namespace onlineStore.Migrations
 
                     b.ToTable("Stores", t =>
                         {
+                            t.HasCheckConstraint("CK_Stores_Language", "[Language] IN ('A', 'E', 'I')");
+
                             t.HasCheckConstraint("CK_Stores_ThemeTemplate", "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U', 'N', 'V', 'Y', 'E', 'R')");
                         });
                 });
@@ -1356,6 +1365,60 @@ namespace onlineStore.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("StoreRegistrationVisits");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.StoreTranslation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("FieldName")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1)
+                        .HasColumnType("nvarchar(1)")
+                        .HasDefaultValue("A");
+
+                    b.Property<Guid>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(100000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StoreId", "EntityType", "EntityId", "Language", "FieldName")
+                        .IsUnique();
+
+                    b.ToTable("StoreTranslations", t =>
+                        {
+                            t.HasCheckConstraint("CK_StoreTranslations_Language", "[Language] IN ('A', 'E', 'I')");
+                        });
                 });
 
             modelBuilder.Entity("onlineStore.Models.Subscriptions.StoreSubscription", b =>
@@ -1881,6 +1944,17 @@ namespace onlineStore.Migrations
                     b.Navigation("Store");
                 });
 
+            modelBuilder.Entity("onlineStore.Models.StoreTranslation", b =>
+                {
+                    b.HasOne("onlineStore.Models.Store", "Store")
+                        .WithMany("Translations")
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Store");
+                });
+
             modelBuilder.Entity("onlineStore.Models.Subscriptions.StoreSubscription", b =>
                 {
                     b.HasOne("onlineStore.Models.Store", "Store")
@@ -1969,6 +2043,8 @@ namespace onlineStore.Migrations
                     b.Navigation("Sections");
 
                     b.Navigation("StoreSubscriptions");
+
+                    b.Navigation("Translations");
                 });
 
             modelBuilder.Entity("onlineStore.Models.StoreCustomer", b =>

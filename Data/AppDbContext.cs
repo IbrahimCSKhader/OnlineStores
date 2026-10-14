@@ -19,6 +19,7 @@ namespace onlineStore.Data
         public AppDbContext(DbContextOptions<AppDbContext> options)
            : base(options) { }
         public DbSet<Store> Stores => Set<Store>();
+        public DbSet<StoreTranslation> StoreTranslations => Set<StoreTranslation>();
         public DbSet<StoreRegistrationVisit> StoreRegistrationVisits => Set<StoreRegistrationVisit>();
 
         public DbSet<Category> Categories => Set<Category>();
@@ -202,10 +203,41 @@ namespace onlineStore.Data
                     .IsRequired()
                     .HasDefaultValue(StoreThemeTemplates.Default);
 
+                entity.Property(x => x.Language)
+                    .HasMaxLength(1)
+                    .IsRequired()
+                    .HasDefaultValue(StoreLanguages.Arabic);
+
                 entity.ToTable(t =>
+                {
                     t.HasCheckConstraint(
                         "CK_Stores_ThemeTemplate",
-                        "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U', 'N', 'V', 'Y', 'E', 'R')"));
+                        "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U', 'N', 'V', 'Y', 'E', 'R')");
+                    t.HasCheckConstraint(
+                        "CK_Stores_Language",
+                        "[Language] IN ('A', 'E', 'I')");
+                });
+            });
+
+            builder.Entity<StoreTranslation>(entity =>
+            {
+                entity.Property(x => x.EntityType).HasMaxLength(40).IsRequired();
+                entity.Property(x => x.Language)
+                    .HasMaxLength(1)
+                    .IsRequired()
+                    .HasDefaultValue(StoreLanguages.Arabic);
+                entity.Property(x => x.FieldName).HasMaxLength(80).IsRequired();
+                entity.Property(x => x.Value).HasMaxLength(100000).IsRequired();
+
+                entity.HasOne(x => x.Store)
+                    .WithMany(s => s.Translations)
+                    .HasForeignKey(x => x.StoreId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.ToTable(t =>
+                    t.HasCheckConstraint(
+                        "CK_StoreTranslations_Language",
+                        "[Language] IN ('A', 'E', 'I')"));
             });
 
             builder.Entity<StoreContactAccount>()
@@ -224,6 +256,7 @@ namespace onlineStore.Data
 
 
             builder.Entity<Store>().HasQueryFilter(x => !x.IsDeleted);
+            builder.Entity<StoreTranslation>().HasQueryFilter(x => !x.IsDeleted);
             builder.Entity<Category>().HasQueryFilter(x => !x.IsDeleted);
             builder.Entity<Section>().HasQueryFilter(x => !x.IsDeleted);
             builder.Entity<Product>().HasQueryFilter(x => !x.IsDeleted);

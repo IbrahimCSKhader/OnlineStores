@@ -7,6 +7,7 @@ using onlineStore.DTOs.Product;
 using onlineStore.Models;
 using onlineStore.Models.Enums;
 using onlineStore.Security;
+using onlineStore.Services.Store;
 using onlineStore.Services.Subscription;
 using System.Text.RegularExpressions;
 
@@ -19,6 +20,7 @@ namespace onlineStore.Services.Product
         private readonly ICurrentUserService _currentUser;
         private readonly IStoreAuthorizationService _storeAuthorizationService;
         private readonly ISubscriptionService _subscriptionService;
+        private readonly IStorefrontTranslationService _translationService;
         private readonly IWebHostEnvironment _environment;
 
         public ProductService(
@@ -27,6 +29,7 @@ namespace onlineStore.Services.Product
             ICurrentUserService currentUser,
             IStoreAuthorizationService storeAuthorizationService,
             ISubscriptionService subscriptionService,
+            IStorefrontTranslationService translationService,
             IWebHostEnvironment environment)
         {
             _context = context;
@@ -34,6 +37,7 @@ namespace onlineStore.Services.Product
             _currentUser = currentUser;
             _storeAuthorizationService = storeAuthorizationService;
             _subscriptionService = subscriptionService;
+            _translationService = translationService;
             _environment = environment;
         }
 
@@ -42,7 +46,8 @@ namespace onlineStore.Services.Product
         // ════════════════════════════════════════════════════
         public async Task<List<ProductDto>> GetStoreProductsAsync(
     Guid storeId,
-    Guid? userId = null)
+    Guid? userId = null,
+    string? language = null)
         {
             var discountPercentage = await GetCustomerDiscountPercentageAsync(storeId, userId);
 
@@ -56,7 +61,9 @@ namespace onlineStore.Services.Product
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
 
-            return products.Select(p => ToDto(p, discountPercentage)).ToList();
+            var result = products.Select(p => ToDto(p, discountPercentage)).ToList();
+            await _translationService.ApplyProductsAsync(storeId, result, language);
+            return result;
         }
 
         public async Task<PagedResultDto<ProductDto>> GetStoreProductsPageAsync(
@@ -71,7 +78,9 @@ namespace onlineStore.Services.Product
                     .Where(p => p.StoreId == storeId && p.Status == ProductStatus.Active),
                 query);
 
-            return await BuildPagedProductsAsync(productQuery, query, discountPercentage);
+            var result = await BuildPagedProductsAsync(productQuery, query, discountPercentage);
+            await _translationService.ApplyProductsAsync(storeId, result.Items, query.RequestedLanguage);
+            return result;
         }
 
         public async Task<List<ProductDto>> GetStoreProductsForManagementAsync(Guid storeId)
@@ -93,7 +102,8 @@ namespace onlineStore.Services.Product
         // ════════════════════════════════════════════════════
         public async Task<List<ProductDto>> GetFeaturedProductsAsync(
             Guid storeId,
-            Guid? userId = null)
+            Guid? userId = null,
+            string? language = null)
         {
             var discountPercentage = await GetCustomerDiscountPercentageAsync(storeId, userId);
 
@@ -105,7 +115,9 @@ namespace onlineStore.Services.Product
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(12);
 
-            return await ToCatalogProductDtosAsync(query, discountPercentage);
+            var result = await ToCatalogProductDtosAsync(query, discountPercentage);
+            await _translationService.ApplyProductsAsync(storeId, result, language);
+            return result;
         }
 
         // ════════════════════════════════════════════════════
@@ -113,7 +125,8 @@ namespace onlineStore.Services.Product
         // ════════════════════════════════════════════════════
         public async Task<List<ProductDto>> GetProductsByCategoryAsync(
             Guid categoryId,
-            Guid? userId = null)
+            Guid? userId = null,
+            string? language = null)
         {
             var products = await IncludeProductReadGraph(
                 _context.Products
@@ -131,7 +144,9 @@ namespace onlineStore.Services.Product
             var storeId = activeProducts.First().StoreId;
             var discountPercentage = await GetCustomerDiscountPercentageAsync(storeId, userId);
 
-            return activeProducts.Select(p => ToDto(p, discountPercentage)).ToList();
+            var result = activeProducts.Select(p => ToDto(p, discountPercentage)).ToList();
+            await _translationService.ApplyProductsAsync(storeId, result, language);
+            return result;
         }
 
         // ════════════════════════════════════════════════════
@@ -154,12 +169,16 @@ namespace onlineStore.Services.Product
                 ? await GetCustomerDiscountPercentageAsync(storeId.Value, userId)
                 : 0m;
 
-            return await BuildPagedProductsAsync(productQuery, query, discountPercentage);
+            var result = await BuildPagedProductsAsync(productQuery, query, discountPercentage);
+            if (storeId.HasValue)
+                await _translationService.ApplyProductsAsync(storeId.Value, result.Items, query.RequestedLanguage);
+            return result;
         }
 
         public async Task<List<ProductDto>> GetProductsBySectionAsync(
             Guid sectionId,
-            Guid? userId = null)
+            Guid? userId = null,
+            string? language = null)
         {
             var products = await IncludeProductReadGraph(
                 _context.Products
@@ -177,7 +196,9 @@ namespace onlineStore.Services.Product
             var storeId = activeProducts.First().StoreId;
             var discountPercentage = await GetCustomerDiscountPercentageAsync(storeId, userId);
 
-            return activeProducts.Select(p => ToDto(p, discountPercentage)).ToList();
+            var result = activeProducts.Select(p => ToDto(p, discountPercentage)).ToList();
+            await _translationService.ApplyProductsAsync(storeId, result, language);
+            return result;
         }
 
         // ════════════════════════════════════════════════════
@@ -200,12 +221,16 @@ namespace onlineStore.Services.Product
                 ? await GetCustomerDiscountPercentageAsync(storeId.Value, userId)
                 : 0m;
 
-            return await BuildPagedProductsAsync(productQuery, query, discountPercentage);
+            var result = await BuildPagedProductsAsync(productQuery, query, discountPercentage);
+            if (storeId.HasValue)
+                await _translationService.ApplyProductsAsync(storeId.Value, result.Items, query.RequestedLanguage);
+            return result;
         }
 
         public async Task<ProductDto?> GetProductByIdAsync(
             Guid id,
-            Guid? userId = null)
+            Guid? userId = null,
+            string? language = null)
         {
             var product = await IncludeProductReadGraph(
                 _context.Products
@@ -218,7 +243,9 @@ namespace onlineStore.Services.Product
 
             var discountPercentage = await GetCustomerDiscountPercentageAsync(product.StoreId, userId);
 
-            return ToDto(product, discountPercentage);
+            var result = ToDto(product, discountPercentage);
+            await _translationService.ApplyProductAsync(result, language);
+            return result;
         }
 
         // ════════════════════════════════════════════════════
@@ -226,7 +253,8 @@ namespace onlineStore.Services.Product
         // ════════════════════════════════════════════════════
         public async Task<ProductDto?> GetProductBySlugAsync(
             string slug,
-            Guid? userId = null)
+            Guid? userId = null,
+            string? language = null)
         {
             if (string.IsNullOrWhiteSpace(slug))
                 return null;
@@ -244,7 +272,9 @@ namespace onlineStore.Services.Product
 
             var discountPercentage = await GetCustomerDiscountPercentageAsync(product.StoreId, userId);
 
-            return ToDto(product, discountPercentage);
+            var result = ToDto(product, discountPercentage);
+            await _translationService.ApplyProductAsync(result, language);
+            return result;
         }
 
         // ════════════════════════════════════════════════════

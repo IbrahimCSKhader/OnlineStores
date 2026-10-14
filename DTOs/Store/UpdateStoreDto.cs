@@ -27,6 +27,9 @@ namespace onlineStore.DTOs.Store
         [MaxLength(1)]
         public string? ThemeTemplate { get; set; }
 
+        [MaxLength(1)]
+        public string? Language { get; set; }
+
         public bool? IsActive { get; set; }
         public List<StoreContactAccountInputDto>? ContactAccounts { get; set; }
     }

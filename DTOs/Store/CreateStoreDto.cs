@@ -34,6 +34,9 @@ namespace onlineStore.DTOs.Store
         [MaxLength(1)]
         public string? ThemeTemplate { get; set; } = StoreThemeTemplates.Default;
 
+        [MaxLength(1)]
+        public string? Language { get; set; } = StoreLanguages.Arabic;
+
         public List<StoreContactAccountInputDto>? ContactAccounts { get; set; }
 
         [Required]
