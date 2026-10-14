@@ -687,37 +687,136 @@ async Task SeedRolesAndAdmin(
             await roleManager.CreateAsync(new AppRole { Name = role });
     }
 
-    var adminEmail = "admin@onlinestore.com";
-    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+    await EnsureSuperAdminAccount(
+        userManager,
+        "admin@onlinestore.com",
+        "Admin@12345",
+        "Super",
+        "Admin",
+        resetPassword: false);
+
+    await EnsureSuperAdminAccount(
+        userManager,
+        "ik2907951@gmail.com",
+        "hehe123hehe",
+        "Ibrahim",
+        "Admin",
+        resetPassword: false);
+}
+
+async Task EnsureSuperAdminAccount(
+    UserManager<AppUser> userManager,
+    string email,
+    string password,
+    string firstName,
+    string lastName,
+    bool resetPassword)
+{
+    var adminUser = await userManager.FindByEmailAsync(email);
 
     if (adminUser == null)
     {
         adminUser = new AppUser
         {
-            FirstName = "Super",
-            LastName = "Admin",
-            Email = adminEmail,
-            UserName = adminEmail,
+            FirstName = firstName,
+            LastName = lastName,
+            Email = email,
+            UserName = email,
             EmailConfirmed = true,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
 
-        var result = await userManager.CreateAsync(adminUser, "Admin@12345");
-        if (result.Succeeded)
-            await userManager.AddToRoleAsync(adminUser, "SuperAdmin");
+        var result = await userManager.CreateAsync(adminUser, password);
+        EnsureIdentityResultSucceeded(result, $"create super admin account {email}");
+
+        var addRoleResult = await userManager.AddToRoleAsync(adminUser, "SuperAdmin");
+        EnsureIdentityResultSucceeded(addRoleResult, $"assign SuperAdmin role to {email}");
     }
     else
     {
+        var shouldUpdate = false;
+
         if (!adminUser.EmailConfirmed)
         {
             adminUser.EmailConfirmed = true;
-            await userManager.UpdateAsync(adminUser);
+            shouldUpdate = true;
         }
 
-        if (!await userManager.IsInRoleAsync(adminUser, "SuperAdmin"))
-            await userManager.AddToRoleAsync(adminUser, "SuperAdmin");
+        if (!adminUser.IsActive)
+        {
+            adminUser.IsActive = true;
+            shouldUpdate = true;
+        }
+
+        if (adminUser.IsDeleted)
+        {
+            adminUser.IsDeleted = false;
+            shouldUpdate = true;
+        }
+
+        if (!string.Equals(adminUser.Email, email, StringComparison.Ordinal))
+        {
+            adminUser.Email = email;
+            shouldUpdate = true;
+        }
+
+        if (!string.Equals(adminUser.UserName, email, StringComparison.Ordinal))
+        {
+            adminUser.UserName = email;
+            shouldUpdate = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(adminUser.FirstName))
+        {
+            adminUser.FirstName = firstName;
+            shouldUpdate = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(adminUser.LastName))
+        {
+            adminUser.LastName = lastName;
+            shouldUpdate = true;
+        }
+
+        if (shouldUpdate)
+        {
+            var updateResult = await userManager.UpdateAsync(adminUser);
+            EnsureIdentityResultSucceeded(updateResult, $"update super admin account {email}");
+        }
     }
+
+    if (!await userManager.IsInRoleAsync(adminUser, "SuperAdmin"))
+    {
+        var addRoleResult = await userManager.AddToRoleAsync(adminUser, "SuperAdmin");
+        EnsureIdentityResultSucceeded(addRoleResult, $"assign SuperAdmin role to {email}");
+    }
+
+    if (resetPassword && !await userManager.CheckPasswordAsync(adminUser, password))
+    {
+        var removePasswordResult = await userManager.RemovePasswordAsync(adminUser);
+        if (!removePasswordResult.Succeeded &&
+            !removePasswordResult.Errors.Any(error => string.Equals(error.Code, "UserHasNoPassword", StringComparison.OrdinalIgnoreCase)))
+        {
+            EnsureIdentityResultSucceeded(removePasswordResult, $"remove old password for {email}");
+        }
+
+        var addPasswordResult = await userManager.AddPasswordAsync(adminUser, password);
+        EnsureIdentityResultSucceeded(addPasswordResult, $"set password for {email}");
+
+        await userManager.ResetAccessFailedCountAsync(adminUser);
+        await userManager.SetLockoutEndDateAsync(adminUser, null);
+        await userManager.UpdateSecurityStampAsync(adminUser);
+    }
+}
+
+void EnsureIdentityResultSucceeded(IdentityResult result, string operation)
+{
+    if (result.Succeeded)
+        return;
+
+    var errors = string.Join(", ", result.Errors.Select(error => $"{error.Code}: {error.Description}"));
+    throw new InvalidOperationException($"Failed to {operation}. {errors}");
 }
 
 async Task EnsureStoreOwnerRolesForAssignedStores(

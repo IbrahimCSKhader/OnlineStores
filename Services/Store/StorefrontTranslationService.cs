@@ -22,7 +22,7 @@ public sealed class StorefrontTranslationService : IStorefrontTranslationService
         string? language,
         CancellationToken cancellationToken = default)
     {
-        var normalizedLanguage = StoreLanguages.NormalizeOrDefault(language);
+        var normalizedLanguage = StoreLanguages.NormalizeOrDefault(string.IsNullOrWhiteSpace(language) ? store.Language : language);
         store.Language = normalizedLanguage;
 
         if (StoreLanguages.IsBaseLanguage(normalizedLanguage))

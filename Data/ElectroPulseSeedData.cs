@@ -3,8 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using onlineStore.Models;
 using onlineStore.Models.Enums;
 using onlineStore.Models.Identity;
+using onlineStore.Models.Orders;
 using onlineStore.Models.Subscriptions;
 using onlineStore.Models.Subscriptions.Enums;
+using onlineStore.Services.Rewards;
 using System.Net;
 
 namespace onlineStore.Data;
@@ -15,6 +17,8 @@ public static class ElectroPulseSeedData
     private const string OwnerPassword = "PASS1234";
     private const string StoreSlug = "electropulse-hub";
     private const string ImageAssetsPath = "/wwwroot/seed-images/electropulse";
+    private const string DemoCustomerPassword = "Customer@12345";
+    private const string DemoOrderNumberPrefix = "EPH-DEMO-20261009";
 
     public static async Task SeedAsync(AppDbContext context, UserManager<AppUser> userManager, string webRootPath)
     {
@@ -36,7 +40,8 @@ public static class ElectroPulseSeedData
         var sections = await EnsureSectionsAsync(context, store.Id, categoryDefinitions);
         await EnsureContactAccountsAsync(context, store.Id);
         await EnsureSubscriptionAsync(context, store.Id);
-        await EnsureProductsAsync(context, store.Id, products, categories, sections);
+        var seededProducts = await EnsureProductsAsync(context, store.Id, products, categories, sections);
+        await EnsureDemoCustomersAndOrdersAsync(context, store, seededProducts);
 
         await context.SaveChangesAsync();
     }
@@ -338,13 +343,15 @@ public static class ElectroPulseSeedData
         });
     }
 
-    private static async Task EnsureProductsAsync(
+    private static async Task<List<Product>> EnsureProductsAsync(
         AppDbContext context,
         Guid storeId,
         ProductSeed[] products,
         IReadOnlyDictionary<string, Category> categories,
         IReadOnlyDictionary<string, Section> sections)
     {
+        var seededProducts = new List<Product>();
+
         for (var i = 0; i < products.Length; i++)
         {
             var seed = products[i];
@@ -389,8 +396,282 @@ public static class ElectroPulseSeedData
 
             await EnsureImagesAsync(context, product, seed);
             EnsureVariants(product, seed, i + 1);
+
+            seededProducts.Add(product);
+        }
+
+        return seededProducts;
+    }
+
+    private static async Task EnsureDemoCustomersAndOrdersAsync(
+        AppDbContext context,
+        Store store,
+        IReadOnlyList<Product> seededProducts)
+    {
+        var phoneProductSlugs = Products()
+            .Where(x => string.Equals(x.CategoryKey, "phones", StringComparison.OrdinalIgnoreCase))
+            .Select(x => ProductSlug(x.Slug))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var phoneProducts = seededProducts
+            .Where(x => phoneProductSlugs.Contains(x.Slug))
+            .OrderBy(x => x.Name)
+            .ToList();
+
+        if (phoneProducts.Count == 0)
+            return;
+
+        var passwordHasher = new PasswordHasher<StoreCustomer>();
+        var customerSeeds = DemoCustomers();
+
+        for (var i = 0; i < customerSeeds.Length; i++)
+        {
+            var seed = customerSeeds[i];
+            var customer = await EnsureDemoCustomerAsync(context, passwordHasher, store.Id, seed);
+            var order = BuildDemoOrder(store.Id, customer.Id, seed, i, phoneProducts);
+
+            await EnsureDemoOrderAsync(context, order);
+            customer.PurchasePoints = PurchasePointsPolicy.CalculatePointsFromOrderItems(order.Items);
         }
     }
+
+    private static async Task<StoreCustomer> EnsureDemoCustomerAsync(
+        AppDbContext context,
+        IPasswordHasher<StoreCustomer> passwordHasher,
+        Guid storeId,
+        DemoCustomerSeed seed)
+    {
+        var customer = await context.StoreCustomers
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(x => x.StoreId == storeId && x.Email == seed.Email);
+
+        if (customer == null)
+        {
+            customer = new StoreCustomer
+            {
+                StoreId = storeId,
+                Email = seed.Email,
+                CreatedAt = DateTime.UtcNow.AddDays(-seed.DaysAgo)
+            };
+
+            context.StoreCustomers.Add(customer);
+        }
+
+        customer.FirstName = seed.FirstName;
+        customer.LastName = seed.LastName;
+        customer.Phone = seed.Phone;
+        customer.DiscountPercentage = seed.DiscountPercentage;
+        customer.EmailConfirmed = true;
+        customer.EmailVerificationCodeHash = null;
+        customer.EmailVerificationCodeExpiresAt = null;
+        customer.PasswordResetCodeHash = null;
+        customer.PasswordResetCodeExpiresAt = null;
+        customer.IsActive = true;
+        customer.IsDeleted = false;
+
+        if (string.IsNullOrWhiteSpace(customer.PasswordHash) ||
+            passwordHasher.VerifyHashedPassword(customer, customer.PasswordHash, DemoCustomerPassword) == PasswordVerificationResult.Failed)
+        {
+            customer.PasswordHash = passwordHasher.HashPassword(customer, DemoCustomerPassword);
+        }
+
+        return customer;
+    }
+
+    private static Order BuildDemoOrder(
+        Guid storeId,
+        Guid customerId,
+        DemoCustomerSeed customer,
+        int index,
+        IReadOnlyList<Product> phoneProducts)
+    {
+        var firstProduct = phoneProducts[index % phoneProducts.Count];
+        var secondProduct = phoneProducts[(index + 3) % phoneProducts.Count];
+        var firstVariant = ResolveDemoVariant(firstProduct, preferBundle: index % 2 == 0);
+        var secondVariant = ResolveDemoVariant(secondProduct, preferBundle: index % 3 == 0);
+
+        var quantities = new[] { 1 + (index % 2), 1 };
+        var items = new List<OrderItem>
+        {
+            BuildDemoOrderItem(firstProduct, firstVariant, quantities[0]),
+            BuildDemoOrderItem(secondProduct, secondVariant, quantities[1])
+        };
+
+        var subTotal = items.Sum(x => x.TotalPrice);
+        var discountAmount = Math.Round(subTotal * customer.DiscountPercentage / 100m, 2);
+        var totalAmount = subTotal - discountAmount;
+
+        return new Order
+        {
+            OrderNumber = $"{DemoOrderNumberPrefix}-{index + 1:000}",
+            Title = customer.OrderTitle,
+            Status = customer.Status,
+            SubTotal = subTotal,
+            DiscountAmount = discountAmount,
+            TotalAmount = totalAmount,
+            PointsEarned = PurchasePointsPolicy.CalculatePointsFromOrderItems(items),
+            CustomerNotes = customer.CustomerNotes,
+            StoreNotes = "Seeded demo purchase for the ElectroPulse phone store.",
+            DeliveryAddress = customer.Address,
+            DeliveryCity = customer.City,
+            DeliveryPhone = customer.Phone,
+            StoreCustomerId = customerId,
+            StoreId = storeId,
+            CreatedAt = DateTime.UtcNow.AddDays(-customer.DaysAgo),
+            Items = items
+        };
+    }
+
+    private static OrderItem BuildDemoOrderItem(Product product, ProductVariant? variant, int quantity)
+    {
+        var unitPrice = variant?.Price ?? product.Price;
+
+        return new OrderItem
+        {
+            ProductId = product.Id,
+            ProductName = product.Name,
+            VariantId = variant?.Id,
+            VariantName = variant?.Name,
+            Quantity = quantity,
+            UnitPrice = unitPrice,
+            TotalPrice = unitPrice * quantity,
+            CreatedAt = DateTime.UtcNow
+        };
+    }
+
+    private static async Task EnsureDemoOrderAsync(AppDbContext context, Order desiredOrder)
+    {
+        var order = await context.Orders
+            .IgnoreQueryFilters()
+            .Include(x => x.Items)
+            .FirstOrDefaultAsync(x => x.OrderNumber == desiredOrder.OrderNumber);
+
+        if (order == null)
+        {
+            context.Orders.Add(desiredOrder);
+            return;
+        }
+
+        order.Title = desiredOrder.Title;
+        order.Status = desiredOrder.Status;
+        order.SubTotal = desiredOrder.SubTotal;
+        order.DiscountAmount = desiredOrder.DiscountAmount;
+        order.TotalAmount = desiredOrder.TotalAmount;
+        order.PointsEarned = desiredOrder.PointsEarned;
+        order.CustomerNotes = desiredOrder.CustomerNotes;
+        order.StoreNotes = desiredOrder.StoreNotes;
+        order.DeliveryAddress = desiredOrder.DeliveryAddress;
+        order.DeliveryCity = desiredOrder.DeliveryCity;
+        order.DeliveryPhone = desiredOrder.DeliveryPhone;
+        order.StoreCustomerId = desiredOrder.StoreCustomerId;
+        order.StoreId = desiredOrder.StoreId;
+        order.CouponId = null;
+        order.IsDeleted = false;
+
+        foreach (var item in order.Items.ToList())
+            context.Entry(item).State = EntityState.Detached;
+
+        order.Items.Clear();
+        await context.OrderItems
+            .Where(x => x.OrderId == order.Id)
+            .ExecuteDeleteAsync();
+
+        foreach (var item in desiredOrder.Items)
+        {
+            item.Id = Guid.NewGuid();
+            item.OrderId = order.Id;
+            item.Order = order;
+            context.OrderItems.Add(item);
+        }
+    }
+
+    private static ProductVariant? ResolveDemoVariant(Product product, bool preferBundle)
+    {
+        var activeVariants = product.Variants
+            .Where(x => !x.IsDeleted && x.IsActive)
+            .OrderByDescending(x => preferBundle && x.Name.Contains("Pro Bundle", StringComparison.OrdinalIgnoreCase))
+            .ThenByDescending(x => x.IsDefault)
+            .ThenBy(x => x.SortOrder)
+            .ToList();
+
+        return activeVariants.FirstOrDefault();
+    }
+
+    private static DemoCustomerSeed[] DemoCustomers() =>
+    [
+        new(
+            "sara.phone.demo@electropulse.test",
+            "Sara",
+            "Khalil",
+            "0599101001",
+            "Ramallah",
+            "Al-Irsal Street, Building 14",
+            5m,
+            OrderStatus.Delivered,
+            "iPhone and accessories purchase",
+            "Please keep the device sealed.",
+            18),
+        new(
+            "omar.phone.demo@electropulse.test",
+            "Omar",
+            "Nasser",
+            "0599101002",
+            "Nablus",
+            "Rafidia Main Road",
+            0m,
+            OrderStatus.Shipped,
+            "Galaxy upgrade order",
+            "Call before delivery.",
+            14),
+        new(
+            "lina.phone.demo@electropulse.test",
+            "Lina",
+            "Saleh",
+            "0599101003",
+            "Hebron",
+            "Ein Sarah Street",
+            7.5m,
+            OrderStatus.Processing,
+            "Pixel camera bundle",
+            "Gift wrapping if available.",
+            10),
+        new(
+            "yousef.phone.demo@electropulse.test",
+            "Yousef",
+            "Awad",
+            "0599101004",
+            "Bethlehem",
+            "Manger Street",
+            0m,
+            OrderStatus.Confirmed,
+            "Xiaomi family phones",
+            "Prefer evening delivery.",
+            7),
+        new(
+            "mira.phone.demo@electropulse.test",
+            "Mira",
+            "Haddad",
+            "0599101005",
+            "Jenin",
+            "Cinema Roundabout",
+            3m,
+            OrderStatus.Delivered,
+            "OnePlus fast charge setup",
+            "Add invoice inside the package.",
+            4),
+        new(
+            "kareem.phone.demo@electropulse.test",
+            "Kareem",
+            "Darwish",
+            "0599101006",
+            "Tulkarm",
+            "University Street",
+            0m,
+            OrderStatus.Pending,
+            "Motorola foldable order",
+            "Customer will pay on delivery.",
+            1)
+    ];
 
     private static async Task EnsureImagesAsync(AppDbContext context, Product product, ProductSeed seed)
     {
@@ -616,6 +897,18 @@ public static class ElectroPulseSeedData
     private sealed record CategorySeed(string Key, string Name, string Description, string ImageUrl);
     private sealed record ContactSeed(string Platform, string Username, string Label, int SortOrder);
     private sealed record VariantSeed(string Name, decimal PriceDelta, int Stock, bool IsDefault, string Description);
+    private sealed record DemoCustomerSeed(
+        string Email,
+        string FirstName,
+        string LastName,
+        string Phone,
+        string City,
+        string Address,
+        decimal DiscountPercentage,
+        OrderStatus Status,
+        string OrderTitle,
+        string CustomerNotes,
+        int DaysAgo);
     private sealed record ProductSeed(
         string Slug,
         string Name,
