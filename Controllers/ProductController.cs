@@ -85,6 +85,14 @@ namespace onlineStore.Controllers
             }
         }
 
+        [HttpGet("highlights/{storeId}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetHighlights(Guid storeId,
+            [FromQuery] string? language = null, [FromQuery] string? lang = null)
+        {
+            return Ok(await _productService.GetHighlightProductsAsync(storeId, GetUserIdOrNull(), language ?? lang));
+        }
+
         // GET api/product/category/{categoryId}
         [HttpGet("category/{categoryId}")]
         [AllowAnonymous]

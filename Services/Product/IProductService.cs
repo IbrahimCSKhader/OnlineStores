@@ -9,6 +9,7 @@ namespace onlineStore.Services.Product
         Task<List<ProductDto>> GetStoreProductsAsync(Guid storeId, Guid? userId = null, string? language = null);
         Task<List<ProductDto>> GetStoreProductsForManagementAsync(Guid storeId);
         Task<List<ProductDto>> GetFeaturedProductsAsync(Guid storeId, Guid? userId = null, string? language = null);
+        Task<List<ProductDto>> GetHighlightProductsAsync(Guid storeId, Guid? userId = null, string? language = null);
         Task<List<ProductDto>> GetProductsByCategoryAsync(Guid categoryId, Guid? userId = null, string? language = null);
         Task<List<ProductDto>> GetProductsBySectionAsync(Guid sectionId, Guid? userId = null, string? language = null);
         Task<PagedResultDto<ProductDto>> GetStoreProductsPageAsync(Guid storeId, ProductQueryDto query, Guid? userId = null);

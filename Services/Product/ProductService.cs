@@ -120,6 +120,37 @@ namespace onlineStore.Services.Product
             return result;
         }
 
+        public async Task<List<ProductDto>> GetHighlightProductsAsync(
+            Guid storeId, Guid? userId = null, string? language = null)
+        {
+            const int limit = 15;
+            var active = _context.Products.AsNoTracking()
+                .Where(p => p.StoreId == storeId && p.Status == ProductStatus.Active);
+            var ranked = active.OrderByDescending(p => p.IsFeatured)
+                .ThenByDescending(p => p.VisitCount).ThenByDescending(p => p.CreatedAt).ThenBy(p => p.Id);
+
+            // Reserve a place for each category before filling the remaining slots.
+            var selectedIds = await active.GroupBy(p => p.CategoryId)
+                .OrderByDescending(group => group.Max(p => p.IsFeatured ? 1 : 0))
+                .ThenByDescending(group => group.Max(p => p.VisitCount))
+                .ThenBy(group => group.Key)
+                .Select(group => group.OrderByDescending(p => p.IsFeatured)
+                    .ThenByDescending(p => p.VisitCount).ThenByDescending(p => p.CreatedAt)
+                    .ThenBy(p => p.Id).Select(p => p.Id).First())
+                .Take(limit).ToListAsync();
+            if (selectedIds.Count < limit)
+            {
+                var extraIds = await ranked.Where(p => !selectedIds.Contains(p.Id))
+                    .Select(p => p.Id).Take(limit - selectedIds.Count).ToListAsync();
+                selectedIds.AddRange(extraIds);
+            }
+
+            var discount = await GetCustomerDiscountPercentageAsync(storeId, userId);
+            var result = await ToCatalogProductDtosAsync(ranked.Where(p => selectedIds.Contains(p.Id)), discount);
+            await _translationService.ApplyProductsAsync(storeId, result, language);
+            return result;
+        }
+
         // ════════════════════════════════════════════════════
         // Get Products By Category
         // ════════════════════════════════════════════════════
