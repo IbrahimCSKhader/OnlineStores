@@ -14,19 +14,22 @@ namespace onlineStore.Services.Category
         private readonly ICurrentUserService _currentUser;
         private readonly IStoreAuthorizationService _storeAuthorizationService;
         private readonly IStorefrontTranslationService _translationService;
+        private readonly IWebHostEnvironment? _environment;
 
         public CategoryService(
             AppDbContext context,
             ICurrentUserService currentUser,
             IStoreAuthorizationService storeAuthorizationService,
             IStorefrontTranslationService translationService,
-            ILogger<CategoryService> logger)
+            ILogger<CategoryService> logger,
+            IWebHostEnvironment? environment = null)
         {
             _context = context;
             _currentUser = currentUser;
             _storeAuthorizationService = storeAuthorizationService;
             _translationService = translationService;
             _logger = logger;
+            _environment = environment;
         }
 
         public async Task<List<CategoryDto>> GetStoreCategoriesAsync(
@@ -103,7 +106,7 @@ namespace onlineStore.Services.Category
             };
 
             _context.Categories.Add(category);
-            await _context.SaveChangesAsync(cancellationToken);
+            await SaveWithImageAsync(category, dto.ImageFile, cancellationToken);
 
             return ToDto(category);
         }
@@ -136,7 +139,7 @@ namespace onlineStore.Services.Category
             if (dto.IsActive.HasValue)
                 category.IsActive = dto.IsActive.Value;
 
-            await _context.SaveChangesAsync(cancellationToken);
+            await SaveWithImageAsync(category, dto.ImageFile, cancellationToken);
 
             return ToDto(category);
         }
@@ -157,6 +160,29 @@ namespace onlineStore.Services.Category
             await _context.SaveChangesAsync(cancellationToken);
 
             return true;
+        }
+
+        private async Task SaveWithImageAsync(Models.Category category, IFormFile? image, CancellationToken cancellationToken)
+        {
+            Utilities.CategoryImageStorage.SavedImage? saved = null;
+            var previousUrl = category.ImageUrl;
+            try
+            {
+                if (image != null)
+                {
+                    var webRoot = _environment?.WebRootPath
+                        ?? throw new InvalidOperationException("Image storage is not configured.");
+                    saved = await Utilities.CategoryImageStorage.SaveAsync(image, webRoot, category.StoreId, cancellationToken);
+                    category.ImageUrl = saved.Url;
+                }
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+            catch
+            {
+                category.ImageUrl = previousUrl;
+                if (saved != null) File.Delete(saved.FilePath);
+                throw;
+            }
         }
 
         private async Task EnsureCanManageStoreAsync(

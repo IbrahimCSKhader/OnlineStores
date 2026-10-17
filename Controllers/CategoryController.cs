@@ -54,6 +54,7 @@ public class CategoryController : ControllerBase
     }
 
     [HttpPost]
+    [Consumes("application/json")]
     [Authorize(Roles = "SuperAdmin,StoreOwner")]
     public async Task<IActionResult> Create(
         [FromBody] CreateCategoryDto dto,
@@ -88,7 +89,16 @@ public class CategoryController : ControllerBase
         }
     }
 
+    [HttpPost]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(6 * 1024 * 1024)]
+    [Authorize(Roles = "SuperAdmin,StoreOwner")]
+    public Task<IActionResult> CreateWithImage(
+        [FromForm] CreateCategoryDto dto,
+        CancellationToken cancellationToken) => Create(dto, cancellationToken);
+
     [HttpPut("{id}")]
+    [Consumes("application/json")]
     [Authorize(Roles = "SuperAdmin,StoreOwner")]
     public async Task<IActionResult> Update(
         Guid id,
@@ -143,6 +153,15 @@ public class CategoryController : ControllerBase
             return StatusCode(500, new { message = "An unexpected error occurred." });
         }
     }
+
+    [HttpPut("{id}")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(6 * 1024 * 1024)]
+    [Authorize(Roles = "SuperAdmin,StoreOwner")]
+    public Task<IActionResult> UpdateWithImage(
+        Guid id,
+        [FromForm] UpdateCategoryDto dto,
+        CancellationToken cancellationToken) => Update(id, dto, cancellationToken);
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "SuperAdmin,StoreOwner")]
