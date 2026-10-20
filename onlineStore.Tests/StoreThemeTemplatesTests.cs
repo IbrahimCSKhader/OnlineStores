@@ -17,6 +17,7 @@ public class StoreThemeTemplatesTests
         StoreThemeTemplates.Gold,
         StoreThemeTemplates.DeepGreen,
         StoreThemeTemplates.Red,
+        StoreThemeTemplates.ElectroPulse,
     };
 
     [Theory]
@@ -24,6 +25,13 @@ public class StoreThemeTemplatesTests
     public void NormalizeForResponse_PreservesSupportedTemplate(string template)
     {
         Assert.Equal(template, StoreThemeTemplates.NormalizeForResponse(template));
+    }
+
+    [Fact]
+    public void ElectroPulse_CanBeSavedThroughStoreValidation()
+    {
+        Assert.True(StoreThemeTemplates.IsValid(" t "));
+        Assert.Equal(StoreThemeTemplates.ElectroPulse, StoreThemeTemplates.NormalizeOrThrow(" t "));
     }
 
     [Fact]
