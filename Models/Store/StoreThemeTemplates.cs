@@ -13,10 +13,11 @@ namespace onlineStore.Models
         public const string Gold = "Y";
         public const string DeepGreen = "E";
         public const string Red = "R";
+        public const string ElectroPulse = "T";
 
 
         public static readonly string[] AllowedValues =
-            [Default, L, F, P, B, Blue, Brown, Purple, Gold, DeepGreen, Red];
+            [Default, L, F, P, B, Blue, Brown, Purple, Gold, DeepGreen, Red, ElectroPulse];
 
         public static bool IsValid(string? value)
         {

@@ -1228,7 +1228,7 @@ namespace onlineStore.Migrations
                         {
                             t.HasCheckConstraint("CK_Stores_Language", "[Language] IN ('A', 'E', 'I')");
 
-                            t.HasCheckConstraint("CK_Stores_ThemeTemplate", "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U', 'N', 'V', 'Y', 'E', 'R')");
+                            t.HasCheckConstraint("CK_Stores_ThemeTemplate", "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U', 'N', 'V', 'Y', 'E', 'R', 'T')");
                         });
                 });
 

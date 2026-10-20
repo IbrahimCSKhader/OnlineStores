@@ -147,7 +147,7 @@ public static class ElectroPulseSeedData
         store.CoverImageUrl = Photo("photo-1498049794561-7780e7231661", "electronics store devices");
         store.WhatsAppNumber = "970599123456";
         store.StoreStory = "ElectroPulse Hub يجمع أشهر الأجهزة التقنية في تجربة واضحة وسريعة، مع تصنيفات مباشرة وصور واقعية تساعد الزبون يختار الجهاز المناسب بثقة.";
-        store.ThemeTemplate = StoreThemeTemplates.Blue;
+        store.ThemeTemplate = StoreThemeTemplates.ElectroPulse;
         store.IsActive = true;
         store.IsDeleted = false;
         store.OwnerId = ownerId;
