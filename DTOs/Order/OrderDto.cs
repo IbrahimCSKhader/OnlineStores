@@ -12,6 +12,9 @@ namespace onlineStore.DTOs.Order
 
         public decimal SubTotal { get; set; }
         public decimal DiscountAmount { get; set; }
+        public Guid? DeliveryLocationId { get; set; }
+        public string DeliveryLocationName { get; set; } = "افتراضي";
+        public decimal DeliveryCost { get; set; }
         public decimal TotalAmount { get; set; }
         public int PointsEarned { get; set; }
 

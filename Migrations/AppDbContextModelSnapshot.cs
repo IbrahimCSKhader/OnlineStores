@@ -603,6 +603,21 @@ namespace onlineStore.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<decimal>("DeliveryCost")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<Guid?>("DeliveryLocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DeliveryLocationName")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("افتراضي");
+
                     b.Property<string>("DeliveryPhone")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
@@ -652,6 +667,8 @@ namespace onlineStore.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CouponId");
+
+                    b.HasIndex("DeliveryLocationId");
 
                     b.HasIndex("OrderNumber")
                         .IsUnique();
@@ -1353,6 +1370,42 @@ namespace onlineStore.Migrations
                     b.ToTable("CustomerStores", (string)null);
                 });
 
+            modelBuilder.Entity("onlineStore.Models.StoreDeliveryLocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Cost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StoreId");
+
+                    b.ToTable("StoreDeliveryLocations", t =>
+                        {
+                            t.HasCheckConstraint("CK_StoreDeliveryLocations_Cost", "[Cost] >= 0");
+                        });
+                });
+
             modelBuilder.Entity("onlineStore.Models.StoreRegistrationVisit", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1724,6 +1777,11 @@ namespace onlineStore.Migrations
                         .HasForeignKey("CouponId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("onlineStore.Models.StoreDeliveryLocation", "DeliveryLocation")
+                        .WithMany()
+                        .HasForeignKey("DeliveryLocationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("onlineStore.Models.StoreCustomer", "StoreCustomer")
                         .WithMany("Orders")
                         .HasForeignKey("StoreCustomerId")
@@ -1737,6 +1795,8 @@ namespace onlineStore.Migrations
                         .IsRequired();
 
                     b.Navigation("Coupon");
+
+                    b.Navigation("DeliveryLocation");
 
                     b.Navigation("Store");
 
@@ -1944,6 +2004,17 @@ namespace onlineStore.Migrations
                     b.Navigation("Store");
                 });
 
+            modelBuilder.Entity("onlineStore.Models.StoreDeliveryLocation", b =>
+                {
+                    b.HasOne("onlineStore.Models.Store", "Store")
+                        .WithMany("DeliveryLocations")
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Store");
+                });
+
             modelBuilder.Entity("onlineStore.Models.StoreTranslation", b =>
                 {
                     b.HasOne("onlineStore.Models.Store", "Store")
@@ -2037,6 +2108,8 @@ namespace onlineStore.Migrations
                     b.Navigation("Categories");
 
                     b.Navigation("ContactAccounts");
+
+                    b.Navigation("DeliveryLocations");
 
                     b.Navigation("Offers");
 

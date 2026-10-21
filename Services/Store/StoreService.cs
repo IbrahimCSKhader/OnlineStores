@@ -241,6 +241,7 @@ namespace onlineStore.Services.Store
         {
             var store = await _context.Stores
                 .Include(s => s.ContactAccounts)
+                .Include(s => s.DeliveryLocations)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             if (store == null)
@@ -297,6 +298,33 @@ namespace onlineStore.Services.Store
 
             if (dto.IsActive != null)
                 store.IsActive = dto.IsActive.Value;
+
+            if (dto.DeliveryLocations != null)
+            {
+                if (dto.DeliveryLocations.Count > 50 || dto.DeliveryLocations.Any(x =>
+                    string.IsNullOrWhiteSpace(x.Name) || x.Name.Trim().Length > 100 ||
+                    x.Cost < 0 || x.Cost > 99999999.99m || decimal.Round(x.Cost, 2) != x.Cost))
+                    throw new ArgumentException("أدخل اسم مكان التوصيل وكلفة صحيحة لا تقل عن صفر وبحد أقصى منزلتين عشريتين.");
+
+                var existing = store.DeliveryLocations.Where(x => !x.IsDeleted).ToList();
+                if (dto.DeliveryLocations.Any(x => x.Id != Guid.Empty && !existing.Any(e => e.Id == x.Id)) ||
+                    dto.DeliveryLocations.Where(x => x.Id != Guid.Empty).GroupBy(x => x.Id).Any(g => g.Count() > 1))
+                    throw new ArgumentException("مكان التوصيل غير صالح لهذا المتجر.");
+
+                foreach (var location in existing)
+                    location.IsDeleted = !dto.DeliveryLocations.Any(x => x.Id == location.Id);
+                foreach (var input in dto.DeliveryLocations)
+                {
+                    var location = existing.FirstOrDefault(x => x.Id == input.Id);
+                    if (location == null)
+                    {
+                        location = new StoreDeliveryLocation { StoreId = store.Id };
+                        _context.StoreDeliveryLocations.Add(location);
+                    }
+                    location.Name = input.Name.Trim();
+                    location.Cost = input.Cost;
+                }
+            }
 
             if (dto.ContactAccounts != null)
                 ReplaceContactAccounts(store, dto.ContactAccounts);
@@ -357,6 +385,10 @@ namespace onlineStore.Services.Store
                     Url = StoreContactPlatforms.BuildUrl(c.Platform, c.Username),
                     SortOrder = c.SortOrder
                 })
+                .ToList(),
+            DeliveryLocations = s.DeliveryLocations.Where(x => !x.IsDeleted)
+                .OrderBy(x => x.CreatedAt).ThenBy(x => x.Id)
+                .Select(x => new StoreDeliveryLocationDto { Id = x.Id, Name = x.Name, Cost = x.Cost })
                 .ToList(),
             CreatedAt = s.CreatedAt
         };
@@ -806,6 +838,7 @@ namespace onlineStore.Services.Store
         {
             var query = _context.Stores
                 .Include(s => s.ContactAccounts)
+                .Include(s => s.DeliveryLocations)
                 .AsQueryable();
 
             return asNoTracking ? query.AsNoTracking() : query;

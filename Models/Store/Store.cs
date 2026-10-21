@@ -46,6 +46,8 @@ namespace onlineStore.Models
 
         public int VisitCount { get; set; } = 0;
         
+        public ICollection<StoreDeliveryLocation> DeliveryLocations { get; set; } = new List<StoreDeliveryLocation>();
+
         public ICollection<Category> Categories { get; set; } = new List<Category>();
         public ICollection<Section> Sections { get; set; } = new List<Section>();
         public ICollection<StoreTranslation> Translations { get; set; } = new List<StoreTranslation>();

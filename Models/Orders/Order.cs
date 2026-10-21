@@ -36,7 +36,16 @@ namespace onlineStore.Models.Orders
         [MaxLength(1000)]
         public string? StoreNotes { get; set; } // ملاحظات صاحب المتجر
 
-        // Delivery Info (بدون شحن — بس بنحفظ العنوان)
+        public Guid? DeliveryLocationId { get; set; }
+        public StoreDeliveryLocation? DeliveryLocation { get; set; }
+
+        [Required, MaxLength(100)]
+        public string DeliveryLocationName { get; set; } = "افتراضي";
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal DeliveryCost { get; set; }
+
+        // Delivery Info
         [MaxLength(300)]
         public string? DeliveryAddress { get; set; }
 

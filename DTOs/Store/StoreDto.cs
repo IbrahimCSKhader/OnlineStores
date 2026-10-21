@@ -20,6 +20,7 @@ namespace onlineStore.DTOs.Store
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public int VisitCount { get; set; }
+        public List<StoreDeliveryLocationDto> DeliveryLocations { get; set; } = new();
         public List<StoreContactAccountDto> ContactAccounts { get; set; } = new();
     }
 }

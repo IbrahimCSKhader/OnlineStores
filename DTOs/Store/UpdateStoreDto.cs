@@ -30,6 +30,9 @@ namespace onlineStore.DTOs.Store
         [MaxLength(1)]
         public string? Language { get; set; }
 
+        [MaxLength(50)]
+        public List<StoreDeliveryLocationDto>? DeliveryLocations { get; set; }
+
         public bool? IsActive { get; set; }
         public List<StoreContactAccountInputDto>? ContactAccounts { get; set; }
     }

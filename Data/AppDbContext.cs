@@ -18,6 +18,7 @@ namespace onlineStore.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options)
            : base(options) { }
+        public DbSet<StoreDeliveryLocation> StoreDeliveryLocations => Set<StoreDeliveryLocation>();
         public DbSet<Store> Stores => Set<Store>();
         public DbSet<StoreTranslation> StoreTranslations => Set<StoreTranslation>();
         public DbSet<StoreRegistrationVisit> StoreRegistrationVisits => Set<StoreRegistrationVisit>();
@@ -240,6 +241,20 @@ namespace onlineStore.Data
                         "[Language] IN ('A', 'E', 'I')"));
             });
 
+            builder.Entity<StoreDeliveryLocation>()
+                .HasOne(x => x.Store)
+                .WithMany(s => s.DeliveryLocations)
+                .HasForeignKey(x => x.StoreId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<StoreDeliveryLocation>().HasQueryFilter(x => !x.IsDeleted);
+            builder.Entity<StoreDeliveryLocation>().ToTable(t =>
+                t.HasCheckConstraint("CK_StoreDeliveryLocations_Cost", "[Cost] >= 0"));
+            builder.Entity<Order>()
+                .HasOne(o => o.DeliveryLocation)
+                .WithMany()
+                .HasForeignKey(o => o.DeliveryLocationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.Entity<StoreContactAccount>()
                 .HasOne(sca => sca.Store)
                 .WithMany(s => s.ContactAccounts)
@@ -307,6 +322,8 @@ namespace onlineStore.Data
                 e.Property(o => o.SubTotal).HasColumnType("decimal(18,2)");
                 e.Property(o => o.DiscountAmount).HasColumnType("decimal(18,2)");
                 e.Property(o => o.TotalAmount).HasColumnType("decimal(18,2)");
+                e.Property(o => o.DeliveryLocationName).HasDefaultValue("افتراضي");
+                e.Property(o => o.DeliveryCost).HasDefaultValue(0m);
                 e.Property(o => o.PointsEarned).HasDefaultValue(0);
             });
 

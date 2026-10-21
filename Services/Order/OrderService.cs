@@ -73,6 +73,14 @@ namespace onlineStore.Services.Order
                 try
                 {
                     await EnsureActiveStoreCustomerAsync(storeCustomerId, dto.StoreId);
+                    var deliveryLocations = await _context.StoreDeliveryLocations.AsNoTracking()
+                        .Where(x => x.StoreId == dto.StoreId).ToListAsync();
+                    var deliveryLocation = deliveryLocations.FirstOrDefault(x => x.Id == dto.DeliveryLocationId);
+                    if (deliveryLocations.Count > 0 && deliveryLocation == null)
+                        throw new ArgumentException("يرجى اختيار مكان توصيل من الأماكن المتاحة لهذا المتجر.");
+                    if (deliveryLocations.Count == 0 && dto.DeliveryLocationId.HasValue)
+                        throw new ArgumentException("مكان التوصيل المحدد لم يعد متاحاً، يرجى تحديث الصفحة.");
+
                     var customerDiscountPercentage = await GetStoreCustomerDiscountPercentageAsync(
                         storeCustomerId,
                         dto.StoreId);
@@ -208,6 +216,8 @@ namespace onlineStore.Services.Order
                     if (totalAmount < 0)
                         totalAmount = 0;
 
+                    totalAmount += deliveryLocation?.Cost ?? 0m;
+
                     var pointsEarned = PurchasePointsPolicy.CalculatePointsFromCartItems(cartItems);
 
                     var order = new Models.Orders.Order
@@ -223,6 +233,9 @@ namespace onlineStore.Services.Order
                         DeliveryAddress = dto.DeliveryAddress.Trim(),
                         DeliveryCity = dto.DeliveryCity.Trim(),
                         DeliveryPhone = dto.DeliveryPhone.Trim(),
+                        DeliveryLocationId = deliveryLocation?.Id,
+                        DeliveryLocationName = deliveryLocation?.Name ?? "افتراضي",
+                        DeliveryCost = deliveryLocation?.Cost ?? 0m,
                         CouponId = coupon?.Id,
                         StoreCustomerId = storeCustomerId,
                         StoreId = dto.StoreId,
@@ -329,6 +342,9 @@ namespace onlineStore.Services.Order
                     SubTotal = o.SubTotal,
                     DiscountAmount = o.DiscountAmount,
                     TotalAmount = o.TotalAmount,
+                    DeliveryLocationId = o.DeliveryLocationId,
+                    DeliveryLocationName = o.DeliveryLocationName,
+                    DeliveryCost = o.DeliveryCost,
                     PointsEarned = o.PointsEarned,
                     StoreCustomerId = o.StoreCustomerId,
                     CustomerName = (o.StoreCustomer.FirstName + " " + o.StoreCustomer.LastName).Trim(),
@@ -464,6 +480,9 @@ namespace onlineStore.Services.Order
                     SubTotal = o.SubTotal,
                     DiscountAmount = o.DiscountAmount,
                     TotalAmount = o.TotalAmount,
+                    DeliveryLocationId = o.DeliveryLocationId,
+                    DeliveryLocationName = o.DeliveryLocationName,
+                    DeliveryCost = o.DeliveryCost,
                     PointsEarned = o.PointsEarned,
                     StoreCustomerId = o.StoreCustomerId,
                     CustomerName = (o.StoreCustomer.FirstName + " " + o.StoreCustomer.LastName).Trim(),
@@ -998,6 +1017,9 @@ namespace onlineStore.Services.Order
                 DeliveryAddress = order.DeliveryAddress,
                 DeliveryCity = order.DeliveryCity,
                 DeliveryPhone = order.DeliveryPhone,
+                DeliveryLocationId = order.DeliveryLocationId,
+                DeliveryLocationName = order.DeliveryLocationName,
+                DeliveryCost = order.DeliveryCost,
                 StoreCustomerId = order.StoreCustomerId,
                 CustomerName = BuildCustomerFullName(order.StoreCustomer),
                 CustomerEmail = order.StoreCustomer?.Email,
