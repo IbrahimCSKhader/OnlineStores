@@ -21,6 +21,8 @@ namespace onlineStore.DTOs.Store
         [MaxLength(100)]
         public string? BusinessType { get; set; }
 
+        public bool IsCatalog { get; set; } = false;
+
         public IFormFile? Logo { get; set; }
 
         public IFormFile? CoverPage { get; set; }

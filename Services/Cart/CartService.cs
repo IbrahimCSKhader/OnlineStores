@@ -81,6 +81,9 @@ namespace onlineStore.Services.Cart
                     throw new Exception("الكمية يجب أن تكون أكبر من صفر");
                 }
 
+                if (await _context.Stores.AnyAsync(s => s.Id == dto.StoreId && s.IsCatalog))
+                    throw new ArgumentException("هذا كاتالوج للعرض فقط، الشراء غير متاح.");
+
                 // 1) جيب أو أنشئ الكارت
                 var cart = await GetOrCreateCartAsync(storeCustomerId, dto.StoreId);
 
@@ -275,6 +278,9 @@ namespace onlineStore.Services.Cart
 
                     throw new Exception("العنصر غير موجود في الكارت");
                 }
+
+                if (await _context.Stores.AnyAsync(s => s.Id == item.Cart.StoreId && s.IsCatalog))
+                    throw new ArgumentException("هذا كاتالوج للعرض فقط، الشراء غير متاح.");
 
                 if (item.Product == null)
                 {

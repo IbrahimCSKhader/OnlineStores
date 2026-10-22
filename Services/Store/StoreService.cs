@@ -367,6 +367,7 @@ namespace onlineStore.Services.Store
             LogoUrl = s.LogoUrl,
             CoverImageUrl = s.CoverImageUrl,
             IsActive = s.IsActive,
+            IsCatalog = s.IsCatalog,
             VisitCount = includeVisitCount ? s.VisitCount : 0,
             WhatsAppNumber = s.WhatsAppNumber,
             StoreStory = s.StoreStory,
@@ -665,6 +666,7 @@ namespace onlineStore.Services.Store
                 OwnerId = owner.Id,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
+                IsCatalog = dto.IsCatalog,
                 ContactAccounts = normalizedContactAccounts
             };
 

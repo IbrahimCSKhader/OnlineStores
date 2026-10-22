@@ -199,6 +199,8 @@ namespace onlineStore.Data
 
             builder.Entity<Store>(entity =>
             {
+                entity.Property(x => x.IsCatalog).HasDefaultValue(false);
+
                 entity.Property(x => x.ThemeTemplate)
                     .HasMaxLength(1)
                     .IsRequired()

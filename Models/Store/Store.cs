@@ -29,6 +29,8 @@ namespace onlineStore.Models
         [MaxLength(100)]
         public string? BusinessType { get; set; }
 
+        public bool IsCatalog { get; set; } = false;
+
         public bool IsActive { get; set; } = true;
 
         public Guid OwnerId { get; set; }

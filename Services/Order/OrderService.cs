@@ -73,6 +73,8 @@ namespace onlineStore.Services.Order
                 try
                 {
                     await EnsureActiveStoreCustomerAsync(storeCustomerId, dto.StoreId);
+                    if (await _context.Stores.AnyAsync(s => s.Id == dto.StoreId && s.IsCatalog))
+                        throw new ArgumentException("هذا كاتالوج للعرض فقط، الشراء غير متاح.");
                     var deliveryLocations = await _context.StoreDeliveryLocations.AsNoTracking()
                         .Where(x => x.StoreId == dto.StoreId).ToListAsync();
                     var deliveryLocation = deliveryLocations.FirstOrDefault(x => x.Id == dto.DeliveryLocationId);

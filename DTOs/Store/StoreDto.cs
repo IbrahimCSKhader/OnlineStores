@@ -10,6 +10,8 @@ namespace onlineStore.DTOs.Store
         public string? Description { get; set; }
         public string? CustomDomain { get; set; }
         public string? BusinessType { get; set; }
+
+        public bool IsCatalog { get; set; } = false;
         public string? LogoUrl { get; set; }
         public string? CoverImageUrl { get; set; }
         public string? WhatsAppNumber { get; set; }

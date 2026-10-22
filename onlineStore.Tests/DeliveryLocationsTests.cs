@@ -43,6 +43,14 @@ public class DeliveryLocationsTests
             db.AddRange(owner, role, store, customer, product);
             db.UserRoles.Add(new() { UserId = owner.Id, RoleId = role.Id });
             await db.SaveChangesAsync();
+            var catalogMigration = new AddStoreCatalogMode();
+            var catalogSql = db.GetService<IMigrationsSqlGenerator>();
+            foreach (var sql in catalogSql.Generate(catalogMigration.DownOperations, db.Model))
+                await db.Database.ExecuteSqlRawAsync(sql.CommandText);
+            foreach (var sql in catalogSql.Generate(catalogMigration.UpOperations, db.Model))
+                await db.Database.ExecuteSqlRawAsync(sql.CommandText);
+            Assert.False(await db.Stores.AsNoTracking().Where(x => x.Id == store.Id).Select(x => x.IsCatalog).SingleAsync());
+            Assert.False(new CreateStoreDto().IsCatalog);
             var actor = new TestActor(owner.Id);
             var orders = new OrderService(db, NullLogger<OrderService>.Instance,
                 new CartPricingService(db, NullLogger<CartPricingService>.Instance), actor);
@@ -116,6 +124,24 @@ public class DeliveryLocationsTests
             Assert.Equal(15.50m, historical.DeliveryCost);
             await Assert.ThrowsAsync<ArgumentException>(() => stores.UpdateStoreAsync(store.Id,
                 new UpdateStoreDto { DeliveryLocations = new() { new() { Name = "Invalid", Cost = -1 } } }));
+            var catalog = await db.Stores.SingleAsync(x => x.Id == store.Id);
+            catalog.IsCatalog = true;
+            await db.SaveChangesAsync();
+            Assert.True((await stores.GetAllStoresAsync()).Single(x => x.Id == store.Id).IsCatalog);
+            await RefillCart();
+            var cartItem = await db.CartItems.SingleAsync();
+            var carts = new onlineStore.Services.Cart.CartService(db,
+                NullLogger<onlineStore.Services.Cart.CartService>.Instance,
+                new CartPricingService(db, NullLogger<CartPricingService>.Instance));
+            await Assert.ThrowsAsync<ArgumentException>(() => carts.AddToCartAsync(customer.Id,
+                new onlineStore.DTOs.Cart.AddToCartDto { StoreId = store.Id, ProductId = product.Id, Quantity = 1 }));
+            await Assert.ThrowsAsync<ArgumentException>(() => carts.UpdateCartItemAsync(customer.Id, cartItem.Id,
+                new onlineStore.DTOs.Cart.UpdateCartItemDto { Quantity = 2 }));
+            await Assert.ThrowsAsync<ArgumentException>(() => orders.CreateOrderAsync(customer.Id, request));
+            Assert.Equal(1, (await db.CartItems.SingleAsync()).Quantity);
+            catalog.IsCatalog = false;
+            await db.SaveChangesAsync();
+            Assert.Equal(100m, (await orders.CreateOrderAsync(customer.Id, request)).TotalAmount);
             actor.UserId = Guid.NewGuid();
             await Assert.ThrowsAsync<UnauthorizedAccessException>(() => stores.UpdateStoreAsync(store.Id,
                 new UpdateStoreDto { DeliveryLocations = new() }));
