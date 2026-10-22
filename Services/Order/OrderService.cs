@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using onlineStore.Data;
 using onlineStore.DTOs.Order;
 using onlineStore.Models;
@@ -68,7 +68,7 @@ namespace onlineStore.Services.Order
 
             return await strategy.ExecuteAsync(async () =>
             {
-                await using var transaction = await _context.Database.BeginTransactionAsync();
+                await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
 
                 try
                 {
@@ -92,7 +92,7 @@ namespace onlineStore.Services.Order
                         dto.StoreId,
                         customerDiscountPercentage);
 
-                    var carts = await _context.Carts
+                    var carts = await _context.Carts.IgnoreQueryFilters()
                         .Include(c => c.Items.Where(i => !i.IsDeleted))
                             .ThenInclude(i => i.Product)
                                 .ThenInclude(p => p.Variants.Where(v => !v.IsDeleted && v.IsActive))
@@ -102,7 +102,7 @@ namespace onlineStore.Services.Order
                             .ThenInclude(i => i.Variant)
                         .AsSplitQuery()
                         .Where(c =>
-                            c.StoreCustomerId == storeCustomerId &&
+                            !c.IsDeleted && c.StoreCustomerId == storeCustomerId &&
                             c.StoreId == dto.StoreId)
                         .OrderBy(c => c.CreatedAt)
                         .ToListAsync();
@@ -146,6 +146,7 @@ namespace onlineStore.Services.Order
                             item.UnitPrice
                         }).ToList());
 
+                    await BundleCartPricing.RefreshAsync(_context, dto.StoreId, cartItems);
                     var resolvedCartItems = new Dictionary<Guid, ResolvedOrderCartItem>();
 
                     foreach (var item in cartItems)
@@ -153,6 +154,8 @@ namespace onlineStore.Services.Order
                         if (item.Product == null)
                             throw new Exception("يوجد عنصر غير صالح في السلة");
 
+                        if (item.Quantity <= 0 || item.Product.IsDeleted)
+                            throw new InvalidOperationException("أحد المنتجات لم يعد متاحاً");
                         if (item.Product.StoreId != dto.StoreId)
                             throw new Exception("يوجد عنصر لا ينتمي لهذا المتجر");
 
@@ -170,10 +173,20 @@ namespace onlineStore.Services.Order
                             resolvedVariant,
                             customerDiscountPercentage);
 
+                        if (item.BundleGroupId.HasValue)
+                            unitPrice = decimal.Round(item.BundleLineTotal!.Value / item.Quantity, 2);
                         item.UnitPrice = unitPrice;
                         resolvedCartItems[item.Id] = new ResolvedOrderCartItem(
                             resolvedVariant,
                             unitPrice);
+                    }
+
+                    foreach (var group in cartItems.GroupBy(i => new { i.ProductId, VariantId = resolvedCartItems[i.Id].Variant?.Id }))
+                    {
+                        var first = group.First();
+                        var stock = resolvedCartItems[first.Id].Variant?.StockQuantity ?? first.Product.StockQuantity;
+                        if (first.Product.TrackInventory && group.Sum(i => i.Quantity) > stock)
+                            throw new InvalidOperationException($"الكمية المطلوبة من {first.Product.Name} تتجاوز المخزون المتاح");
                     }
 
                     var pricing = await _cartPricingService.CalculatePricingAsync(
@@ -254,9 +267,15 @@ namespace onlineStore.Services.Order
                             ProductName = cartItem.Product?.Name?.Trim() ?? "Unknown Product",
                             VariantId = resolvedCartItem.Variant?.Id,
                             VariantName = resolvedCartItem.Variant?.Name?.Trim(),
+                            BundleOfferId = cartItem.BundleOfferId,
+                            BundleGroupId = cartItem.BundleGroupId,
+                            BundleName = cartItem.BundleName,
+                            BundleQuantity = cartItem.BundleQuantity,
+                            BundleItemQuantity = cartItem.BundleItemQuantity,
+                            BundlePrice = cartItem.BundlePrice,
                             Quantity = cartItem.Quantity,
                             UnitPrice = resolvedCartItem.UnitPrice,
-                            TotalPrice = resolvedCartItem.UnitPrice * cartItem.Quantity,
+                            TotalPrice = cartItem.BundleLineTotal ?? resolvedCartItem.UnitPrice * cartItem.Quantity,
                             CreatedAt = DateTime.UtcNow
                         };
 
@@ -354,6 +373,7 @@ namespace onlineStore.Services.Order
                     CustomerPhone = o.StoreCustomer.Phone,
                     CustomerDiscountPercentage = o.StoreCustomer.DiscountPercentage,
                     CustomerPurchasePoints = o.StoreCustomer.PurchasePoints,
+                    ContainsBundles = o.Items.Any(i => i.BundleGroupId != null),
                     ItemsCount = o.Items.Count(),
                     StoreId = o.StoreId,
                     CouponId = o.CouponId,
@@ -492,6 +512,7 @@ namespace onlineStore.Services.Order
                     CustomerPhone = o.StoreCustomer.Phone,
                     CustomerDiscountPercentage = o.StoreCustomer.DiscountPercentage,
                     CustomerPurchasePoints = o.StoreCustomer.PurchasePoints,
+                    ContainsBundles = o.Items.Any(i => i.BundleGroupId != null),
                     ItemsCount = o.Items.Count(),
                     StoreId = o.StoreId,
                     CouponId = o.CouponId,
@@ -547,7 +568,7 @@ namespace onlineStore.Services.Order
 
             return await strategy.ExecuteAsync(async () =>
             {
-                await using var transaction = await _context.Database.BeginTransactionAsync();
+                await using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
 
                 try
                 {
@@ -1044,6 +1065,12 @@ namespace onlineStore.Services.Order
                     VariantImageUrl = i.Variant?.ImageUrl,
                     EffectiveVariantImageUrl = ResolveEffectiveVariantImageUrl(i.Variant, i.Product),
                     VariantAttributes = MapOrderVariantAttributes(i.Variant),
+                    BundleOfferId = i.BundleOfferId,
+                    BundleGroupId = i.BundleGroupId,
+                    BundleName = i.BundleName,
+                    BundleQuantity = i.BundleQuantity,
+                    BundleItemQuantity = i.BundleItemQuantity,
+                    BundlePrice = i.BundlePrice,
                     Quantity = i.Quantity,
                     UnitPrice = i.UnitPrice,
                     TotalPrice = i.TotalPrice

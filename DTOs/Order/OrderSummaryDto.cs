@@ -1,4 +1,4 @@
-﻿using onlineStore.Models.Enums;
+using onlineStore.Models.Enums;
 
 namespace onlineStore.DTOs.Order
 {
@@ -25,6 +25,7 @@ namespace onlineStore.DTOs.Order
         public decimal CustomerDiscountPercentage { get; set; }
         public int CustomerPurchasePoints { get; set; }
 
+        public bool ContainsBundles { get; set; }
         public int ItemsCount { get; set; }
         public Guid StoreId { get; set; }
         public Guid? CouponId { get; set; }

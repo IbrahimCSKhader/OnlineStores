@@ -131,6 +131,28 @@ namespace onlineStore.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("BundleGroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("BundleItemQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("BundleLineTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("BundleName")
+                        .HasMaxLength(180)
+                        .HasColumnType("nvarchar(180)");
+
+                    b.Property<Guid?>("BundleOfferId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("BundlePrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("BundleQuantity")
+                        .HasColumnType("int");
+
                     b.Property<Guid>("CartId")
                         .HasColumnType("uniqueidentifier");
 
@@ -687,6 +709,25 @@ namespace onlineStore.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BundleGroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("BundleItemQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("BundleName")
+                        .HasMaxLength(180)
+                        .HasColumnType("nvarchar(180)");
+
+                    b.Property<Guid?>("BundleOfferId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("BundlePrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("BundleQuantity")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");

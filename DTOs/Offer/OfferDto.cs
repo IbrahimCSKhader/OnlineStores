@@ -19,6 +19,9 @@ namespace onlineStore.DTOs.Offer
         public bool AppliesToAllProducts { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public decimal RegularPrice => Items.Sum(i => i.UnitPrice * i.RequiredQuantity);
+        public decimal Savings => Math.Max(0, RegularPrice - (BundlePrice ?? RegularPrice));
+        public int AvailableBundles => Items.Count == 0 ? 0 : Items.Min(i => i.IsAvailable && i.RequiredQuantity > 0 ? i.AvailableStock / i.RequiredQuantity : 0);
         public List<OfferItemDto> Items { get; set; } = new();
     }
 }

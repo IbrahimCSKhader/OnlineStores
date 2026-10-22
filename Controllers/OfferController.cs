@@ -24,6 +24,11 @@ namespace onlineStore.Controllers
             return Ok(offers);
         }
 
+        [HttpGet("store/{storeId:guid}/active")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetActive(Guid storeId) =>
+            Ok(await _offerService.GetActiveOffersForStoreAsync(storeId));
+
         [HttpGet("{id:guid}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetById(Guid id)

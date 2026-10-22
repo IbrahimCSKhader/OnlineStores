@@ -35,10 +35,11 @@ namespace onlineStore.Services.Offer
             var canManageStore = await CanCurrentUserManageStoreAsync(storeId);
             var now = DateTime.UtcNow;
 
-            IQueryable<Models.Offers.Offer> query = _context.Offers
+            IQueryable<Models.Offers.Offer> query = _context.Offers.IgnoreQueryFilters().Where(o => !o.IsDeleted)
                 .AsNoTracking()
-                .Include(o => o.Items)
-                    .ThenInclude(i => i.Product)
+                .Include(o => o.Items.Where(i => !i.IsDeleted))
+                    .ThenInclude(i => i.Product).ThenInclude(p => p.Images)
+                .Include(o => o.Items.Where(i => !i.IsDeleted)).ThenInclude(i => i.Product).ThenInclude(p => p.Variants)
                 .Where(o => o.StoreId == storeId);
 
             if (!canManageStore)
@@ -53,17 +54,18 @@ namespace onlineStore.Services.Offer
                 .ThenByDescending(o => o.CreatedAt)
                 .ToListAsync();
 
-            return offers.Select(ToDto).ToList();
+            return offers.Select(ToDto).Where(o => canManageStore || (o.Items.Count > 0 && o.Items.All(i => i.IsAvailable))).ToList();
         }
 
         public async Task<List<OfferDto>> GetActiveOffersForStoreAsync(Guid storeId)
         {
             var now = DateTime.UtcNow;
 
-            var offers = await _context.Offers
+            var offers = await _context.Offers.IgnoreQueryFilters().Where(o => !o.IsDeleted)
                 .AsNoTracking()
-                .Include(o => o.Items)
-                    .ThenInclude(i => i.Product)
+                .Include(o => o.Items.Where(i => !i.IsDeleted))
+                    .ThenInclude(i => i.Product).ThenInclude(p => p.Images)
+                .Include(o => o.Items.Where(i => !i.IsDeleted)).ThenInclude(i => i.Product).ThenInclude(p => p.Variants)
                 .Where(o => o.StoreId == storeId
                             && o.IsActive
                             && o.StartDate <= now
@@ -72,15 +74,16 @@ namespace onlineStore.Services.Offer
                 .ThenByDescending(o => o.CreatedAt)
                 .ToListAsync();
 
-            return offers.Select(ToDto).ToList();
+            return offers.Select(ToDto).Where(o => o.Items.Count > 0 && o.Items.All(i => i.IsAvailable)).ToList();
         }
 
         public async Task<OfferDto?> GetOfferByIdAsync(Guid id)
         {
-            var offer = await _context.Offers
+            var offer = await _context.Offers.IgnoreQueryFilters().Where(o => !o.IsDeleted)
                 .AsNoTracking()
-                .Include(o => o.Items)
-                    .ThenInclude(i => i.Product)
+                .Include(o => o.Items.Where(i => !i.IsDeleted))
+                    .ThenInclude(i => i.Product).ThenInclude(p => p.Images)
+                .Include(o => o.Items.Where(i => !i.IsDeleted)).ThenInclude(i => i.Product).ThenInclude(p => p.Variants)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
             if (offer == null)
@@ -94,7 +97,7 @@ namespace onlineStore.Services.Offer
                     && offer.StartDate <= now
                     && (!offer.EndDate.HasValue || offer.EndDate >= now);
 
-                if (!isPubliclyVisible)
+                if (!isPubliclyVisible || offer.Items.Count == 0 || ToDto(offer).Items.Any(i => !i.IsAvailable))
                     return null;
             }
 
@@ -103,6 +106,7 @@ namespace onlineStore.Services.Offer
 
         public async Task<OfferDto> CreateOfferAsync(CreateOfferDto dto)
         {
+            if (string.IsNullOrWhiteSpace(dto.Name)) throw new InvalidOperationException("اسم العرض مطلوب");
             await EnsureCanManageStoreAsync(dto.StoreId);
             await ValidateOfferUsageAsync(dto.StoreId);
             ValidateOfferInput(dto.Type, dto.BundlePrice, dto.DiscountPercentage, dto.DiscountAmount, dto.StartDate, dto.EndDate);
@@ -138,10 +142,11 @@ namespace onlineStore.Services.Offer
             _context.Offers.Add(offer);
             await _context.SaveChangesAsync();
 
-            var created = await _context.Offers
+            var created = await _context.Offers.IgnoreQueryFilters().Where(o => !o.IsDeleted)
                 .AsNoTracking()
-                .Include(o => o.Items)
-                    .ThenInclude(i => i.Product)
+                .Include(o => o.Items.Where(i => !i.IsDeleted))
+                    .ThenInclude(i => i.Product).ThenInclude(p => p.Images)
+                .Include(o => o.Items.Where(i => !i.IsDeleted)).ThenInclude(i => i.Product).ThenInclude(p => p.Variants)
                 .FirstAsync(o => o.Id == offer.Id);
 
             _logger.LogInformation("Offer created. OfferId: {OfferId}, StoreId: {StoreId}", created.Id, created.StoreId);
@@ -175,6 +180,7 @@ namespace onlineStore.Services.Offer
                 effectiveStartDate,
                 effectiveEndDate);
 
+            if (dto.Name != null && string.IsNullOrWhiteSpace(dto.Name)) throw new InvalidOperationException("اسم العرض مطلوب");
             if (dto.Name != null) offer.Name = dto.Name.Trim();
             if (dto.Description != null) offer.Description = NormalizeNullable(dto.Description);
             if (dto.Type.HasValue) offer.Type = dto.Type.Value;
@@ -206,10 +212,11 @@ namespace onlineStore.Services.Offer
 
             await _context.SaveChangesAsync();
 
-            var updated = await _context.Offers
+            var updated = await _context.Offers.IgnoreQueryFilters().Where(o => !o.IsDeleted)
                 .AsNoTracking()
-                .Include(o => o.Items)
-                    .ThenInclude(i => i.Product)
+                .Include(o => o.Items.Where(i => !i.IsDeleted))
+                    .ThenInclude(i => i.Product).ThenInclude(p => p.Images)
+                .Include(o => o.Items.Where(i => !i.IsDeleted)).ThenInclude(i => i.Product).ThenInclude(p => p.Variants)
                 .FirstAsync(o => o.Id == offer.Id);
 
             _logger.LogInformation("Offer updated. OfferId: {OfferId}, StoreId: {StoreId}", updated.Id, updated.StoreId);
@@ -282,6 +289,8 @@ namespace onlineStore.Services.Offer
             if (duplicateProductIds.Count > 0)
                 throw new InvalidOperationException("Offer contains duplicate products.");
 
+            if (itemList.Any(i => i.RequiredQuantity <= 0)) throw new InvalidOperationException("كمية مكونات الباكيج يجب أن تكون أكبر من صفر");
+
             var productIds = itemList.Select(i => i.ProductId).ToList();
 
             var validProductCount = await _context.Products
@@ -300,6 +309,10 @@ namespace onlineStore.Services.Offer
             DateTime startDate,
             DateTime? endDate)
         {
+            if (!Enum.IsDefined(type) || type is OfferType.BuyXGetY or OfferType.FreeShipping)
+                throw new InvalidOperationException("نوع العرض غير مدعوم");
+            if (bundlePrice.HasValue && decimal.Round(bundlePrice.Value, 2) != bundlePrice.Value)
+                throw new InvalidOperationException("سعر الباكيج يجب أن يحتوي على منزلتين عشريتين كحد أقصى");
             if (endDate.HasValue && endDate.Value < startDate)
                 throw new InvalidOperationException("Offer EndDate cannot be before StartDate.");
 
@@ -330,6 +343,9 @@ namespace onlineStore.Services.Offer
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
+        private static onlineStore.Models.ProductVariant? DefaultVariant(onlineStore.Models.Product? product) =>
+            product?.Variants.Where(v => v.IsActive && !v.IsDeleted).OrderByDescending(v => v.IsDefault).ThenBy(v => v.SortOrder).ThenBy(v => v.CreatedAt).FirstOrDefault();
+
         private static OfferDto ToDto(Models.Offers.Offer offer)
         {
             return new OfferDto
@@ -355,6 +371,10 @@ namespace onlineStore.Services.Offer
                     OfferId = i.OfferId,
                     ProductId = i.ProductId,
                     ProductName = i.Product?.Name ?? string.Empty,
+                    ProductImageUrl = i.Product?.ThumbnailUrl ?? i.Product?.Images.Where(x => !x.IsDeleted && x.VariantId == null).OrderBy(x => x.DisplayOrder).Select(x => x.Url).FirstOrDefault(),
+                    UnitPrice = DefaultVariant(i.Product)?.Price ?? i.Product?.Price ?? 0m,
+                    AvailableStock = i.Product?.TrackInventory == false ? int.MaxValue : DefaultVariant(i.Product)?.StockQuantity ?? i.Product?.StockQuantity ?? 0,
+                    IsAvailable = i.Product != null && !i.Product.IsDeleted && i.Product.Status == onlineStore.Models.Enums.ProductStatus.Active && DefaultVariant(i.Product) != null,
                     RequiredQuantity = i.RequiredQuantity
                 }).ToList()
             };

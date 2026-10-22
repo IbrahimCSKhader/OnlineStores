@@ -23,6 +23,15 @@ namespace onlineStore.Services.Pricing
             decimal customerDiscountPercentage = 0m,
             CancellationToken cancellationToken = default)
         {
+            var bundleTotal = items.Where(i => i.BundleGroupId.HasValue).Sum(i => i.BundleLineTotal ?? 0m);
+            var standalone = items.Where(i => !i.BundleGroupId.HasValue).ToList();
+            if (bundleTotal > 0m)
+            {
+                var regularPricing = await CalculatePricingAsync(storeId, standalone, customerDiscountPercentage, cancellationToken);
+                regularPricing.Subtotal += bundleTotal;
+                regularPricing.FinalTotal += bundleTotal;
+                return regularPricing;
+            }
             var subtotal = items.Sum(i => i.UnitPrice * i.Quantity);
             if (subtotal <= 0 || items.Count == 0)
             {
@@ -60,6 +69,7 @@ namespace onlineStore.Services.Pricing
                 .AsNoTracking()
                 .Include(o => o.Items)
                 .Where(o => o.StoreId == storeId
+                            && o.Type != OfferType.BundleFixedPrice
                             && o.IsActive
                             && o.StartDate <= now
                             && (!o.EndDate.HasValue || o.EndDate >= now)

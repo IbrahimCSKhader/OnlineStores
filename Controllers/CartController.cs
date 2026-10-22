@@ -76,6 +76,18 @@ namespace onlineStore.Controllers
             }
         }
 
+        [HttpPost("bundle")]
+        public async Task<IActionResult> AddBundle([FromBody] AddBundleToCartDto dto)
+        {
+            var customer = GetStoreCustomerContext();
+            if (customer == null) return Unauthorized();
+            if (customer.Value.StoreId != dto.StoreId) return Forbid();
+            try { return Ok(await _cartService.AddBundleAsync(customer.Value.StoreCustomerId, dto)); }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (OverflowException) { return BadRequest(new { message = "الكمية المطلوبة كبيرة جداً" }); }
+        }
+
         [HttpPost("add")]
         public async Task<IActionResult> AddToCart([FromBody] AddToCartDto dto)
         {

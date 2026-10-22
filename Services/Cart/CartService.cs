@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using onlineStore.Data;
 using onlineStore.DTOs.Cart;
 using onlineStore.Models;
@@ -7,7 +7,7 @@ using onlineStore.Services.Pricing;
 
 namespace onlineStore.Services.Cart
 {
-    public class CartService : ICartService
+    public partial class CartService : ICartService
     {
         private readonly AppDbContext _context;
         private readonly ILogger<CartService> _logger;
@@ -115,6 +115,10 @@ namespace onlineStore.Services.Cart
                     product.Id,
                     dto.VariantId);
                 var availableStock = resolvedVariant.StockQuantity;
+                var bundleStock = await _context.CartItems.Where(i => i.CartId == cart.Id && !i.IsDeleted
+                    && i.ProductId == product.Id && i.VariantId == resolvedVariant.Id && i.BundleGroupId != null)
+                    .SumAsync(i => i.Quantity);
+                availableStock -= bundleStock;
                 var basePrice = resolvedVariant.Price ?? product.Price;
                 var compareAtPrice = resolvedVariant.CompareAtPrice ?? product.CompareAtPrice;
 
@@ -133,6 +137,7 @@ namespace onlineStore.Services.Cart
                         i.CartId == cart.Id &&
                         i.ProductId == dto.ProductId &&
                         i.VariantId == resolvedVariant.Id &&
+                        i.BundleGroupId == null &&
                         !i.IsDeleted);
 
                 if (existingItem != null)
@@ -282,6 +287,9 @@ namespace onlineStore.Services.Cart
                 if (await _context.Stores.AnyAsync(s => s.Id == item.Cart.StoreId && s.IsCatalog))
                     throw new ArgumentException("هذا كاتالوج للعرض فقط، الشراء غير متاح.");
 
+                if (item.BundleGroupId.HasValue)
+                    return await UpdateBundleAsync(item, dto.Quantity);
+
                 if (item.Product == null)
                 {
                     _logger.LogWarning(
@@ -301,7 +309,9 @@ namespace onlineStore.Services.Cart
                         "Stock check in UpdateCartItemAsync. CartItemId: {CartItemId}, AvailableStock: {AvailableStock}, RequestedQuantity: {RequestedQuantity}",
                         cartItemId, availableStock, dto.Quantity);
 
-                    if (availableStock < dto.Quantity)
+                    var otherQuantity = await _context.CartItems.Where(i => i.CartId == item.CartId && !i.IsDeleted
+                        && i.Id != item.Id && i.ProductId == item.ProductId && i.VariantId == item.VariantId).SumAsync(i => i.Quantity);
+                    if ((long)otherQuantity + dto.Quantity > availableStock)
                     {
                         _logger.LogWarning(
                             "Insufficient stock in UpdateCartItemAsync. CartItemId: {CartItemId}, AvailableStock: {AvailableStock}, RequestedQuantity: {RequestedQuantity}",
@@ -368,7 +378,11 @@ namespace onlineStore.Services.Cart
 
                 var cartId = item.CartId;
                 var cartStoreId = item.Cart.StoreId;
-                _context.CartItems.Remove(item);
+                if (item.BundleGroupId.HasValue)
+                    _context.CartItems.RemoveRange(await _context.CartItems.Where(i =>
+                        i.CartId == cartId && i.BundleGroupId == item.BundleGroupId).ToListAsync());
+                else
+                    _context.CartItems.Remove(item);
 
                 await _context.SaveChangesAsync();
 
@@ -537,7 +551,7 @@ namespace onlineStore.Services.Cart
                         productId,
                         requestedVariantId.Value);
 
-                    throw new Exception("النسخة غير موجودة");
+                    throw new InvalidOperationException("النسخة غير موجودة");
                 }
 
                 if (requestedVariant.ProductId != productId)
@@ -548,7 +562,7 @@ namespace onlineStore.Services.Cart
                         requestedVariant.Id,
                         requestedVariant.ProductId);
 
-                    throw new Exception("النسخة لا تتبع هذا المنتج");
+                    throw new InvalidOperationException("النسخة لا تتبع هذا المنتج");
                 }
 
                 if (requestedVariant.IsDeleted || !requestedVariant.IsActive)
@@ -560,7 +574,7 @@ namespace onlineStore.Services.Cart
                         requestedVariant.IsActive,
                         requestedVariant.IsDeleted);
 
-                    throw new Exception("النسخة غير متاحة حالياً");
+                    throw new InvalidOperationException("النسخة غير متاحة حالياً");
                 }
 
                 return requestedVariant;
@@ -580,7 +594,7 @@ namespace onlineStore.Services.Cart
                     "No active variant exists for cart product. ProductId: {ProductId}",
                     productId);
 
-                throw new Exception("لا توجد نسخة متاحة لهذا المنتج");
+                throw new InvalidOperationException("لا توجد نسخة متاحة لهذا المنتج");
             }
 
             return defaultVariant;
@@ -711,6 +725,7 @@ namespace onlineStore.Services.Cart
                     i.UnitPrice
                 }).ToList());
 
+            await BundleCartPricing.RefreshAsync(_context, cart.StoreId, cart.Items?.ToList() ?? new List<CartItem>(), strict: false);
             var items = cart.Items?.Select(i =>
             {
                 var displayVariant = ResolveDisplayVariant(i);
@@ -727,9 +742,16 @@ namespace onlineStore.Services.Cart
                     VariantImageUrl = ResolveVariantImageUrl(displayVariant),
                     EffectiveVariantImageUrl = ResolveEffectiveVariantImageUrl(displayVariant, i.Product),
                     VariantAttributes = MapCartVariantAttributes(displayVariant),
+                    BundleOfferId = i.BundleOfferId,
+                    BundleGroupId = i.BundleGroupId,
+                    BundleName = i.BundleName,
+                    BundleQuantity = i.BundleQuantity,
+                    BundleItemQuantity = i.BundleItemQuantity,
+                    BundlePrice = i.BundlePrice,
+                    BundleLineTotal = i.BundleLineTotal,
                     Quantity = i.Quantity,
                     UnitPrice = i.UnitPrice,
-                    AvailableStock = i.VariantId.HasValue && i.Variant != null
+                    AvailableStock = i.Product?.TrackInventory == false ? int.MaxValue : i.VariantId.HasValue && i.Variant != null
                         ? i.Variant.StockQuantity
                         : i.Product?.StockQuantity ?? 0
                 };
@@ -767,7 +789,7 @@ namespace onlineStore.Services.Cart
 
         private IQueryable<ShoppingCart> BuildCartQuery(bool asNoTracking)
         {
-            IQueryable<ShoppingCart> query = _context.Carts
+            IQueryable<ShoppingCart> query = _context.Carts.IgnoreQueryFilters().Where(c => !c.IsDeleted)
                 .Include(c => c.Items.Where(i => !i.IsDeleted))
                     .ThenInclude(i => i.Product)
                         .ThenInclude(p => p.Images)
@@ -817,6 +839,7 @@ namespace onlineStore.Services.Cart
                     var existingItem = primaryCart.Items.FirstOrDefault(i =>
                         i.ProductId == duplicateItem.ProductId &&
                         i.VariantId == duplicateItem.VariantId &&
+                        i.BundleGroupId == duplicateItem.BundleGroupId &&
                         !i.IsDeleted);
 
                     if (existingItem == null)

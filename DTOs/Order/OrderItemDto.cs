@@ -1,4 +1,4 @@
-﻿namespace onlineStore.DTOs.Order
+namespace onlineStore.DTOs.Order
 {
     public class OrderItemDto
     {
@@ -13,6 +13,16 @@
         public string? VariantImageUrl { get; set; }
         public string? EffectiveVariantImageUrl { get; set; }
         public List<OrderItemVariantAttributeDto> VariantAttributes { get; set; } = new();
+
+        // Snapshot identity survives offer edits/deletion; components remain inventory-bearing rows.
+        public Guid? BundleOfferId { get; set; }
+        public Guid? BundleGroupId { get; set; }
+        [System.ComponentModel.DataAnnotations.MaxLength(180)]
+        public string? BundleName { get; set; }
+        public int? BundleQuantity { get; set; }
+        public int? BundleItemQuantity { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.Column(TypeName = "decimal(18,2)")]
+        public decimal? BundlePrice { get; set; }
 
         public int Quantity { get; set; }
 

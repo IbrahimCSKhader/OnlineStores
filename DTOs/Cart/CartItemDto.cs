@@ -12,9 +12,20 @@ namespace onlineStore.DTOs.Cart
         public string? VariantImageUrl { get; set; }
         public string? EffectiveVariantImageUrl { get; set; }
         public List<CartItemVariantAttributeDto> VariantAttributes { get; set; } = new();
+        // Snapshot identity survives offer edits/deletion; components remain inventory-bearing rows.
+        public Guid? BundleOfferId { get; set; }
+        public Guid? BundleGroupId { get; set; }
+        [System.ComponentModel.DataAnnotations.MaxLength(180)]
+        public string? BundleName { get; set; }
+        public int? BundleQuantity { get; set; }
+        public int? BundleItemQuantity { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.Column(TypeName = "decimal(18,2)")]
+        public decimal? BundlePrice { get; set; }
+
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
-        public decimal TotalPrice => UnitPrice * Quantity;
+        public decimal? BundleLineTotal { get; set; }
+        public decimal TotalPrice => BundleLineTotal ?? UnitPrice * Quantity;
         public int AvailableStock { get; set; }
     }
 
