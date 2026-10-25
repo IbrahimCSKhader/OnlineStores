@@ -14,5 +14,6 @@ namespace onlineStore.Services.Order
         Task<OrderDto?> GetStoreOrderByIdAsync(Guid storeId, Guid orderId);
 
         Task<OrderDto?> UpdateOrderStatusAsync(Guid orderId, UpdateOrderStatusDto dto);
+        Task<OrderDto?> UpdateReceivedAmountAsync(Guid orderId, UpdateReceivedAmountDto dto);
     }
 }

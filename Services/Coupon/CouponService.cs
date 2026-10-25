@@ -2,6 +2,7 @@
 using onlineStore.Data;
 using onlineStore.DTOs.Coupon;
 using onlineStore.Models.Enums;
+using onlineStore.Utilities;
 using CouponEntity = onlineStore.Models.Discounts.Coupon;
 
 namespace onlineStore.Services.Coupon
@@ -22,6 +23,9 @@ namespace onlineStore.Services.Coupon
 
         public async Task<List<CouponDto>> GetStoreCouponsAsync(Guid storeId)
         {
+            if (!StoreCouponPolicy.IsEnabled(storeId))
+                return new List<CouponDto>();
+
             return await _context.Coupons
                 .AsNoTracking()
                 .Where(c => c.StoreId == storeId)
@@ -37,7 +41,7 @@ namespace onlineStore.Services.Coupon
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == id);
 
-            return coupon == null ? null : ToDto(coupon);
+            return coupon == null || !StoreCouponPolicy.IsEnabled(coupon.StoreId) ? null : ToDto(coupon);
         }
 
          public async Task<CouponDto> CreateCouponAsync(CreateCouponDto dto)
@@ -81,7 +85,7 @@ namespace onlineStore.Services.Coupon
             var coupon = await _context.Coupons
                 .FirstOrDefaultAsync(c => c.Id == id);
 
-            if (coupon == null)
+            if (coupon == null || !StoreCouponPolicy.IsEnabled(coupon.StoreId))
                 return null;
 
             var newCode = dto.Code != null ? NormalizeCode(dto.Code) : coupon.Code;
@@ -131,7 +135,7 @@ namespace onlineStore.Services.Coupon
             var coupon = await _context.Coupons
                 .FirstOrDefaultAsync(c => c.Id == id);
 
-            if (coupon == null)
+            if (coupon == null || !StoreCouponPolicy.IsEnabled(coupon.StoreId))
                 return false;
 
             coupon.IsDeleted = true;
@@ -156,6 +160,8 @@ namespace onlineStore.Services.Coupon
             Guid storeId,
             Guid? currentCouponId)
         {
+            StoreCouponPolicy.EnsureEnabled(storeId);
+
             if (storeId == Guid.Empty)
                 throw new Exception("unvalid store id");
 

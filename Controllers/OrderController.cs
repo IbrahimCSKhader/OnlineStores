@@ -329,6 +329,26 @@ namespace onlineStore.Controllers
         }
 
 
+        [HttpPut("{orderId}/received-amount")]
+        [Authorize(Roles = "SuperAdmin,StoreOwner")]
+        public async Task<IActionResult> UpdateReceivedAmount(Guid orderId, [FromBody] UpdateReceivedAmountDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            try
+            {
+                var order = await _orderService.UpdateReceivedAmountAsync(orderId, dto);
+                return order == null ? NotFound(new { message = "الطلب غير موجود" }) : Ok(order);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         private (Guid StoreCustomerId, Guid StoreId)? GetStoreCustomerContext()
         {
             var storeCustomerId = User.GetStoreCustomerId();

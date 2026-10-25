@@ -8,6 +8,7 @@ using onlineStore.Models.Orders;
 using onlineStore.Security;
 using onlineStore.Services.Pricing;
 using onlineStore.Services.Rewards;
+using onlineStore.Utilities;
 using CouponEntity = onlineStore.Models.Discounts.Coupon;
 
 namespace onlineStore.Services.Order
@@ -502,6 +503,7 @@ namespace onlineStore.Services.Order
                     SubTotal = o.SubTotal,
                     DiscountAmount = o.DiscountAmount,
                     TotalAmount = o.TotalAmount,
+                    ReceivedAmount = o.ReceivedAmount,
                     DeliveryLocationId = o.DeliveryLocationId,
                     DeliveryLocationName = o.DeliveryLocationName,
                     DeliveryCost = o.DeliveryCost,
@@ -549,8 +551,31 @@ namespace onlineStore.Services.Order
                 storeId,
                 orderId,
                 order != null,
-                order == null ? null : ToOrderLogModel(MapOrderToDto(order)));
-            return order == null ? null : MapOrderToDto(order);
+                order == null ? null : ToOrderLogModel(MapOwnerOrderToDto(order)));
+            return order == null ? null : MapOwnerOrderToDto(order);
+        }
+
+        public async Task<OrderDto?> UpdateReceivedAmountAsync(Guid orderId, UpdateReceivedAmountDto dto)
+        {
+            ArgumentNullException.ThrowIfNull(dto);
+            if (dto.ReceivedAmount is decimal amount &&
+                (amount < 0m || amount > 9999999999999999.99m || decimal.Round(amount, 2) != amount))
+                throw new ArgumentException("أدخل مبلغ استلام موجباً أو صفراً، بمنزلتين عشريتين كحد أقصى.");
+
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId);
+            if (order == null) return null;
+            await EnsureCanAccessStoreOrdersAsync(order.StoreId);
+
+            order.ReceivedAmount = dto.ReceivedAmount;
+            await _context.SaveChangesAsync();
+            return await GetStoreOrderByIdAsync(order.StoreId, orderId);
+        }
+
+        private static OrderDto MapOwnerOrderToDto(Models.Orders.Order order)
+        {
+            var dto = MapOrderToDto(order);
+            dto.ReceivedAmount = order.ReceivedAmount;
+            return dto;
         }
 
         public async Task<OrderDto?> UpdateOrderStatusAsync(Guid orderId, UpdateOrderStatusDto dto)
@@ -862,6 +887,8 @@ namespace onlineStore.Services.Order
             Guid storeCustomerId,
             decimal subTotal)
         {
+            StoreCouponPolicy.EnsureEnabled(storeId);
+
             _logger.LogInformation(
                 "order=> validate-coupon:start Code={Code} StoreId={StoreId} StoreCustomerId={StoreCustomerId} SubTotal={SubTotal}",
                 code,

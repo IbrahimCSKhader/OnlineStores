@@ -16,6 +16,9 @@ namespace onlineStore.DTOs.Order
         public string DeliveryLocationName { get; set; } = "افتراضي";
         public decimal DeliveryCost { get; set; }
         public decimal TotalAmount { get; set; }
+        public decimal? ReceivedAmount { get; set; }
+        public decimal? RemainingAmount => ReceivedAmount.HasValue ? Math.Max(TotalAmount - ReceivedAmount.Value, 0m) : null;
+        public decimal? OverpaidAmount => ReceivedAmount.HasValue ? Math.Max(ReceivedAmount.Value - TotalAmount, 0m) : null;
         public int PointsEarned { get; set; }
 
         public string? CustomerNotes { get; set; }
