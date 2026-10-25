@@ -1960,6 +1960,20 @@ namespace onlineStore.Migrations
                 {
                     b.Navigation("StoreSubscriptions");
                 });
+            modelBuilder.Entity("onlineStore.Models.Orders.OrderInvoicePrint", b =>
+                {
+                    b.Property<Guid>("Id").HasColumnType("uniqueidentifier");
+                    b.Property<DateTime>("CreatedAt").HasColumnType("datetime2");
+                    b.Property<Guid>("OrderId").HasColumnType("uniqueidentifier");
+                    b.Property<Guid>("PrintedByUserId").HasColumnType("uniqueidentifier");
+                    b.HasKey("Id");
+                    b.HasIndex("OrderId", "CreatedAt");
+                    b.ToTable("OrderInvoicePrints");
+                    b.HasOne("onlineStore.Models.Orders.Order", "Order")
+                        .WithMany().HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict).IsRequired();
+                    b.Navigation("Order");
+                });
 #pragma warning restore 612, 618
         }
     }
