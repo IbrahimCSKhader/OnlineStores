@@ -240,6 +240,7 @@ namespace onlineStore.Services.Store
         public async Task<StoreDto?> UpdateStoreAsync(Guid id, UpdateStoreDto dto)
         {
             var store = await _context.Stores
+                .Include(s => s.Appearance)
                 .Include(s => s.ContactAccounts)
                 .Include(s => s.DeliveryLocations)
                 .FirstOrDefaultAsync(s => s.Id == id);
@@ -372,6 +373,7 @@ namespace onlineStore.Services.Store
             WhatsAppNumber = s.WhatsAppNumber,
             StoreStory = s.StoreStory,
             ThemeTemplate = StoreThemeTemplates.NormalizeForResponse(s.ThemeTemplate),
+            Appearance = StoreAppearancePolicy.Read(s.Appearance?.OverridesJson),
             Language = StoreLanguages.NormalizeOrDefault(s.Language),
             ContactAccounts = s.ContactAccounts
                 .Where(c => !c.IsDeleted)
@@ -839,6 +841,7 @@ namespace onlineStore.Services.Store
         private IQueryable<Models.Store> GetStoresWithContacts(bool asNoTracking = false)
         {
             var query = _context.Stores
+                .Include(s => s.Appearance)
                 .Include(s => s.ContactAccounts)
                 .Include(s => s.DeliveryLocations)
                 .AsQueryable();

@@ -707,6 +707,27 @@ namespace onlineStore.Migrations
                     b.ToTable("Orders");
                 });
 
+            modelBuilder.Entity("onlineStore.Models.Orders.OrderInvoicePrint", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PrintedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId", "CreatedAt");
+
+                    b.ToTable("OrderInvoicePrints", (string)null);
+                });
+
             modelBuilder.Entity("onlineStore.Models.Orders.OrderItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1298,6 +1319,21 @@ namespace onlineStore.Migrations
                         });
                 });
 
+            modelBuilder.Entity("onlineStore.Models.StoreAppearance", b =>
+                {
+                    b.Property<Guid>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("OverridesJson")
+                        .IsRequired()
+                        .HasMaxLength(16000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("StoreId");
+
+                    b.ToTable("StoreAppearance");
+                });
+
             modelBuilder.Entity("onlineStore.Models.StoreContactAccount", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1852,6 +1888,17 @@ namespace onlineStore.Migrations
                     b.Navigation("StoreCustomer");
                 });
 
+            modelBuilder.Entity("onlineStore.Models.Orders.OrderInvoicePrint", b =>
+                {
+                    b.HasOne("onlineStore.Models.Orders.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("onlineStore.Models.Orders.OrderItem", b =>
                 {
                     b.HasOne("onlineStore.Models.Orders.Order", "Order")
@@ -2031,6 +2078,17 @@ namespace onlineStore.Migrations
                     b.Navigation("Owner");
                 });
 
+            modelBuilder.Entity("onlineStore.Models.StoreAppearance", b =>
+                {
+                    b.HasOne("onlineStore.Models.Store", "Store")
+                        .WithOne("Appearance")
+                        .HasForeignKey("onlineStore.Models.StoreAppearance", "StoreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Store");
+                });
+
             modelBuilder.Entity("onlineStore.Models.StoreContactAccount", b =>
                 {
                     b.HasOne("onlineStore.Models.Store", "Store")
@@ -2154,6 +2212,8 @@ namespace onlineStore.Migrations
 
             modelBuilder.Entity("onlineStore.Models.Store", b =>
                 {
+                    b.Navigation("Appearance");
+
                     b.Navigation("Categories");
 
                     b.Navigation("ContactAccounts");
@@ -2181,20 +2241,6 @@ namespace onlineStore.Migrations
             modelBuilder.Entity("onlineStore.Models.Subscriptions.SubscriptionPlan", b =>
                 {
                     b.Navigation("StoreSubscriptions");
-                });
-            modelBuilder.Entity("onlineStore.Models.Orders.OrderInvoicePrint", b =>
-                {
-                    b.Property<Guid>("Id").HasColumnType("uniqueidentifier");
-                    b.Property<DateTime>("CreatedAt").HasColumnType("datetime2");
-                    b.Property<Guid>("OrderId").HasColumnType("uniqueidentifier");
-                    b.Property<Guid>("PrintedByUserId").HasColumnType("uniqueidentifier");
-                    b.HasKey("Id");
-                    b.HasIndex("OrderId", "CreatedAt");
-                    b.ToTable("OrderInvoicePrints");
-                    b.HasOne("onlineStore.Models.Orders.Order", "Order")
-                        .WithMany().HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Restrict).IsRequired();
-                    b.Navigation("Order");
                 });
 #pragma warning restore 612, 618
         }

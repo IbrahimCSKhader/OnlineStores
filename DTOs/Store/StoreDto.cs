@@ -4,6 +4,7 @@ namespace onlineStore.DTOs.Store
 {
     public class StoreDto
     {
+        public StoreAppearanceDto Appearance { get; set; } = new();
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
         public string Slug { get; set; } = null!;

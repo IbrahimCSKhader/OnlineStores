@@ -11,6 +11,7 @@ namespace onlineStore.Models
     [Index(nameof(OwnerId))]
     public class Store : BaseEntity
     {
+        public StoreAppearance? Appearance { get; set; }
         [Required, MaxLength(100)]
         public string Name { get; set; } = null!;
 
