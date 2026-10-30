@@ -29,7 +29,9 @@ public class StoreInstallManifestTests
         Assert.Equal(url, first.GetProperty("start_url").GetString());
         Assert.Equal(url, nextSession.GetProperty("id").GetString());
         Assert.Equal(Store.Name, first.GetProperty("name").GetString());
-        Assert.Equal("https://api.example/uploads/logo.png", first.GetProperty("icons")[0].GetProperty("src").GetString());
+        Assert.Equal("192x192", first.GetProperty("icons")[0].GetProperty("sizes").GetString());
+        Assert.Equal("512x512", first.GetProperty("icons")[1].GetProperty("sizes").GetString());
+        Assert.Equal("https://api.example/uploads/logo.png", first.GetProperty("icons")[2].GetProperty("src").GetString());
         Assert.StartsWith(first.GetProperty("scope").GetString()!, url);
         Assert.NotEqual("https://mawja.site/", first.GetProperty("scope").GetString());
     }

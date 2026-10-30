@@ -30,6 +30,7 @@ public static class StoreInstallManifest
             (logo.Scheme == "https" || logo.Scheme == "http") && !string.IsNullOrWhiteSpace(store.LogoUrl)
             ? logo.AbsoluteUri : origin + "/mawja%20logo.jpeg";
         var startUrl = launchUrl.AbsoluteUri;
+        var iconBase = new Uri(assetBase, $"api/store-install/{Uri.EscapeDataString(store.Slug)}/icons/");
         return new
         {
             name = store.Name,
@@ -39,7 +40,12 @@ public static class StoreInstallManifest
             start_url = startUrl,
             scope,
             display = "standalone",
-            icons = new[] { new { src = icon, purpose = "any" } }
+            icons = new[]
+            {
+                new { src = new Uri(iconBase, "192.png").AbsoluteUri, sizes = "192x192", type = "image/png", purpose = "any" },
+                new { src = new Uri(iconBase, "512.png").AbsoluteUri, sizes = "512x512", type = "image/png", purpose = "any" },
+                new { src = icon, sizes = (string?)null, type = (string?)null, purpose = "any" }
+            }
         };
     }
 }
