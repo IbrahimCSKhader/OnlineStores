@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\onlineStore.csproj" />
+    <Content Include="..\wwwroot\store-branding\alsujood\real-products.json" Link="CatalogAssets\real-products.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

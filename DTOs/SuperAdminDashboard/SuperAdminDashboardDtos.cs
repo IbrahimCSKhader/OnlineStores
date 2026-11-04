@@ -39,6 +39,8 @@ namespace onlineStore.DTOs.SuperAdminDashboard
         public string Name { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty;
         public string? CustomDomain { get; set; }
+        public bool RequireCustomerLoginForCheckout { get; set; } = true;
+        public bool EnableLanguageSwitching { get; set; }
         public string ThemeTemplate { get; set; } = StoreThemeTemplates.Default;
         public bool IsActive { get; set; }
         public string? StoreStory { get; set; }
@@ -85,6 +87,8 @@ namespace onlineStore.DTOs.SuperAdminDashboard
         public string Name { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty;
         public string? CustomDomain { get; set; }
+        public bool RequireCustomerLoginForCheckout { get; set; } = true;
+        public bool EnableLanguageSwitching { get; set; }
         public string ThemeTemplate { get; set; } = StoreThemeTemplates.Default;
         public string? Description { get; set; }
         public string? BusinessType { get; set; }

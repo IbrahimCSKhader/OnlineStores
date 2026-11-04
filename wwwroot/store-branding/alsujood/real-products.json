@@ -1,0 +1,308 @@
+{
+  "products": [
+    {
+      "slug": "alsujood-cosmetics-velvet-burgundy-lipstick",
+      "name": "NYX Velvet Matte Lipstick",
+      "source": "https://www.nyxcosmetics.com/velvet-matte-lipstick/NYX_348.html?cgid=lipstick",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/866/original/open-uri20171224-4-9fhzot?1514082394"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-soft-matte-lip-cream",
+      "name": "NYX Soft Matte Lip Cream",
+      "source": "https://www.nyxcosmetics.com/soft-matte-lip-cream/NYX_007.html?cgid=lipstick",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/852/original/open-uri20171224-4-1a0jfqz?1514082384"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-flawless-liquid-foundation",
+      "name": "Maybelline FIT ME! Matte + Poreless Foundation",
+      "source": "https://well.ca/products/maybelline-fit-me-matte-poreless_100974.html",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/320/original/data?1514063292"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-silky-pressed-powder",
+      "name": "NYX High Definition Finishing Powder",
+      "source": "https://www.nyxcosmetics.com/high-definition-finishing-powder/NYX_186.html?cgid=powder",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/930/original/open-uri20171224-4-1se55cy?1514082672"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-rose-blush-compact",
+      "name": "Maybelline Fit Me Blush",
+      "source": "https://well.ca/products/maybelline-fit-me-blush_31269.html",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/439/original/open-uri20171223-4-1max36x?1514063325"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-golden-burgundy-eyeshadow",
+      "name": "Maybelline The Nudes Eyeshadow Palette in The Blushed Nudes",
+      "source": "https://well.ca/products/maybelline-the-nudes-eyeshadow_107498.html",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/286/original/open-uri20171223-4-1pj74fn?1514063294"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-volume-lash-mascara",
+      "name": "Maybelline Volum' Express Colossal Mascara",
+      "source": "https://well.ca/products/maybelline-volum-express-colossal_7663.html",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/014/original/data?1514061108"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-black-precision-eyeliner",
+      "name": "Maybelline EyeStudio Master Precise Ink Pen Eyeliner",
+      "source": "https://well.ca/products/maybelline-eyestudio-master-precise_40535.html",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/179/original/open-uri20171223-4-1vi901o?1514062276"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-brow-define-pencil",
+      "name": "NYX Precision Brow Pencil",
+      "source": "https://www.nyxcosmetics.com/precision-brow-pencil/NYX_450.html?cgid=brows",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/978/original/open-uri20171224-4-odtm98?1514082764"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-neutral-everyday-eyeshadow",
+      "name": "Maybelline The Nudes Eye Shadow Palette",
+      "source": "https://well.ca/products/maybelline-the-nudes-eye-shadow_95144.html",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/295/original/open-uri20171223-4-5nv3ff?1514063296"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-clear-brow-gel",
+      "name": "NYX Control Freak Eyebrow Gel",
+      "source": "https://www.nyxcosmetics.com/control-freak-eyebrow-gel/NYX_123.html?cgid=brows",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/976/original/data?1514082761"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-pearl-glow-highlighter",
+      "name": "NYX Illuminator",
+      "source": "https://www.nyxcosmetics.com/illuminator/NYX_062.html?cgid=bronzer",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/927/original/open-uri20171224-4-firpx4?1514082659"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-soft-contour-stick",
+      "name": "Maybelline Facestudio Master Contour Kit",
+      "source": "https://well.ca/products/maybelline-facestudio-master-contour_120303.html?cat=328",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/477/original/open-uri20171223-4-1m8bc4v?1514063328"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-smooth-liquid-concealer",
+      "name": "NYX HD Photogenic Concealer Wand",
+      "source": "https://www.nyxcosmetics.com/hd-photogenic-concealer-wand/NYX_013.html?cgid=concealer",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/905/original/open-uri20171224-4-1tmsfyh?1514082604"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-precision-lip-liner",
+      "name": "NYX Slim Lip Pencil",
+      "source": "https://well.ca/products/nyx-slim-lip-pencil_106558.html",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/396/original/open-uri20171223-4-pmcfhy?1514063312"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-nourish-lip-balm",
+      "name": "NYX Butter Lipstick",
+      "source": "https://www.nyxcosmetics.com/butter-lipstick/NYX_120.html?cgid=lipstick",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/872/original/open-uri20171224-4-193brnk?1514082418"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-cherry-lip-tint",
+      "name": "NYX Lip Lustre Glossy Lip Tint",
+      "source": "https://www.nyxcosmetics.com/lip-lustre-glossy-lip-tint/NYX_362.html?cgid=lipgloss",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/861/original/open-uri20171224-4-1s2vu19?1514082377"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-glass-shine-lip-gloss",
+      "name": "NYX Strictly Vinyl Lip Gloss",
+      "source": "https://www.nyxcosmetics.com/strictly-vinyl-lip-gloss/NYX_592.html?cgid=lipgloss",
+      "images": [
+        "https://s3.amazonaws.com/donovanbailey/products/api_featured_images/000/000/858/original/open-uri20171224-4-7z9c9k?1514082356"
+      ],
+      "provenance": "Product photograph archived by Makeup API in 2017; original brand/retailer product link recorded."
+    },
+    {
+      "slug": "alsujood-cosmetics-hyaluronic-glow-serum",
+      "name": "The Ordinary Hyaluronic Acid 2% + B5 (Original Formulation)",
+      "source": "https://theordinary.com/en-us/hyaluronic-acid-2-b5-serum-original-formulation-100425.html",
+      "images": [
+        "https://theordinary.com/dw/image/v2/BFKJ_PRD/on/demandware.static/-/Sites-deciem-master/default/dw56cd0f2e/Images/products/The%20Ordinary/rdn-hyaluronic-acid-2pct-b5-30ml.png?sw=900&sh=900&sm=fit"
+      ],
+      "provenance": "Product imagery read from the manufacturer's product page structured data."
+    },
+    {
+      "slug": "alsujood-cosmetics-retinol-night-serum",
+      "name": "The Ordinary Retinol 0.2% in Squalane",
+      "source": "https://theordinary.com/en-us/retinol-02-in-squalane-serum-100439.html",
+      "images": [
+        "https://theordinary.com/dw/image/v2/BFKJ_PRD/on/demandware.static/-/Sites-deciem-master/default/dw30e9d48b/Images/products/The%20Ordinary/rdn-retinol-0-2pct-in-squalane-30ml.png?sw=900&sh=900&sm=fit",
+        "https://theordinary.com/dw/image/v2/BFKJ_PRD/on/demandware.static/-/Sites-deciem-master/default/dw5353209b/Images/products/The%20Ordinary/application/FY25-D41247-ORD-Web-PDP-Rtnl-02pct-Sql-1x1-EN-4b.jpg?sw=900&sh=900&sm=fit"
+      ],
+      "provenance": "Product imagery read from the manufacturer's product page structured data."
+    },
+    {
+      "slug": "alsujood-cosmetics-vitamin-c-bright-serum",
+      "name": "The Ordinary Ascorbyl Glucoside Solution 12%",
+      "source": "https://theordinary.com/en-us/ascorbyl-glucoside-solution-12-vitamin-c-100405.html",
+      "images": [
+        "https://theordinary.com/dw/image/v2/BFKJ_PRD/on/demandware.static/-/Sites-deciem-master/default/dw345ba9db/Images/products/The%20Ordinary/rdn-ascorbyl-glucoside-solution-12pct-30ml.png?sw=900&sh=900&sm=fit",
+        "https://theordinary.com/dw/image/v2/BFKJ_PRD/on/demandware.static/-/Sites-deciem-master/default/dwba28db5c/Images/products/The%20Ordinary/application/FY25-D41247-ORD-Web-PDP-Ascbl-Glcd-12pct-1x1-EN-4d.jpg?sw=900&sh=900&sm=fit"
+      ],
+      "provenance": "Product imagery read from the manufacturer's product page structured data."
+    },
+    {
+      "slug": "alsujood-cosmetics-balance-rose-toner",
+      "name": "The Ordinary Glycolic Acid 7% Exfoliating Toner",
+      "source": "https://theordinary.com/en-us/glycolic-acid-7-exfoliating-toner-100418.html",
+      "images": [
+        "https://theordinary.com/dw/image/v2/BFKJ_PRD/on/demandware.static/-/Sites-deciem-master/default/dw8b57fa2b/Images/products/The%20Ordinary/ord-glyc-acid-7pct-100ml-Aug-UPC.png?sw=900&sh=900&sm=fit",
+        "https://theordinary.com/dw/image/v2/BFKJ_PRD/on/demandware.static/-/Sites-deciem-master/default/dw1d27b873/Images/products/The%20Ordinary/application/ord-glycolic-acid-exfoliating-toner-model-application-with-benefits.jpg?sw=900&sh=900&sm=fit",
+        "https://theordinary.com/dw/image/v2/BFKJ_PRD/on/demandware.static/-/Sites-deciem-master/default/dw98873246/Images/products/The%20Ordinary/Before-After/ord-glycolic-before-after-radiance.jpg?sw=900&sh=900&sm=fit"
+      ],
+      "provenance": "Product imagery read from the manufacturer's product page structured data."
+    },
+    {
+      "slug": "alsujood-cosmetics-clay-pore-mask",
+      "name": "The Ordinary Salicylic Acid 2% Masque",
+      "source": "https://theordinary.com/en-us/salicylic-acid-2-face-masque-100443.html",
+      "images": [
+        "https://theordinary.com/dw/image/v2/BFKJ_PRD/on/demandware.static/-/Sites-deciem-master/default/dwb391b95c/Images/products/The%20Ordinary/rdn-salicylic-acid-2pct-masque-50ml.png?sw=900&sh=900&sm=fit",
+        "https://theordinary.com/dw/image/v2/BFKJ_PRD/on/demandware.static/-/Sites-deciem-master/default/dwcafe7bb3/Images/products/The%20Ordinary/application/FY25-D41247-ORD-Web-PDP-SA-2pct-Msq-1x1-EN-4d.jpg?sw=900&sh=900&sm=fit"
+      ],
+      "provenance": "Product imagery read from the manufacturer's product page structured data."
+    },
+    {
+      "slug": "alsujood-cosmetics-gentle-gel-cleanser",
+      "name": "CeraVe Hydrating Facial Cleanser",
+      "source": "https://www.cerave.com/skincare/cleansers/hydrating-facial-cleanser",
+      "images": [
+        "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/skincare/cleansers/hydrating-facial-cleanser/photos/2026/700x785/hfc-atf-1-700x785-v1.jpg?rev=6b7c77cf83ce4faebd7c20d7491af7a2",
+        "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/skincare/cleansers/hydrating-facial-cleanser/photos/2026/700x785/hfc-atf-2-700x785-v1.jpg?rev=02edcd57d1e24ae4b1503b305234342d",
+        "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/skincare/cleansers/hydrating-facial-cleanser/photos/2026/700x785/hfc-atf-3-700x785-v1.jpg?rev=76e814967d86409d914aa5ae53cbefd8"
+      ],
+      "provenance": "Product imagery read from the manufacturer's product page structured data."
+    },
+    {
+      "slug": "alsujood-cosmetics-daily-hydra-moisturizer",
+      "name": "CeraVe Moisturizing Cream",
+      "source": "https://www.cerave.com/skincare/moisturizers/moisturizing-cream",
+      "images": [
+        "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/skincare/moisturizers/moisturizing-cream/moisturizing-cream-12oz-front.jpg?rev=a6959c87b34f4e7c803db48d2effdaec&w=500&hash=151B6476E507AAE717F2D451C7B4BE92"
+      ],
+      "provenance": "Product imagery read from the manufacturer's product page structured data."
+    },
+    {
+      "slug": "alsujood-cosmetics-micellar-cleansing-water",
+      "name": "Garnier Micellar Cleansing Water With Vitamin C",
+      "source": "https://www.garnierusa.com/about-our-brands/skin-care/micellar-cleansing-water/micellar-cleansing-water-with-vitamin-c",
+      "images": [
+        "https://www.garnierusa.com/-/media/project/loreal/brand-sites/garnier/usa/us/products/skin-care/micellar-cleansing-water/2026/all-in-1-with-vitamin-c/13-5-floz/0603084578603_1.jpg?rev=912ba9882b8547c78407067a3bc100eb&hash=6AD12F52E7EF69405D94B06A9F75D197"
+      ],
+      "provenance": "Product imagery read from the manufacturer's product page structured data."
+    },
+    {
+      "slug": "alsujood-cosmetics-dewy-setting-spray",
+      "name": "e.l.f. Power Grip Dewy Setting Spray",
+      "source": "https://www.elfcosmetics.com/us/products/power-grip-dewy-setting-spray",
+      "images": [
+        "https://cdn.shopify.com/s/files/1/0661/2251/4520/files/84759_Open_A_V9_R.png?v=1776967370"
+      ],
+      "provenance": "Product imagery read from the manufacturer's product page structured data."
+    },
+    {
+      "slug": "alsujood-cosmetics-pocket-perfume-oil",
+      "name": "Swiss Arabian LAYALI",
+      "source": "https://swissarabian.com/products/layali",
+      "images": [
+        "https://cdn.shopify.com/s/files/1/0793/9712/6445/files/Top-angle_e14cc38b-4c1a-4819-b10e-d828756883eb.webp?v=1783577455",
+        "https://cdn.shopify.com/s/files/1/0793/9712/6445/files/Top-angle_box_04c1903c-4189-4d19-9ab0-b23bc3dd692f.webp?v=1783577463"
+      ],
+      "provenance": "Product imagery from the manufacturer's Shopify product catalog."
+    },
+    {
+      "slug": "alsujood-cosmetics-floral-body-mist",
+      "name": "Swiss Arabian ROSE 01 - HAIR MIST",
+      "source": "https://swissarabian.com/products/rose-1",
+      "images": [
+        "https://cdn.shopify.com/s/files/1/0793/9712/6445/files/Rose-01_0aa1c371-5557-462e-9938-0a8aa74bd146.png?v=1767955010",
+        "https://cdn.shopify.com/s/files/1/0793/9712/6445/files/Rose01----01.png?v=1767955010"
+      ],
+      "provenance": "Product imagery from the manufacturer's Shopify product catalog."
+    },
+    {
+      "slug": "alsujood-cosmetics-oud-rose-mist",
+      "name": "Swiss Arabian SHAGHAF OUD",
+      "source": "https://swissarabian.com/products/shaghaf-oud-3",
+      "images": [
+        "https://cdn.shopify.com/s/files/1/0793/9712/6445/files/Shaghaf-Oud.webp?v=1782984698",
+        "https://cdn.shopify.com/s/files/1/0793/9712/6445/files/Shaghaf-Oud-with-box.webp?v=1782984708"
+      ],
+      "provenance": "Product imagery from the manufacturer's Shopify product catalog."
+    },
+    {
+      "slug": "alsujood-cosmetics-pro-makeup-brush-set",
+      "name": "EIGSHOW Splendid Series 15-Piece Makeup Brush Set",
+      "source": "https://www.eigshowbeauty.com/products/splendid-series-15-pcs-classic-makeup-brush-set-with-patterns-carved-ferrule-and-silk-fiber-hair",
+      "images": [
+        "https://cdn.shopify.com/s/files/1/0065/9059/5141/products/eigbeauty-makeup-brush-splendid-series-15-pcs-classic-makeup-brush-set-with-patterns-carved-ferrule-and-silk-fiber-hair-30878667866181.jpg?v=1651222155",
+        "https://cdn.shopify.com/s/files/1/0065/9059/5141/products/eigbeauty-makeup-brush-splendid-series-15-pcs-classic-makeup-brush-set-with-patterns-carved-ferrule-and-silk-fiber-hair-30878667833413.jpg?v=1651222158",
+        "https://cdn.shopify.com/s/files/1/0065/9059/5141/products/eigbeauty-makeup-brush-splendid-series-15-pcs-classic-makeup-brush-set-with-patterns-carved-ferrule-and-silk-fiber-hair-30878667735109.jpg?v=1651222161"
+      ],
+      "provenance": "Product imagery from the manufacturer's Shopify product catalog."
+    },
+    {
+      "slug": "alsujood-cosmetics-spf-50-sun-veil",
+      "name": "CeraVe Hydrating Mineral Sunscreen SPF 50 Face Lotion",
+      "source": "https://www.cerave.com/sunscreen/face/hydrating-mineral-sunscreen-face-lotion-spf-50",
+      "images": [
+        "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/sunscreen/face/50-spf-face/50-spf-face_front.jpg?rev=876337554bf7423bb530d2f754cb9e78&w=900&hash=06DB49BEE812663A2422CDF2F1C722F3",
+        "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/sunscreen/face/50-spf-face/50-spf-face_back.jpg?rev=3e8ed55e98c145e9a2745bb15d41a0a6&w=900&hash=D419BA12BBFFFBDB7825E370C902160A",
+        "https://www.cerave.com/-/media/project/loreal/brand-sites/cerave/americas/us/products/pdp-updates-04-2021/hydrating-mineral-sunscreen-face-spf-50/700x875/sun-face-spf-50_carton_front-2021-700x875-v1.jpg?rev=35f8fa1aa30e4be0beb838da1e243910&w=900&hash=23731B1EDE46070A3E08955A5A0B3463"
+      ],
+      "provenance": "Product imagery read from the manufacturer's product page structured data."
+    }
+  ],
+  "logoUrl": "https://mawja.premiumasp.net/uploads/stores/36d138fa-3e4f-4dd0-99aa-254690416af1/products/5a32b488-64bd-4d37-8939-431e59658213/99.png",
+  "coverImageUrl": "https://mawja.premiumasp.net/uploads/stores/36d138fa-3e4f-4dd0-99aa-254690416af1/products/5a32b488-64bd-4d37-8939-431e59658213/99.jpg"
+}

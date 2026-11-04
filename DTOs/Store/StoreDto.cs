@@ -13,13 +13,16 @@ namespace onlineStore.DTOs.Store
         public string? BusinessType { get; set; }
 
         public bool IsCatalog { get; set; } = false;
+        public bool EnableLanguageSwitching { get; set; } = false;
+        public bool RequireCustomerLoginForCheckout { get; set; } = true;
         public string? LogoUrl { get; set; }
         public string? CoverImageUrl { get; set; }
         public string? WhatsAppNumber { get; set; }
         public string? StoreStory { get; set; }
         public string ThemeTemplate { get; set; } = StoreThemeTemplates.Default;
         public string Language { get; set; } = StoreLanguages.Arabic;
-        public IReadOnlyList<string> SupportedLanguages { get; set; } = StoreLanguages.Supported;
+        public string DefaultLanguage { get; set; } = StoreLanguages.Arabic;
+        public IReadOnlyList<string> SupportedLanguages { get; set; } = [StoreLanguages.Arabic];
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public int VisitCount { get; set; }

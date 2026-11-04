@@ -109,6 +109,19 @@ namespace onlineStore.Controllers
             }
         }
 
+        [HttpPost("guest")]
+        [AllowAnonymous]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("guest-orders")]
+        [RequestSizeLimit(64000)]
+        public async Task<IActionResult> CreateGuest(CreateGuestOrderDto dto)
+        {
+            try { return Ok(await _orderService.CreateGuestOrderAsync(dto)); }
+            catch (UnauthorizedAccessException ex) { return StatusCode(403, new { message = ex.Message }); }
+            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex) when (ex.GetType() == typeof(Exception)) { return BadRequest(new { message = ex.Message }); }
+        }
+
 
         [HttpGet("my-orders")]
         [Authorize(Policy = "StoreCustomerOnly")]

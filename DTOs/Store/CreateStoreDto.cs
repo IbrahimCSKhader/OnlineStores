@@ -22,6 +22,8 @@ namespace onlineStore.DTOs.Store
         public string? BusinessType { get; set; }
 
         public bool IsCatalog { get; set; } = false;
+        public bool EnableLanguageSwitching { get; set; } = false;
+        public bool RequireCustomerLoginForCheckout { get; set; } = true;
 
         public IFormFile? Logo { get; set; }
 

@@ -43,6 +43,7 @@ namespace onlineStore.Services.CustomerStore
         {
             var query = _context.StoreCustomers
                 .AsNoTracking()
+                .Where(x => !x.IsGuestProfile && x.MergedIntoCustomerId == null)
                 .AsQueryable();
 
             if (_currentUser.IsSuperAdmin)
@@ -84,7 +85,7 @@ namespace onlineStore.Services.CustomerStore
 
             return await _context.StoreCustomers
                 .AsNoTracking()
-                .Where(x => x.StoreId == storeId)
+                .Where(x => x.StoreId == storeId && !x.IsGuestProfile && x.MergedIntoCustomerId == null)
                 .OrderByDescending(x => x.CreatedAt)
                 .Select(x => new CustomerStoreDto
                 {
@@ -169,6 +170,7 @@ namespace onlineStore.Services.CustomerStore
             await EnsureCanManageStoreAsync(entity.StoreId);
 
             string? verificationCode = null;
+            await CustomerIdentity.PreserveOrderSnapshotsAsync(_context, entity);
 
             if (dto.FirstName != null)
                 entity.FirstName = NormalizeValue(dto.FirstName);
@@ -244,7 +246,10 @@ namespace onlineStore.Services.CustomerStore
 
             await EnsureCanManageStoreAsync(entity.StoreId);
 
-            entity.IsDeleted = true;
+            if (await _context.CustomerLedgerEntries.AnyAsync(x => x.CustomerId == entity.Id) ||
+                await _context.Orders.IgnoreQueryFilters().AnyAsync(x => x.AccountCustomerId == entity.Id))
+                entity.IsActive = false; // Retain financial profiles and their statement.
+            else entity.IsDeleted = true;
             await _context.SaveChangesAsync();
 
             return true;

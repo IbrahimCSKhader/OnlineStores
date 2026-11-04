@@ -17,8 +17,10 @@ namespace onlineStore.DTOs.Order
         public decimal DeliveryCost { get; set; }
         public decimal TotalAmount { get; set; }
         public decimal? ReceivedAmount { get; set; }
-        public decimal? RemainingAmount => ReceivedAmount.HasValue ? Math.Max(TotalAmount - ReceivedAmount.Value, 0m) : null;
-        public decimal? OverpaidAmount => ReceivedAmount.HasValue ? Math.Max(ReceivedAmount.Value - TotalAmount, 0m) : null;
+        public Guid? AccountCustomerId { get; set; }
+        public string? PaymentStatus { get; set; }
+        public decimal? RemainingAmount => ReceivedAmount.HasValue ? Math.Max((Status is OrderStatus.Cancelled or OrderStatus.Refunded ? 0m : TotalAmount) - ReceivedAmount.Value, 0m) : null;
+        public decimal? OverpaidAmount => ReceivedAmount.HasValue ? Math.Max(ReceivedAmount.Value - (Status is OrderStatus.Cancelled or OrderStatus.Refunded ? 0m : TotalAmount), 0m) : null;
         public int PointsEarned { get; set; }
 
         public string? CustomerNotes { get; set; }
@@ -28,7 +30,8 @@ namespace onlineStore.DTOs.Order
         public string? DeliveryCity { get; set; }
         public string? DeliveryPhone { get; set; }
 
-        public Guid StoreCustomerId { get; set; }
+        public Guid? StoreCustomerId { get; set; }
+        public bool IsGuest => !StoreCustomerId.HasValue;
         public string? CustomerName { get; set; }
         public string? CustomerEmail { get; set; }
         public string? CustomerPhone { get; set; }

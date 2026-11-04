@@ -6,6 +6,7 @@ namespace onlineStore.DTOs.Order
 
         public Guid ProductId { get; set; }
         public string ProductName { get; set; } = string.Empty;
+        public string? ProductImageUrl { get; set; }
 
         public Guid? VariantId { get; set; }
         public string? VariantName { get; set; }

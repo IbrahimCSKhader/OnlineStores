@@ -601,17 +601,162 @@ namespace onlineStore.Migrations
                     b.ToTable("OfferItems");
                 });
 
+            modelBuilder.Entity("onlineStore.Models.Orders.CustomerAccountAudit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SourceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CustomerAccountAudits");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.Orders.CustomerLedgerEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Method")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("RecordedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RequestHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("RequestKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("ReversesEntryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("ReversesEntryId")
+                        .IsUnique()
+                        .HasFilter("[ReversesEntryId] IS NOT NULL");
+
+                    b.HasIndex("StoreId", "RequestKey")
+                        .IsUnique()
+                        .HasFilter("[RequestKey] IS NOT NULL");
+
+                    b.HasIndex("StoreId", "CustomerId", "OccurredAt");
+
+                    b.ToTable("CustomerLedgerEntries");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.Orders.CustomerPaymentAllocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("EntryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("EntryId", "OrderId")
+                        .IsUnique();
+
+                    b.ToTable("CustomerPaymentAllocations");
+                });
+
             modelBuilder.Entity("onlineStore.Models.Orders.Order", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("AccountCustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("AccountInitialized")
+                        .HasColumnType("bit");
+
                     b.Property<Guid?>("CouponId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("CustomerEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("CustomerName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("CustomerNotes")
                         .HasMaxLength(1000)
@@ -666,7 +811,7 @@ namespace onlineStore.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<Guid>("StoreCustomerId")
+                    b.Property<Guid?>("StoreCustomerId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("StoreId")
@@ -690,6 +835,8 @@ namespace onlineStore.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AccountCustomerId");
 
                     b.HasIndex("CouponId");
 
@@ -1245,6 +1392,11 @@ namespace onlineStore.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<bool>("EnableLanguageSwitching")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -1273,6 +1425,11 @@ namespace onlineStore.Migrations
 
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("RequireCustomerLoginForCheckout")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -1382,6 +1539,14 @@ namespace onlineStore.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Address")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -1408,16 +1573,29 @@ namespace onlineStore.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<bool>("HasSharedPhone")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsGuestProfile")
+                        .HasColumnType("bit");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("MergedIntoCustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("NormalizedPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -1451,6 +1629,8 @@ namespace onlineStore.Migrations
 
                     b.HasIndex("StoreId", "Email")
                         .IsUnique();
+
+                    b.HasIndex("StoreId", "NormalizedPhone");
 
                     b.ToTable("CustomerStores", (string)null);
                 });
@@ -1855,8 +2035,50 @@ namespace onlineStore.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("onlineStore.Models.Orders.CustomerLedgerEntry", b =>
+                {
+                    b.HasOne("onlineStore.Models.StoreCustomer", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("onlineStore.Models.Orders.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.Orders.CustomerPaymentAllocation", b =>
+                {
+                    b.HasOne("onlineStore.Models.Orders.CustomerLedgerEntry", "Entry")
+                        .WithMany("Allocations")
+                        .HasForeignKey("EntryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("onlineStore.Models.Orders.Order", "Order")
+                        .WithMany("PaymentAllocations")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Entry");
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("onlineStore.Models.Orders.Order", b =>
                 {
+                    b.HasOne("onlineStore.Models.StoreCustomer", "AccountCustomer")
+                        .WithMany()
+                        .HasForeignKey("AccountCustomerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("onlineStore.Models.Discounts.Coupon", "Coupon")
                         .WithMany("Orders")
                         .HasForeignKey("CouponId")
@@ -1870,14 +2092,15 @@ namespace onlineStore.Migrations
                     b.HasOne("onlineStore.Models.StoreCustomer", "StoreCustomer")
                         .WithMany("Orders")
                         .HasForeignKey("StoreCustomerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("onlineStore.Models.Store", "Store")
                         .WithMany()
                         .HasForeignKey("StoreId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("AccountCustomer");
 
                     b.Navigation("Coupon");
 
@@ -2172,9 +2395,16 @@ namespace onlineStore.Migrations
                     b.Navigation("Items");
                 });
 
+            modelBuilder.Entity("onlineStore.Models.Orders.CustomerLedgerEntry", b =>
+                {
+                    b.Navigation("Allocations");
+                });
+
             modelBuilder.Entity("onlineStore.Models.Orders.Order", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("PaymentAllocations");
                 });
 
             modelBuilder.Entity("onlineStore.Models.Product", b =>

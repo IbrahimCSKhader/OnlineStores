@@ -185,7 +185,7 @@ namespace onlineStore.Services.StoreCustomerAuth
                     .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(c => c.StoreId == dto.StoreId && c.Email == normalizedEmail);
 
-                if (customer == null)
+                if (customer == null || customer.IsGuestProfile)
                     return Fail("Invalid email or password.");
 
                 if (customer.IsDeleted)
@@ -692,7 +692,7 @@ namespace onlineStore.Services.StoreCustomerAuth
         private async Task<StoreCustomer?> FindStoreCustomerAsync(Guid storeId, string email) =>
             await _context.StoreCustomers
                 .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.StoreId == storeId && c.Email == NormalizeEmail(email));
+                .FirstOrDefaultAsync(c => c.StoreId == storeId && !c.IsGuestProfile && c.Email == NormalizeEmail(email));
 
         private Task<bool> IsReservedForStoreOwnerAsync(Guid storeId, string email) =>
             _storeAccountBoundaryService.IsStoreOwnerEmailAsync(storeId, NormalizeEmail(email));

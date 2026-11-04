@@ -68,6 +68,14 @@ static bool IsAllowedCorsOrigin(string origin, HashSet<string> allowedOrigins)
 IStorefrontOriginService? storefrontOriginService = null;
 
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("guest-orders", context => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+        { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+});
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -406,6 +414,7 @@ builder.Services.AddScoped<IStoreService, StoreService>();
 builder.Services.AddScoped<IStorefrontTranslationService, StorefrontTranslationService>();
 builder.Services.AddScoped<ISectionService, SectionService>();
 builder.Services.AddScoped<ICustomerStoreService, CustomerStoreService>();
+builder.Services.AddScoped<onlineStore.Services.CustomerStore.CustomerAccountService>();
 builder.Services.AddScoped<IStoreCustomerEmailWorkflowService, StoreCustomerEmailWorkflowService>();
 builder.Services.AddScoped<IStoreCustomerAuthService, StoreCustomerAuthService>();
 builder.Services.AddScoped<ISuperAdminDashboardService, SuperAdminDashboardService>();
@@ -625,6 +634,7 @@ app.UseCors(app.Environment.IsDevelopment()
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 

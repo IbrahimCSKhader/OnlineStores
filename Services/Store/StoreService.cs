@@ -250,6 +250,12 @@ namespace onlineStore.Services.Store
 
             await EnsureCanManageStoreAsync(id);
 
+            if (dto.RequireCustomerLoginForCheckout.HasValue)
+                store.RequireCustomerLoginForCheckout = dto.RequireCustomerLoginForCheckout.Value;
+
+            if (dto.EnableLanguageSwitching.HasValue)
+                store.EnableLanguageSwitching = dto.EnableLanguageSwitching.Value;
+
             if (dto.Name != null)
                 store.Name = dto.Name.Trim();
 
@@ -369,9 +375,15 @@ namespace onlineStore.Services.Store
             CoverImageUrl = s.CoverImageUrl,
             IsActive = s.IsActive,
             IsCatalog = s.IsCatalog,
+            EnableLanguageSwitching = s.EnableLanguageSwitching,
+            DefaultLanguage = StoreLanguages.NormalizeOrDefault(s.Language),
+            SupportedLanguages = s.EnableLanguageSwitching
+                ? StoreLanguages.Supported
+                : [StoreLanguages.NormalizeOrDefault(s.Language)],
             VisitCount = includeVisitCount ? s.VisitCount : 0,
             WhatsAppNumber = s.WhatsAppNumber,
             StoreStory = s.StoreStory,
+            RequireCustomerLoginForCheckout = s.RequireCustomerLoginForCheckout,
             ThemeTemplate = StoreThemeTemplates.NormalizeForResponse(s.ThemeTemplate),
             Appearance = StoreAppearancePolicy.Read(s.Appearance?.OverridesJson),
             Language = StoreLanguages.NormalizeOrDefault(s.Language),
@@ -661,6 +673,8 @@ namespace onlineStore.Services.Store
                 BusinessType = NormalizeOptional(dto.BusinessType),
                 WhatsAppNumber = NormalizeOptional(dto.WhatsAppNumber),
                 StoreStory = NormalizeOptional(dto.StoreStory),
+                RequireCustomerLoginForCheckout = dto.RequireCustomerLoginForCheckout,
+                EnableLanguageSwitching = dto.EnableLanguageSwitching,
                 ThemeTemplate = StoreThemeTemplates.NormalizeOrThrow(
                     dto.ThemeTemplate,
                     nameof(dto.ThemeTemplate)),

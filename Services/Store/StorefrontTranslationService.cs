@@ -22,7 +22,7 @@ public sealed class StorefrontTranslationService : IStorefrontTranslationService
         string? language,
         CancellationToken cancellationToken = default)
     {
-        var normalizedLanguage = StoreLanguages.NormalizeOrDefault(string.IsNullOrWhiteSpace(language) ? store.Language : language);
+        var normalizedLanguage = await ResolveLanguageAsync(store.Id, language, cancellationToken);
         store.Language = normalizedLanguage;
 
         if (StoreLanguages.IsBaseLanguage(normalizedLanguage))
@@ -46,7 +46,7 @@ public sealed class StorefrontTranslationService : IStorefrontTranslationService
         string? language,
         CancellationToken cancellationToken = default)
     {
-        var normalizedLanguage = StoreLanguages.NormalizeOrDefault(language);
+        var normalizedLanguage = await ResolveLanguageAsync(storeId, language, cancellationToken);
         SetLanguage(categories, normalizedLanguage);
 
         if (StoreLanguages.IsBaseLanguage(normalizedLanguage) || categories.Count == 0)
@@ -71,7 +71,7 @@ public sealed class StorefrontTranslationService : IStorefrontTranslationService
         string? language,
         CancellationToken cancellationToken = default)
     {
-        var normalizedLanguage = StoreLanguages.NormalizeOrDefault(language);
+        var normalizedLanguage = await ResolveLanguageAsync(storeId, language, cancellationToken);
         SetLanguage(sections, normalizedLanguage);
 
         if (StoreLanguages.IsBaseLanguage(normalizedLanguage) || sections.Count == 0)
@@ -111,7 +111,7 @@ public sealed class StorefrontTranslationService : IStorefrontTranslationService
         string? language,
         CancellationToken cancellationToken = default)
     {
-        var normalizedLanguage = StoreLanguages.NormalizeOrDefault(language);
+        var normalizedLanguage = await ResolveLanguageAsync(storeId, language, cancellationToken);
         SetLanguage(products, normalizedLanguage);
 
         if (StoreLanguages.IsBaseLanguage(normalizedLanguage) || products.Count == 0)
@@ -145,6 +145,22 @@ public sealed class StorefrontTranslationService : IStorefrontTranslationService
                 variant.Description = GetOptional(translations, StoreTranslationEntityTypes.ProductVariant, variant.Id, "Description", variant.Description);
             }
         }
+    }
+
+    private async Task<string> ResolveLanguageAsync(
+        Guid storeId,
+        string? requestedLanguage,
+        CancellationToken cancellationToken)
+    {
+        var store = await _context.Stores.AsNoTracking()
+            .Where(s => s.Id == storeId)
+            .Select(s => new { s.Language, s.EnableLanguageSwitching })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return StoreLanguages.NormalizeOrDefault(
+            store?.EnableLanguageSwitching == true && !string.IsNullOrWhiteSpace(requestedLanguage)
+                ? requestedLanguage
+                : store?.Language);
     }
 
     private async Task<Dictionary<TranslationKey, string>> LoadTranslationsAsync(

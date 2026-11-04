@@ -109,6 +109,8 @@ public static class LifestyleSeedData
             await EnsureProductsAsync(context, store.Id, seed, categories, sections);
             await context.SaveChangesAsync();
             await EnsureStorefrontTranslationsAsync(context, store.Id, seed, categories, sections);
+            if (seed.Slug == "alsujood-cosmetics")
+                await RealCosmeticsCatalog.ApplyAsync(context, webRootPath);
         }
 
         await context.SaveChangesAsync();
@@ -116,6 +118,11 @@ public static class LifestyleSeedData
 
     public static async Task RepairAlsujoodAssetsAsync(AppDbContext context, string webRootPath)
     {
+        if (File.Exists(Path.Combine(webRootPath, "store-branding", "alsujood", "real-products.json")))
+        {
+            await RealCosmeticsCatalog.ApplyAsync(context, webRootPath);
+            return;
+        }
         var seed = CosmeticsStore();
         EnsureImageAssets(webRootPath, seed);
 

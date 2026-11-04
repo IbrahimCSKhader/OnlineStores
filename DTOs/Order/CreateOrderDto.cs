@@ -7,6 +7,11 @@ namespace onlineStore.DTOs.Order
         [Required(ErrorMessage = "معرّف المتجر مطلوب")]
         public Guid StoreId { get; set; }
 
+        [MaxLength(200)]
+        public string? CustomerName { get; set; }
+        [EmailAddress, MaxLength(256)]
+        public string? CustomerEmail { get; set; }
+
         public Guid? DeliveryLocationId { get; set; }
 
         [MaxLength(200)]

@@ -33,7 +33,9 @@ namespace onlineStore.DTOs.Store
         [MaxLength(50)]
         public List<StoreDeliveryLocationDto>? DeliveryLocations { get; set; }
 
+        public bool? EnableLanguageSwitching { get; set; }
         public bool? IsActive { get; set; }
+        public bool? RequireCustomerLoginForCheckout { get; set; }
         public List<StoreContactAccountInputDto>? ContactAccounts { get; set; }
     }
 }

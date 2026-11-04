@@ -31,6 +31,8 @@ namespace onlineStore.Models
         public string? BusinessType { get; set; }
 
         public bool IsCatalog { get; set; } = false;
+        public bool EnableLanguageSwitching { get; set; } = false;
+        public bool RequireCustomerLoginForCheckout { get; set; } = true;
 
         public bool IsActive { get; set; } = true;
 

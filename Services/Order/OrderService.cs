@@ -32,7 +32,11 @@ namespace onlineStore.Services.Order
             _currentUser = currentUser;
         }
 
-        public async Task<OrderDto> CreateOrderAsync(Guid storeCustomerId, CreateOrderDto dto)
+        public Task<OrderDto> CreateOrderAsync(Guid storeCustomerId, CreateOrderDto dto) => CreateOrderCoreAsync(storeCustomerId, dto);
+
+        public Task<OrderDto> CreateGuestOrderAsync(CreateGuestOrderDto dto) => CreateOrderCoreAsync(Guid.Empty, dto, dto);
+
+        private async Task<OrderDto> CreateOrderCoreAsync(Guid storeCustomerId, CreateOrderDto dto, CreateGuestOrderDto? guest = null)
         {
             _logger.LogInformation(
                 "order=> create:start StoreCustomerId={StoreCustomerId} Request={@Request}",
@@ -73,7 +77,16 @@ namespace onlineStore.Services.Order
 
                 try
                 {
-                    await EnsureActiveStoreCustomerAsync(storeCustomerId, dto.StoreId);
+                    var checkoutStore = await _context.Stores.FirstOrDefaultAsync(s => s.Id == dto.StoreId && s.IsActive)
+                        ?? throw new ArgumentException("المتجر غير متاح");
+                    if (guest == null) await EnsureActiveStoreCustomerAsync(storeCustomerId, dto.StoreId);
+                    else
+                    {
+                        if (checkoutStore.RequireCustomerLoginForCheckout) throw new UnauthorizedAccessException("يلزم تسجيل الدخول لهذا المتجر لإتمام الطلب");
+                        if (string.IsNullOrWhiteSpace(dto.CustomerName) || dto.CustomerName.Trim().Length > 200)
+                            throw new ArgumentException("اسم العميل مطلوب");
+                        if (!string.IsNullOrWhiteSpace(dto.CouponCode)) throw new ArgumentException("كوبونات الخصم متاحة للعملاء المسجلين فقط");
+                    }
                     if (await _context.Stores.AnyAsync(s => s.Id == dto.StoreId && s.IsCatalog))
                         throw new ArgumentException("هذا كاتالوج للعرض فقط، الشراء غير متاح.");
                     var deliveryLocations = await _context.StoreDeliveryLocations.AsNoTracking()
@@ -84,7 +97,7 @@ namespace onlineStore.Services.Order
                     if (deliveryLocations.Count == 0 && dto.DeliveryLocationId.HasValue)
                         throw new ArgumentException("مكان التوصيل المحدد لم يعد متاحاً، يرجى تحديث الصفحة.");
 
-                    var customerDiscountPercentage = await GetStoreCustomerDiscountPercentageAsync(
+                    var customerDiscountPercentage = guest != null ? 0m : await GetStoreCustomerDiscountPercentageAsync(
                         storeCustomerId,
                         dto.StoreId);
                     _logger.LogInformation(
@@ -93,7 +106,7 @@ namespace onlineStore.Services.Order
                         dto.StoreId,
                         customerDiscountPercentage);
 
-                    var carts = await _context.Carts.IgnoreQueryFilters()
+                    var carts = guest != null ? await BuildGuestCartsAsync(guest) : await _context.Carts.IgnoreQueryFilters()
                         .Include(c => c.Items.Where(i => !i.IsDeleted))
                             .ThenInclude(i => i.Product)
                                 .ThenInclude(p => p.Variants.Where(v => !v.IsDeleted && v.IsActive))
@@ -155,7 +168,7 @@ namespace onlineStore.Services.Order
                         if (item.Product == null)
                             throw new Exception("يوجد عنصر غير صالح في السلة");
 
-                        if (item.Quantity <= 0 || item.Product.IsDeleted)
+                        if (item.Quantity <= 0 || item.Product.IsDeleted || item.Product.Status != ProductStatus.Active)
                             throw new InvalidOperationException("أحد المنتجات لم يعد متاحاً");
                         if (item.Product.StoreId != dto.StoreId)
                             throw new Exception("يوجد عنصر لا ينتمي لهذا المتجر");
@@ -234,8 +247,11 @@ namespace onlineStore.Services.Order
 
                     totalAmount += deliveryLocation?.Cost ?? 0m;
 
-                    var pointsEarned = PurchasePointsPolicy.CalculatePointsFromCartItems(cartItems);
+                    var pointsEarned = guest != null ? 0 : PurchasePointsPolicy.CalculatePointsFromCartItems(cartItems);
 
+                    var checkoutCustomer = guest == null
+                        ? await _context.StoreCustomers.FirstAsync(c => c.Id == storeCustomerId && c.StoreId == dto.StoreId)
+                        : null;
                     var order = new Models.Orders.Order
                     {
                         OrderNumber = GenerateOrderNumber(),
@@ -253,7 +269,9 @@ namespace onlineStore.Services.Order
                         DeliveryLocationName = deliveryLocation?.Name ?? "افتراضي",
                         DeliveryCost = deliveryLocation?.Cost ?? 0m,
                         CouponId = coupon?.Id,
-                        StoreCustomerId = storeCustomerId,
+                        StoreCustomerId = guest != null ? null : storeCustomerId,
+                        CustomerName = dto.CustomerName?.Trim() ?? (checkoutCustomer == null ? null : (checkoutCustomer.FirstName + " " + checkoutCustomer.LastName).Trim()),
+                        CustomerEmail = dto.CustomerEmail?.Trim() ?? checkoutCustomer?.Email,
                         StoreId = dto.StoreId,
                         CreatedAt = DateTime.UtcNow,
                         Items = new List<OrderItem>()
@@ -284,6 +302,14 @@ namespace onlineStore.Services.Order
                     }
 
                     _context.Orders.Add(order);
+                    var accountCustomer = await onlineStore.Services.CustomerStore.CustomerIdentity.ResolveAsync(
+                        _context, dto.StoreId, order.CustomerName, order.DeliveryPhone, order.StoreCustomerId);
+                    order.AccountCustomerId = accountCustomer.Id;
+                    if (_context.Entry(accountCustomer).State == EntityState.Added)
+                    {
+                        accountCustomer.Address = order.DeliveryAddress;
+                        accountCustomer.City = order.DeliveryCity;
+                    }
 
                     if (coupon != null)
                         coupon.UsageCount += 1;
@@ -294,12 +320,12 @@ namespace onlineStore.Services.Order
                             customer.StoreId == dto.StoreId &&
                             customer.IsActive);
 
-                    if (storeCustomer == null)
-                        throw new UnauthorizedAccessException("العميل لا يملك صلاحية الوصول إلى هذا المتجر");
-
-                    storeCustomer.PurchasePoints += pointsEarned;
-
-                    _context.CartItems.RemoveRange(cartItems);
+                    if (guest == null)
+                    {
+                        if (storeCustomer == null) throw new UnauthorizedAccessException("العميل لا يملك صلاحية الوصول إلى هذا المتجر");
+                        storeCustomer.PurchasePoints += pointsEarned;
+                        _context.CartItems.RemoveRange(cartItems);
+                    }
 
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
@@ -343,6 +369,33 @@ namespace onlineStore.Services.Order
             });
         }
 
+        private async Task<List<ShoppingCart>> BuildGuestCartsAsync(CreateGuestOrderDto dto)
+        {
+            if (dto.Items == null || dto.Items.Count is < 1 or > 100 || dto.Items.Any(i => i.Quantity is < 1 or > 10000))
+                throw new ArgumentException("عناصر الطلب غير صالحة");
+            var ids = dto.Items.Select(i => i.ProductId).Distinct().ToList();
+            var products = await _context.Products.Include(p => p.Variants.Where(v => v.IsActive && !v.IsDeleted))
+                .Where(p => p.StoreId == dto.StoreId && ids.Contains(p.Id)).ToListAsync();
+            var cart = new ShoppingCart { StoreId = dto.StoreId };
+            foreach (var input in dto.Items)
+            {
+                var product = products.SingleOrDefault(p => p.Id == input.ProductId)
+                    ?? throw new ArgumentException("المنتج غير متاح في هذا المتجر");
+                var variant = input.VariantId.HasValue ? product.Variants.SingleOrDefault(v => v.Id == input.VariantId) : null;
+                if (input.VariantId.HasValue && variant == null) throw new ArgumentException("خيار المنتج غير متاح");
+                if (input.BundleOfferId.HasValue != input.BundleGroupId.HasValue)
+                    throw new ArgumentException("بيانات الباكيج غير صالحة");
+                cart.Items.Add(new CartItem { ProductId = product.Id, Product = product, VariantId = variant?.Id,
+                    Variant = variant, Quantity = input.Quantity, CartId = cart.Id,
+                    BundleOfferId = input.BundleOfferId, BundleGroupId = input.BundleGroupId,
+                    BundleQuantity = input.BundleQuantity, BundleItemQuantity = input.BundleItemQuantity });
+            }
+            foreach (var group in cart.Items.Where(i => i.BundleGroupId.HasValue).GroupBy(i => i.BundleGroupId))
+                if (group.Select(i => i.ProductId).Distinct().Count() != group.Count())
+                    throw new ArgumentException("مكونات الباكيج غير صالحة");
+            return [cart];
+        }
+
         public async Task<List<OrderSummaryDto>> GetUserOrdersAsync(Guid storeCustomerId)
         {
             _logger.LogInformation(
@@ -369,13 +422,27 @@ namespace onlineStore.Services.Order
                     DeliveryCost = o.DeliveryCost,
                     PointsEarned = o.PointsEarned,
                     StoreCustomerId = o.StoreCustomerId,
-                    CustomerName = (o.StoreCustomer.FirstName + " " + o.StoreCustomer.LastName).Trim(),
-                    CustomerEmail = o.StoreCustomer.Email,
-                    CustomerPhone = o.StoreCustomer.Phone,
-                    CustomerDiscountPercentage = o.StoreCustomer.DiscountPercentage,
-                    CustomerPurchasePoints = o.StoreCustomer.PurchasePoints,
+                    CustomerName = o.CustomerName ?? (o.StoreCustomer != null ? (o.StoreCustomer.FirstName + " " + o.StoreCustomer.LastName).Trim() : "زائر غير مسجل"),
+                    CustomerEmail = o.CustomerEmail ?? (o.StoreCustomer != null ? o.StoreCustomer.Email : null),
+                    CustomerPhone = o.DeliveryPhone ?? (o.StoreCustomer != null ? o.StoreCustomer.Phone : null),
+                    DeliveryAddress = o.DeliveryAddress,
+                    DeliveryCity = o.DeliveryCity,
+                    DeliveryPhone = o.DeliveryPhone,
+                    CustomerDiscountPercentage = o.StoreCustomer != null ? o.StoreCustomer.DiscountPercentage : 0,
+                    CustomerPurchasePoints = o.StoreCustomer != null ? o.StoreCustomer.PurchasePoints : 0,
                     ContainsBundles = o.Items.Any(i => i.BundleGroupId != null),
                     ItemsCount = o.Items.Count(),
+                    ProductPreviews = o.Items.OrderBy(i => i.Id).Take(4).Select(i => new OrderProductPreviewDto
+                    {
+                        ProductId = i.ProductId,
+                        ProductName = i.ProductName,
+                        VariantName = i.VariantName ?? (i.Variant != null ? i.Variant.Name : null),
+                        Quantity = i.Quantity,
+                        ImageUrl = (i.Variant != null ? i.Variant.ImageUrl : null)
+                            ?? (i.Variant != null ? i.Variant.Images.Where(x => !x.IsDeleted).OrderBy(x => x.DisplayOrder).Select(x => x.Url).FirstOrDefault() : null)
+                            ?? i.Product.ThumbnailUrl
+                            ?? i.Product.Images.Where(x => !x.IsDeleted && x.VariantId == null).OrderBy(x => x.DisplayOrder).Select(x => x.Url).FirstOrDefault()
+                    }).ToList(),
                     StoreId = o.StoreId,
                     CouponId = o.CouponId,
                     CouponCode = o.Coupon != null ? o.Coupon.Code : null,
@@ -504,18 +571,36 @@ namespace onlineStore.Services.Order
                     DiscountAmount = o.DiscountAmount,
                     TotalAmount = o.TotalAmount,
                     ReceivedAmount = o.ReceivedAmount,
+                    AccountCustomerId = o.AccountCustomerId,
+                    PaymentStatus = (o.ReceivedAmount ?? 0m) > (o.Status == OrderStatus.Cancelled || o.Status == OrderStatus.Refunded ? 0m : o.TotalAmount) ? "credit" :
+                        (o.ReceivedAmount ?? 0m) == (o.Status == OrderStatus.Cancelled || o.Status == OrderStatus.Refunded ? 0m : o.TotalAmount) ? "paid" :
+                        (o.ReceivedAmount ?? 0m) > 0m ? "partial" : "unpaid",
                     DeliveryLocationId = o.DeliveryLocationId,
                     DeliveryLocationName = o.DeliveryLocationName,
                     DeliveryCost = o.DeliveryCost,
                     PointsEarned = o.PointsEarned,
                     StoreCustomerId = o.StoreCustomerId,
-                    CustomerName = (o.StoreCustomer.FirstName + " " + o.StoreCustomer.LastName).Trim(),
-                    CustomerEmail = o.StoreCustomer.Email,
-                    CustomerPhone = o.StoreCustomer.Phone,
-                    CustomerDiscountPercentage = o.StoreCustomer.DiscountPercentage,
-                    CustomerPurchasePoints = o.StoreCustomer.PurchasePoints,
+                    CustomerName = o.CustomerName ?? (o.StoreCustomer != null ? (o.StoreCustomer.FirstName + " " + o.StoreCustomer.LastName).Trim() : "زائر غير مسجل"),
+                    CustomerEmail = o.CustomerEmail ?? (o.StoreCustomer != null ? o.StoreCustomer.Email : null),
+                    CustomerPhone = o.DeliveryPhone ?? (o.StoreCustomer != null ? o.StoreCustomer.Phone : null),
+                    DeliveryAddress = o.DeliveryAddress,
+                    DeliveryCity = o.DeliveryCity,
+                    DeliveryPhone = o.DeliveryPhone,
+                    CustomerDiscountPercentage = o.StoreCustomer != null ? o.StoreCustomer.DiscountPercentage : 0,
+                    CustomerPurchasePoints = o.StoreCustomer != null ? o.StoreCustomer.PurchasePoints : 0,
                     ContainsBundles = o.Items.Any(i => i.BundleGroupId != null),
                     ItemsCount = o.Items.Count(),
+                    ProductPreviews = o.Items.OrderBy(i => i.Id).Take(4).Select(i => new OrderProductPreviewDto
+                    {
+                        ProductId = i.ProductId,
+                        ProductName = i.ProductName,
+                        VariantName = i.VariantName ?? (i.Variant != null ? i.Variant.Name : null),
+                        Quantity = i.Quantity,
+                        ImageUrl = (i.Variant != null ? i.Variant.ImageUrl : null)
+                            ?? (i.Variant != null ? i.Variant.Images.Where(x => !x.IsDeleted).OrderBy(x => x.DisplayOrder).Select(x => x.Url).FirstOrDefault() : null)
+                            ?? i.Product.ThumbnailUrl
+                            ?? i.Product.Images.Where(x => !x.IsDeleted && x.VariantId == null).OrderBy(x => x.DisplayOrder).Select(x => x.Url).FirstOrDefault()
+                    }).ToList(),
                     StoreId = o.StoreId,
                     CouponId = o.CouponId,
                     CouponCode = o.Coupon != null ? o.Coupon.Code : null,
@@ -562,19 +647,34 @@ namespace onlineStore.Services.Order
                 (amount < 0m || amount > 9999999999999999.99m || decimal.Round(amount, 2) != amount))
                 throw new ArgumentException("أدخل مبلغ استلام موجباً أو صفراً، بمنزلتين عشريتين كحد أقصى.");
 
-            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId);
-            if (order == null) return null;
-            await EnsureCanAccessStoreOrdersAsync(order.StoreId);
-
-            order.ReceivedAmount = dto.ReceivedAmount;
-            await _context.SaveChangesAsync();
-            return await GetStoreOrderByIdAsync(order.StoreId, orderId);
+            return await _context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+            {
+                await using var tx = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+                var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId);
+                if (order == null) return null;
+                await EnsureCanAccessStoreOrdersAsync(order.StoreId);
+                _context.LedgerActorId = _currentUser.UserId;
+                if (!order.AccountInitialized)
+                {
+                    var customer = await onlineStore.Services.CustomerStore.CustomerIdentity.ResolveAsync(
+                        _context, order.StoreId, order.CustomerName, order.DeliveryPhone, order.StoreCustomerId);
+                    order.AccountCustomerId = customer.Id;
+                    await _context.SaveChangesAsync();
+                }
+                order.ReceivedAmount = dto.ReceivedAmount;
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+                return await GetStoreOrderByIdAsync(order.StoreId, orderId);
+            });
         }
 
         private static OrderDto MapOwnerOrderToDto(Models.Orders.Order order)
         {
             var dto = MapOrderToDto(order);
             dto.ReceivedAmount = order.ReceivedAmount;
+            dto.AccountCustomerId = order.AccountCustomerId;
+            dto.PaymentStatus = onlineStore.Services.CustomerStore.CustomerAccountService.PaymentStatus(
+                onlineStore.Services.CustomerStore.CustomerAccountService.Charge(order), order.ReceivedAmount ?? 0m);
             return dto;
         }
 
@@ -617,6 +717,7 @@ namespace onlineStore.Services.Order
                     }
 
                     await EnsureCanAccessStoreOrdersAsync(order.StoreId);
+                    _context.LedgerActorId = _currentUser.UserId;
 
                     var previousStatus = order.Status;
                     ApplyInventoryForStatusTransition(order, dto.Status);
@@ -1071,9 +1172,9 @@ namespace onlineStore.Services.Order
                 DeliveryLocationName = order.DeliveryLocationName,
                 DeliveryCost = order.DeliveryCost,
                 StoreCustomerId = order.StoreCustomerId,
-                CustomerName = BuildCustomerFullName(order.StoreCustomer),
-                CustomerEmail = order.StoreCustomer?.Email,
-                CustomerPhone = order.StoreCustomer?.Phone,
+                CustomerName = order.CustomerName ?? BuildCustomerFullName(order.StoreCustomer),
+                CustomerEmail = order.CustomerEmail ?? order.StoreCustomer?.Email,
+                CustomerPhone = order.DeliveryPhone ?? order.StoreCustomer?.Phone,
                 StoreId = order.StoreId,
                 CouponId = order.CouponId,
                 CouponCode = order.Coupon?.Code,
@@ -1086,6 +1187,7 @@ namespace onlineStore.Services.Order
                     Id = i.Id,
                     ProductId = i.ProductId,
                     ProductName = i.ProductName,
+                    ProductImageUrl = ResolveProductImageUrl(i.Product),
                     VariantId = i.VariantId,
                     VariantName = i.VariantName ?? i.Variant?.Name,
                     VariantSKU = i.Variant?.SKU,

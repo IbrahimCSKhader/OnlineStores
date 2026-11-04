@@ -10,6 +10,10 @@ namespace onlineStore.Models
     [Index(nameof(StoreId))]
     public class StoreCustomer : BaseEntity
     {
+        [MaxLength(20)] public string? NormalizedPhone { get; set; }
+        public bool IsGuestProfile { get; set; }
+        public bool HasSharedPhone { get; set; }
+        public Guid? MergedIntoCustomerId { get; set; }
         public Guid StoreId { get; set; }
         public Store Store { get; set; } = null!;
 
@@ -44,6 +48,11 @@ namespace onlineStore.Models
         public decimal DiscountPercentage { get; set; }
 
         public int PurchasePoints { get; set; }
+
+        [MaxLength(300)]
+        public string? Address { get; set; }
+        [MaxLength(100)]
+        public string? City { get; set; }
 
         public bool IsActive { get; set; } = true;
 

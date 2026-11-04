@@ -39,6 +39,10 @@ namespace onlineStore.Data
         public DbSet<CartItem> CartItems => Set<CartItem>();
 
         public DbSet<Order> Orders => Set<Order>();
+        public DbSet<CustomerLedgerEntry> CustomerLedgerEntries => Set<CustomerLedgerEntry>();
+        public DbSet<CustomerPaymentAllocation> CustomerPaymentAllocations => Set<CustomerPaymentAllocation>();
+        public DbSet<CustomerAccountAudit> CustomerAccountAudits => Set<CustomerAccountAudit>();
+        public Guid? LedgerActorId { get; set; }
         public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
         public DbSet<Coupon> Coupons => Set<Coupon>();
@@ -56,6 +60,23 @@ namespace onlineStore.Data
         {
 
             base.OnModelCreating(builder);
+            builder.Entity<StoreCustomer>().HasIndex(x => new { x.StoreId, x.NormalizedPhone });
+            builder.Entity<Order>().HasOne(x => x.AccountCustomer).WithMany()
+                .HasForeignKey(x => x.AccountCustomerId).OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<CustomerLedgerEntry>(e =>
+            {
+                e.HasOne(x => x.Customer).WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
+                e.HasOne(x => x.Order).WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+                e.HasIndex(x => new { x.StoreId, x.RequestKey }).IsUnique().HasFilter("[RequestKey] IS NOT NULL");
+                e.HasIndex(x => x.ReversesEntryId).IsUnique().HasFilter("[ReversesEntryId] IS NOT NULL");
+                e.HasIndex(x => new { x.StoreId, x.CustomerId, x.OccurredAt });
+            });
+            builder.Entity<CustomerPaymentAllocation>(e =>
+            {
+                e.HasOne(x => x.Entry).WithMany(x => x.Allocations).HasForeignKey(x => x.EntryId).OnDelete(DeleteBehavior.Restrict);
+                e.HasOne(x => x.Order).WithMany(x => x.PaymentAllocations).HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+                e.HasIndex(x => new { x.EntryId, x.OrderId }).IsUnique();
+            });
 
             // ════════════════════════════════════════════════════
             // منع Cascade Delete على كل العلاقات الرئيسية
@@ -69,6 +90,9 @@ namespace onlineStore.Data
                 .HasForeignKey(o => o.StoreId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+
+            builder.Entity<Store>().Property(s => s.RequireCustomerLoginForCheckout).HasDefaultValue(true);
+            builder.Entity<Store>().Property(s => s.EnableLanguageSwitching).HasDefaultValue(false);
 
             builder.Entity<Order>()
                 .HasOne(o => o.StoreCustomer)
@@ -424,9 +448,52 @@ namespace onlineStore.Data
         // ════════════════════════════════════════════════════════
         // SaveChangesAsync — Auto UpdatedAt + Security
         // ════════════════════════════════════════════════════════
-        public override Task<int> SaveChangesAsync(
+        public override async Task<int> SaveChangesAsync(
             CancellationToken cancellationToken = default)
         {
+            foreach (var entry in ChangeTracker.Entries<CustomerLedgerEntry>())
+                if (entry.State == EntityState.Deleted || (entry.State == EntityState.Modified && entry.Properties.Any(p => p.IsModified && p.Metadata.Name != nameof(CustomerLedgerEntry.CustomerId))))
+                    throw new InvalidOperationException("Posted financial entries cannot be edited; append a reversal.");
+            foreach (var allocation in ChangeTracker.Entries<CustomerPaymentAllocation>())
+                if (allocation.State is EntityState.Modified or EntityState.Deleted)
+                    throw new InvalidOperationException("Posted payment allocations cannot be edited.");
+            foreach (var customer in ChangeTracker.Entries<StoreCustomer>().Where(x => x.State is EntityState.Added or EntityState.Modified))
+                customer.Entity.NormalizedPhone = onlineStore.Utilities.CustomerPhone.Normalize(customer.Entity.Phone);
+
+            // Maintain order charges and the legacy receipt endpoint in the same database commit.
+            foreach (var tracked in ChangeTracker.Entries<Order>().Where(x => x.State is EntityState.Added or EntityState.Modified).ToList())
+            {
+                var order = tracked.Entity;
+                if (!order.AccountCustomerId.HasValue) continue;
+                var initialize = tracked.State == EntityState.Added || !order.AccountInitialized;
+                var chargeChanged = initialize || tracked.Property(x => x.TotalAmount).IsModified || tracked.Property(x => x.Status).IsModified || tracked.Property(x => x.IsDeleted).IsModified;
+                var receiptChanged = initialize || tracked.Property(x => x.ReceivedAmount).IsModified;
+                if (!chargeChanged && !receiptChanged) continue;
+                var customerId = order.AccountCustomerId.Value;
+                var customer = ChangeTracker.Entries<StoreCustomer>().Select(x => x.Entity).FirstOrDefault(x => x.Id == customerId)
+                    ?? await StoreCustomers.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == customerId, cancellationToken);
+                if (customer == null || customer.StoreId != order.StoreId) throw new InvalidOperationException("Customer belongs to another store.");
+                var existing = tracked.State == EntityState.Added ? new List<CustomerLedgerEntry>() :
+                    await CustomerLedgerEntries.Where(x => x.OrderId == order.Id && x.Kind == "OrderCharge").ToListAsync(cancellationToken);
+                var charge = order.IsDeleted || order.Status is onlineStore.Models.Enums.OrderStatus.Cancelled or onlineStore.Models.Enums.OrderStatus.Refunded ? 0m : order.TotalAmount;
+                var delta = charge - existing.Sum(x => x.Amount);
+                if (chargeChanged && delta != 0) CustomerLedgerEntries.Add(new CustomerLedgerEntry { StoreId = order.StoreId, CustomerId = customerId, OrderId = order.Id,
+                    Kind = "OrderCharge", Amount = delta, RecordedBy = LedgerActorId, OccurredAt = order.AccountInitialized ? DateTime.UtcNow : order.CreatedAt,
+                    Notes = order.AccountInitialized ? "تعديل قيمة الطلب أو حالته" : "قيمة الطلب" });
+                var allocations = tracked.State == EntityState.Added ? new List<CustomerPaymentAllocation>() :
+                    await CustomerPaymentAllocations.Where(x => x.OrderId == order.Id).ToListAsync(cancellationToken);
+                var pending = ChangeTracker.Entries<CustomerPaymentAllocation>().Where(x => x.State == EntityState.Added && x.Entity.OrderId == order.Id).Sum(x => x.Entity.Amount);
+                var receiptDelta = (order.ReceivedAmount ?? 0m) - allocations.Sum(x => x.Amount) - pending;
+                if (receiptChanged && receiptDelta != 0)
+                {
+                    var entry = new CustomerLedgerEntry { StoreId = order.StoreId, CustomerId = customerId, OrderId = order.Id,
+                        Kind = order.AccountInitialized ? "ReceiptCorrection" : "OpeningReceipt", Amount = -receiptDelta, RecordedBy = LedgerActorId,
+                        OccurredAt = order.AccountInitialized ? DateTime.UtcNow : order.CreatedAt, Notes = "مبلغ الاستلام المسجل على الطلب",
+                        Allocations = new() { new CustomerPaymentAllocation { OrderId = order.Id, Amount = receiptDelta } } };
+                    CustomerLedgerEntries.Add(entry);
+                }
+                order.AccountInitialized = true;
+            }
             // ────────────────────────────────────────────────────
             // ⚡ Auto UpdatedAt
             // السبب: بدل ما تكتب UpdatedAt = DateTime.UtcNow
@@ -446,7 +513,7 @@ namespace onlineStore.Data
                     entry.Property(x => x.CreatedAt).IsModified = false;
             }
 
-            return base.SaveChangesAsync(cancellationToken);
+            return await base.SaveChangesAsync(cancellationToken);
         }
     }
 }

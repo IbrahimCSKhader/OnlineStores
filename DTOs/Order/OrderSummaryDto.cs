@@ -17,19 +17,26 @@ namespace onlineStore.DTOs.Order
         public decimal DeliveryCost { get; set; }
         public decimal TotalAmount { get; set; }
         public decimal? ReceivedAmount { get; set; }
-        public decimal? RemainingAmount => ReceivedAmount.HasValue ? Math.Max(TotalAmount - ReceivedAmount.Value, 0m) : null;
-        public decimal? OverpaidAmount => ReceivedAmount.HasValue ? Math.Max(ReceivedAmount.Value - TotalAmount, 0m) : null;
+        public Guid? AccountCustomerId { get; set; }
+        public string? PaymentStatus { get; set; }
+        public decimal? RemainingAmount => ReceivedAmount.HasValue ? Math.Max((Status is OrderStatus.Cancelled or OrderStatus.Refunded ? 0m : TotalAmount) - ReceivedAmount.Value, 0m) : null;
+        public decimal? OverpaidAmount => ReceivedAmount.HasValue ? Math.Max(ReceivedAmount.Value - (Status is OrderStatus.Cancelled or OrderStatus.Refunded ? 0m : TotalAmount), 0m) : null;
         public int PointsEarned { get; set; }
 
-        public Guid StoreCustomerId { get; set; }
+        public Guid? StoreCustomerId { get; set; }
+        public bool IsGuest => !StoreCustomerId.HasValue;
         public string? CustomerName { get; set; }
         public string? CustomerEmail { get; set; }
         public string? CustomerPhone { get; set; }
+        public string? DeliveryPhone { get; set; }
+        public string? DeliveryAddress { get; set; }
+        public string? DeliveryCity { get; set; }
         public decimal CustomerDiscountPercentage { get; set; }
         public int CustomerPurchasePoints { get; set; }
 
         public bool ContainsBundles { get; set; }
         public int ItemsCount { get; set; }
+        public List<OrderProductPreviewDto> ProductPreviews { get; set; } = new();
         public Guid StoreId { get; set; }
         public Guid? CouponId { get; set; }
         public string? CouponCode { get; set; }
@@ -37,5 +44,14 @@ namespace onlineStore.DTOs.Order
         public decimal? CouponDiscountValue { get; set; }
 
         public DateTime CreatedAt { get; set; }
+    }
+
+    public class OrderProductPreviewDto
+    {
+        public Guid ProductId { get; set; }
+        public string ProductName { get; set; } = string.Empty;
+        public string? VariantName { get; set; }
+        public int Quantity { get; set; }
+        public string? ImageUrl { get; set; }
     }
 }

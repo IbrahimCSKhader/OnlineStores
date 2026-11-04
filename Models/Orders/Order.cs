@@ -63,8 +63,17 @@ namespace onlineStore.Models.Orders
         public Coupon? Coupon { get; set; }
 
         // FKs
-        public Guid StoreCustomerId { get; set; }
-        public StoreCustomer StoreCustomer { get; set; } = null!;
+        public Guid? StoreCustomerId { get; set; }
+        // Owner-only accounting association; never grants storefront access.
+        public Guid? AccountCustomerId { get; set; }
+        public StoreCustomer? AccountCustomer { get; set; }
+        public bool AccountInitialized { get; set; }
+        public ICollection<CustomerPaymentAllocation> PaymentAllocations { get; set; } = new List<CustomerPaymentAllocation>();
+        [MaxLength(200)]
+        public string? CustomerName { get; set; }
+        [MaxLength(256)]
+        public string? CustomerEmail { get; set; }
+        public StoreCustomer? StoreCustomer { get; set; }
 
         public Guid StoreId { get; set; }
         public Store Store { get; set; } = null!;
