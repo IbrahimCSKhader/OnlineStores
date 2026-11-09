@@ -34,6 +34,7 @@ namespace onlineStore.DTOs.Store
         public List<StoreDeliveryLocationDto>? DeliveryLocations { get; set; }
 
         public bool? EnableLanguageSwitching { get; set; }
+        public bool? EnableCustomerRegistrationPrompt { get; set; }
         public bool? IsActive { get; set; }
         public bool? RequireCustomerLoginForCheckout { get; set; }
         public List<StoreContactAccountInputDto>? ContactAccounts { get; set; }

@@ -93,8 +93,8 @@ namespace onlineStore.Services.Subscription
             if (plan == null)
                 return null;
 
-            var newMaxProducts = dto.MaxProducts ?? plan.MaxProducts;
-            var newMaxImages = dto.MaxImagesPerProduct ?? plan.MaxImagesPerProduct;
+            var newMaxProducts = dto.ClearMaxProducts ? null : dto.MaxProducts ?? plan.MaxProducts;
+            var newMaxImages = dto.ClearMaxImagesPerProduct ? null : dto.MaxImagesPerProduct ?? plan.MaxImagesPerProduct;
             ValidateLimits(newMaxProducts, newMaxImages);
 
             if (dto.Code != null)
@@ -116,8 +116,8 @@ namespace onlineStore.Services.Subscription
             if (dto.Description != null) plan.Description = NormalizeNullable(dto.Description);
             if (dto.Price.HasValue) plan.Price = dto.Price.Value;
             if (dto.Currency != null) plan.Currency = NormalizeCurrency(dto.Currency);
-            if (dto.MaxProducts.HasValue) plan.MaxProducts = dto.MaxProducts;
-            if (dto.MaxImagesPerProduct.HasValue) plan.MaxImagesPerProduct = dto.MaxImagesPerProduct;
+            plan.MaxProducts = newMaxProducts;
+            plan.MaxImagesPerProduct = newMaxImages;
             if (dto.CanUseOffers.HasValue) plan.CanUseOffers = dto.CanUseOffers.Value;
             if (dto.CanUseCoupons.HasValue) plan.CanUseCoupons = dto.CanUseCoupons.Value;
             if (dto.CanUseAnalytics.HasValue) plan.CanUseAnalytics = dto.CanUseAnalytics.Value;

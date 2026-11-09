@@ -25,6 +25,9 @@ namespace onlineStore.DTOs.Subscription
         [Range(0, int.MaxValue)]
         public int? MaxImagesPerProduct { get; set; }
 
+        public bool ClearMaxProducts { get; set; }
+        public bool ClearMaxImagesPerProduct { get; set; }
+
         public bool? CanUseOffers { get; set; }
         public bool? CanUseCoupons { get; set; }
         public bool? CanUseAnalytics { get; set; }

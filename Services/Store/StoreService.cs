@@ -250,6 +250,14 @@ namespace onlineStore.Services.Store
 
             await EnsureCanManageStoreAsync(id);
 
+            if (dto.EnableCustomerRegistrationPrompt.HasValue)
+            {
+                if (!_currentUser.IsSuperAdmin)
+                    throw new UnauthorizedAccessException("تعديل تحفيز تسجيل حساب متاح لمدير النظام فقط.");
+
+                store.EnableCustomerRegistrationPrompt = dto.EnableCustomerRegistrationPrompt.Value;
+            }
+
             if (dto.RequireCustomerLoginForCheckout.HasValue)
                 store.RequireCustomerLoginForCheckout = dto.RequireCustomerLoginForCheckout.Value;
 
@@ -376,6 +384,7 @@ namespace onlineStore.Services.Store
             IsActive = s.IsActive,
             IsCatalog = s.IsCatalog,
             EnableLanguageSwitching = s.EnableLanguageSwitching,
+            EnableCustomerRegistrationPrompt = s.EnableCustomerRegistrationPrompt,
             DefaultLanguage = StoreLanguages.NormalizeOrDefault(s.Language),
             SupportedLanguages = s.EnableLanguageSwitching
                 ? StoreLanguages.Supported

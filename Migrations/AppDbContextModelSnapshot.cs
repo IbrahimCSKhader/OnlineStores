@@ -1392,6 +1392,11 @@ namespace onlineStore.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<bool>("EnableCustomerRegistrationPrompt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("EnableLanguageSwitching")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")

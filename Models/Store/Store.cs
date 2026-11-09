@@ -32,6 +32,7 @@ namespace onlineStore.Models
 
         public bool IsCatalog { get; set; } = false;
         public bool EnableLanguageSwitching { get; set; } = false;
+        public bool EnableCustomerRegistrationPrompt { get; set; }
         public bool RequireCustomerLoginForCheckout { get; set; } = true;
 
         public bool IsActive { get; set; } = true;

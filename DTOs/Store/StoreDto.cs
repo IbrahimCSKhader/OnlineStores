@@ -14,6 +14,7 @@ namespace onlineStore.DTOs.Store
 
         public bool IsCatalog { get; set; } = false;
         public bool EnableLanguageSwitching { get; set; } = false;
+        public bool EnableCustomerRegistrationPrompt { get; set; }
         public bool RequireCustomerLoginForCheckout { get; set; } = true;
         public string? LogoUrl { get; set; }
         public string? CoverImageUrl { get; set; }

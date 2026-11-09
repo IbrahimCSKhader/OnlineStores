@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using onlineStore.DTOs.SuperAdminDashboard;
+using onlineStore.Models.Identity;
 using onlineStore.Services.SuperAdminDashboard;
 
 namespace onlineStore.Controllers
@@ -15,6 +17,25 @@ namespace onlineStore.Controllers
         public SuperAdminDashboardController(ISuperAdminDashboardService superAdminDashboardService)
         {
             _superAdminDashboardService = superAdminDashboardService;
+        }
+
+        [HttpGet("private-access")]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+        public async Task<IActionResult> VerifyPrivateAccess(
+            [FromServices] IConfiguration configuration,
+            [FromServices] UserManager<AppUser> userManager)
+        {
+            var allowedEmail = configuration["SecretAdmin:Email"]?.Trim();
+            if (string.IsNullOrWhiteSpace(allowedEmail))
+                return StatusCode(503, new { message = "لم يتم إعداد حساب الدخول الخاص بعد." });
+
+            var user = await userManager.GetUserAsync(User);
+            if (user == null || !user.IsActive || user.IsDeleted ||
+                !string.Equals(user.NormalizedEmail, userManager.NormalizeEmail(allowedEmail), StringComparison.Ordinal) ||
+                !await userManager.IsInRoleAsync(user, "SuperAdmin"))
+                return Forbid();
+
+            return NoContent();
         }
 
         [HttpGet("summary")]

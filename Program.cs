@@ -638,6 +638,19 @@ app.UseRateLimiter();
 
 app.MapControllers();
 
+if (args.Contains("--provision-secret-admin", StringComparer.OrdinalIgnoreCase))
+{
+    var email = app.Configuration["SecretAdmin:Email"]?.Trim();
+    var password = app.Configuration["SecretAdmin:ProvisionPassword"];
+    if (string.IsNullOrWhiteSpace(email) || string.IsNullOrEmpty(password))
+        throw new InvalidOperationException("Set SecretAdmin:Email and SecretAdmin:ProvisionPassword before provisioning.");
+
+    using var scope = app.Services.CreateScope();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+    await EnsureSuperAdminAccount(userManager, email, password, "مدير", "موجة", resetPassword: true);
+    return;
+}
+
 
 if (repairLifestylePhotos)
 {
@@ -796,27 +809,21 @@ async Task EnsureSuperAdminAccount(
         }
     }
 
-    if (!await userManager.IsInRoleAsync(adminUser, "SuperAdmin"))
-    {
-        var addRoleResult = await userManager.AddToRoleAsync(adminUser, "SuperAdmin");
-        EnsureIdentityResultSucceeded(addRoleResult, $"assign SuperAdmin role to {email}");
-    }
-
     if (resetPassword && !await userManager.CheckPasswordAsync(adminUser, password))
     {
-        var removePasswordResult = await userManager.RemovePasswordAsync(adminUser);
-        if (!removePasswordResult.Succeeded &&
-            !removePasswordResult.Errors.Any(error => string.Equals(error.Code, "UserHasNoPassword", StringComparison.OrdinalIgnoreCase)))
-        {
-            EnsureIdentityResultSucceeded(removePasswordResult, $"remove old password for {email}");
-        }
-
-        var addPasswordResult = await userManager.AddPasswordAsync(adminUser, password);
-        EnsureIdentityResultSucceeded(addPasswordResult, $"set password for {email}");
+        var resetToken = await userManager.GeneratePasswordResetTokenAsync(adminUser);
+        var resetResult = await userManager.ResetPasswordAsync(adminUser, resetToken, password);
+        EnsureIdentityResultSucceeded(resetResult, $"set password for {email}");
 
         await userManager.ResetAccessFailedCountAsync(adminUser);
         await userManager.SetLockoutEndDateAsync(adminUser, null);
         await userManager.UpdateSecurityStampAsync(adminUser);
+    }
+
+    if (!await userManager.IsInRoleAsync(adminUser, "SuperAdmin"))
+    {
+        var addRoleResult = await userManager.AddToRoleAsync(adminUser, "SuperAdmin");
+        EnsureIdentityResultSucceeded(addRoleResult, $"assign SuperAdmin role to {email}");
     }
 }
 

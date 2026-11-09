@@ -93,6 +93,7 @@ namespace onlineStore.Data
 
             builder.Entity<Store>().Property(s => s.RequireCustomerLoginForCheckout).HasDefaultValue(true);
             builder.Entity<Store>().Property(s => s.EnableLanguageSwitching).HasDefaultValue(false);
+            builder.Entity<Store>().Property(s => s.EnableCustomerRegistrationPrompt).HasDefaultValue(false);
 
             builder.Entity<Order>()
                 .HasOne(o => o.StoreCustomer)
