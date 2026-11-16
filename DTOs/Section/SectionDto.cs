@@ -4,6 +4,10 @@ namespace onlineStore.DTOs.Section
 {
     public class SectionDto
     {
+        public List<onlineStore.DTOs.Store.CatalogTranslationDto>? Translations { get; set; }
+        public string? BaseName { get; set; }
+        public string? BaseDescription { get; set; }
+
         public Guid Id { get; set; }
         public string Name { get; set; }
         public string Slug { get; set; }

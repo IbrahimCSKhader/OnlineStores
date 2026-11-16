@@ -1,7 +1,9 @@
-﻿namespace onlineStore.DTOs.Category
+namespace onlineStore.DTOs.Category
 {
     public class UpdateCategoryDto
     {
+        public List<onlineStore.DTOs.Store.CatalogTranslationDto>? Translations { get; set; }
+
         public string? Name { get; set; }
         public string? Description { get; set; }
         public string? ImageUrl { get; set; }

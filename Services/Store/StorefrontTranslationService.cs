@@ -48,8 +48,16 @@ public sealed class StorefrontTranslationService : IStorefrontTranslationService
     {
         var normalizedLanguage = await ResolveLanguageAsync(storeId, language, cancellationToken);
         SetLanguage(categories, normalizedLanguage);
+        var editableTranslations = await CatalogTranslations.ReadAsync(_context, storeId,
+            StoreTranslationEntityTypes.Category, categories.Select(x => x.Id), cancellationToken);
+        foreach (var item in categories)
+        {
+            item.BaseName = item.Name;
+            item.BaseDescription = item.Description ?? string.Empty;
+            item.Translations = editableTranslations.GetValueOrDefault(item.Id, []);
+        }
 
-        if (StoreLanguages.IsBaseLanguage(normalizedLanguage) || categories.Count == 0)
+        if (categories.Count == 0)
             return;
 
         var translations = await LoadTranslationsAsync(
@@ -73,8 +81,16 @@ public sealed class StorefrontTranslationService : IStorefrontTranslationService
     {
         var normalizedLanguage = await ResolveLanguageAsync(storeId, language, cancellationToken);
         SetLanguage(sections, normalizedLanguage);
+        var editableTranslations = await CatalogTranslations.ReadAsync(_context, storeId,
+            StoreTranslationEntityTypes.Section, sections.Select(x => x.Id), cancellationToken);
+        foreach (var item in sections)
+        {
+            item.BaseName = item.Name;
+            item.BaseDescription = item.Description ?? string.Empty;
+            item.Translations = editableTranslations.GetValueOrDefault(item.Id, []);
+        }
 
-        if (StoreLanguages.IsBaseLanguage(normalizedLanguage) || sections.Count == 0)
+        if (sections.Count == 0)
             return;
 
         var translations = await LoadTranslationsAsync(
@@ -113,8 +129,17 @@ public sealed class StorefrontTranslationService : IStorefrontTranslationService
     {
         var normalizedLanguage = await ResolveLanguageAsync(storeId, language, cancellationToken);
         SetLanguage(products, normalizedLanguage);
+        var editableTranslations = await CatalogTranslations.ReadAsync(_context, storeId,
+            StoreTranslationEntityTypes.Product, products.Select(x => x.Id), cancellationToken);
+        foreach (var item in products)
+        {
+            item.BaseName = item.Name;
+            item.BaseDescription = item.Description ?? string.Empty;
+            item.BaseShortDescription = item.ShortDescription ?? string.Empty;
+            item.Translations = editableTranslations.GetValueOrDefault(item.Id, []);
+        }
 
-        if (StoreLanguages.IsBaseLanguage(normalizedLanguage) || products.Count == 0)
+        if (products.Count == 0)
             return;
 
         var entityIds = products

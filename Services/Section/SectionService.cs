@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using onlineStore.Data;
 using onlineStore.DTOs.Section;
 using onlineStore.Security;
@@ -103,11 +103,17 @@ namespace onlineStore.Services.Section
             };
 
             _context.Sections.Add(section);
+            await CatalogTranslations.StageAsync(_context, section.StoreId, onlineStore.Models.StoreTranslationEntityTypes.Section,
+                section.Id, dto.Translations, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Section created: {SectionName}", section.Name);
 
-            return ToDto(section);
+            var result = ToDto(section);
+            var translations = await CatalogTranslations.ReadAsync(_context, section.StoreId,
+                onlineStore.Models.StoreTranslationEntityTypes.Section, [section.Id], cancellationToken);
+            result.Translations = translations.GetValueOrDefault(section.Id, []);
+            return result;
         }
 
         public async Task<SectionDto?> UpdateSectionAsync(
@@ -135,11 +141,17 @@ namespace onlineStore.Services.Section
             if (dto.IsActive.HasValue)
                 section.IsActive = dto.IsActive.Value;
 
+            await CatalogTranslations.StageAsync(_context, section.StoreId, onlineStore.Models.StoreTranslationEntityTypes.Section,
+                section.Id, dto.Translations, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Section updated: {SectionId}", id);
 
-            return ToDto(section);
+            var result = ToDto(section);
+            var translations = await CatalogTranslations.ReadAsync(_context, section.StoreId,
+                onlineStore.Models.StoreTranslationEntityTypes.Section, [section.Id], cancellationToken);
+            result.Translations = translations.GetValueOrDefault(section.Id, []);
+            return result;
         }
 
         public async Task<bool> DeleteSectionAsync(

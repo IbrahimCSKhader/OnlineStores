@@ -1,4 +1,4 @@
-﻿// DTOs/Product/CreateProductDto.cs
+// DTOs/Product/CreateProductDto.cs
 using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -7,6 +7,8 @@ namespace onlineStore.DTOs.Product
 {
     public class CreateProductDto
     {
+        public List<onlineStore.DTOs.Store.CatalogTranslationDto>? Translations { get; set; }
+
         [Required, MaxLength(200)]
         public string Name { get; set; } = string.Empty;
 

@@ -94,7 +94,11 @@ namespace onlineStore.Services.Product
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
 
-            return products.Select(p => ToDto(p, 0m, includeManagementFields: true)).ToList();
+            var result = products.Select(p => ToDto(p, 0m, includeManagementFields: true)).ToList();
+            var translations = await CatalogTranslations.ReadAsync(_context, storeId,
+                onlineStore.Models.StoreTranslationEntityTypes.Product, result.Select(p => p.Id));
+            foreach (var item in result) item.Translations = translations.GetValueOrDefault(item.Id, []);
+            return result;
         }
 
         // ════════════════════════════════════════════════════
@@ -437,6 +441,8 @@ namespace onlineStore.Services.Product
             }
 
             _context.Products.Add(product);
+            await CatalogTranslations.StageAsync(_context, product.StoreId, onlineStore.Models.StoreTranslationEntityTypes.Product,
+                product.Id, dto.Translations);
             await _context.SaveChangesAsync();
 
             CreateProductFolder(dto.StoreId, product.Id);
@@ -479,7 +485,11 @@ namespace onlineStore.Services.Product
 
             _logger.LogInformation("Product created: {ProductName}", product.Name);
 
-            return ToDto(createdProduct, 0m, includeManagementFields: true);
+            var result = ToDto(createdProduct, 0m, includeManagementFields: true);
+            var translations = await CatalogTranslations.ReadAsync(_context, product.StoreId,
+                onlineStore.Models.StoreTranslationEntityTypes.Product, [product.Id]);
+            result.Translations = translations.GetValueOrDefault(product.Id, []);
+            return result;
         }
 
         // ════════════════════════════════════════════════════
@@ -569,6 +579,8 @@ namespace onlineStore.Services.Product
                 product.SectionId = dto.SectionId.Value;
             }
 
+            await CatalogTranslations.StageAsync(_context, product.StoreId, onlineStore.Models.StoreTranslationEntityTypes.Product,
+                product.Id, dto.Translations);
             await _context.SaveChangesAsync();
 
             if (dto.Images != null && dto.Images.Any())
@@ -613,7 +625,11 @@ namespace onlineStore.Services.Product
 
             _logger.LogInformation("Product updated: {ProductId}", id);
 
-            return ToDto(updatedProduct, 0m, includeManagementFields: true);
+            var result = ToDto(updatedProduct, 0m, includeManagementFields: true);
+            var translations = await CatalogTranslations.ReadAsync(_context, product.StoreId,
+                onlineStore.Models.StoreTranslationEntityTypes.Product, [product.Id]);
+            result.Translations = translations.GetValueOrDefault(product.Id, []);
+            return result;
         }
 
         // ════════════════════════════════════════════════════

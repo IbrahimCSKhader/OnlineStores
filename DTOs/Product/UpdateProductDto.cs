@@ -1,4 +1,4 @@
-﻿// DTOs/Product/UpdateProductDto.cs
+// DTOs/Product/UpdateProductDto.cs
 using Microsoft.AspNetCore.Http;
 using onlineStore.Models.Enums;
 using System.ComponentModel.DataAnnotations;
@@ -7,6 +7,8 @@ namespace onlineStore.DTOs.Product
 {
     public class UpdateProductDto
     {
+        public List<onlineStore.DTOs.Store.CatalogTranslationDto>? Translations { get; set; }
+
         [MaxLength(200)]
         public string? Name { get; set; }
 

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using onlineStore.Data;
 using onlineStore.DTOs.Category;
 using onlineStore.Security;
@@ -106,9 +106,15 @@ namespace onlineStore.Services.Category
             };
 
             _context.Categories.Add(category);
+            await CatalogTranslations.StageAsync(_context, category.StoreId, onlineStore.Models.StoreTranslationEntityTypes.Category,
+                category.Id, dto.Translations, cancellationToken);
             await SaveWithImageAsync(category, dto.ImageFile, cancellationToken);
 
-            return ToDto(category);
+            var result = ToDto(category);
+            var translations = await CatalogTranslations.ReadAsync(_context, category.StoreId,
+                onlineStore.Models.StoreTranslationEntityTypes.Category, [category.Id], cancellationToken);
+            result.Translations = translations.GetValueOrDefault(category.Id, []);
+            return result;
         }
 
         public async Task<CategoryDto?> UpdateCategoryAsync(
@@ -139,9 +145,15 @@ namespace onlineStore.Services.Category
             if (dto.IsActive.HasValue)
                 category.IsActive = dto.IsActive.Value;
 
+            await CatalogTranslations.StageAsync(_context, category.StoreId, onlineStore.Models.StoreTranslationEntityTypes.Category,
+                category.Id, dto.Translations, cancellationToken);
             await SaveWithImageAsync(category, dto.ImageFile, cancellationToken);
 
-            return ToDto(category);
+            var result = ToDto(category);
+            var translations = await CatalogTranslations.ReadAsync(_context, category.StoreId,
+                onlineStore.Models.StoreTranslationEntityTypes.Category, [category.Id], cancellationToken);
+            result.Translations = translations.GetValueOrDefault(category.Id, []);
+            return result;
         }
 
         public async Task<bool> DeleteCategoryAsync(

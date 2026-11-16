@@ -1,4 +1,4 @@
-﻿// DTOs/Product/ProductDto.cs
+// DTOs/Product/ProductDto.cs
 using onlineStore.Models;
 using onlineStore.Models.Enums;
 
@@ -6,6 +6,11 @@ namespace onlineStore.DTOs.Product
 {
     public class ProductDto
     {
+        public List<onlineStore.DTOs.Store.CatalogTranslationDto>? Translations { get; set; }
+        public string? BaseName { get; set; }
+        public string? BaseDescription { get; set; }
+        public string? BaseShortDescription { get; set; }
+
         public Guid Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty;
