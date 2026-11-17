@@ -75,7 +75,7 @@ public static class JubehSeedData
             StoreStory = "الجعبة للأثاث المكتبي يعرض تشكيلة من المكاتب والكراسي والخزائن للمكاتب ومساحات العمل. للاستفسار عن الأسعار والمقاسات والتوفر، تواصلوا معنا على الأرقام التالية:\n0568067006\n0528601833",
             WhatsAppNumber = "972528601833",
             LogoUrl = $"{AssetPath}/logo.png",
-            CoverImageUrl = $"{AssetPath}/ribbed-desk.jpg",
+            CoverImageUrl = $"{AssetPath}/logo.png",
             ThemeTemplate = StoreThemeTemplates.AppNavbar,
             Language = StoreLanguages.Arabic,
             EnableLanguageSwitching = true,
