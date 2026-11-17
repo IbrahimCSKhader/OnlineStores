@@ -106,6 +106,9 @@ namespace onlineStore.Services.Cart
                     throw new Exception("المنتج غير موجود");
                 }
 
+                if (product.PriceOnRequest && product.Price <= 0m)
+                    throw new InvalidOperationException("السعر عند الاستفسار");
+
                 _logger.LogInformation(
                     "Product found. ProductId: {ProductId}, ProductName: {ProductName}, TrackInventory: {TrackInventory}, StockQuantity: {StockQuantity}, Price: {Price}",
                     product.Id, product.Name, product.TrackInventory, product.StockQuantity, product.Price);

@@ -75,6 +75,10 @@ builder.Services.AddRateLimiter(options =>
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
         { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    options.AddPolicy("store-ratings", context => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+        { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -411,6 +415,8 @@ builder.Services.AddScoped<ICartPricingService, CartPricingService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
+builder.Services.AddScoped<StoreFavoriteService>();
+builder.Services.AddScoped<StoreStatisticsService>();
 builder.Services.AddScoped<IStorefrontTranslationService, StorefrontTranslationService>();
 builder.Services.AddScoped<ISectionService, SectionService>();
 builder.Services.AddScoped<ICustomerStoreService, CustomerStoreService>();
@@ -668,6 +674,17 @@ if (repairAlsujoodAssets)
     return;
 }
 
+if (args.Contains("--seed-jubeh", StringComparer.OrdinalIgnoreCase))
+{
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await context.Database.MigrateAsync();
+    await JubehSeedData.SeedAsync(context,
+        scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>(),
+        scope.ServiceProvider.GetRequiredService<RoleManager<AppRole>>());
+    return;
+}
+
 if (!skipStartupSeed)
 {
     using var scope = app.Services.CreateScope();
@@ -687,6 +704,7 @@ if (!skipStartupSeed)
 
     await SeedRolesAndAdmin(userManager, roleManager);
     await ElectroPulseSeedData.SeedAsync(context, userManager, app.Environment.WebRootPath);
+    await JubehSeedData.SeedAsync(context, userManager, roleManager);
     await LifestyleSeedData.SeedAsync(context, userManager, app.Environment.WebRootPath);
     await EnsureStoreOwnerRolesForAssignedStores(context, userManager);
 }

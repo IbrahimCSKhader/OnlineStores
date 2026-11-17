@@ -1551,6 +1551,7 @@ namespace onlineStore.Services.Product
             return query
                 .Select(p => new ProductDto
                 {
+                    IsPriceOnRequest = p.PriceOnRequest && p.Price <= 0m,
                     Id = p.Id,
                     Name = p.Name,
                     Slug = p.Slug,
@@ -1787,6 +1788,7 @@ namespace onlineStore.Services.Product
 
             return new ProductDto
             {
+                IsPriceOnRequest = p.PriceOnRequest && p.Price <= 0m,
                 Id = p.Id,
                 Name = p.Name,
                 Slug = p.Slug,

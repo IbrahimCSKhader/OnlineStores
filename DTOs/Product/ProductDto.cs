@@ -20,6 +20,7 @@ namespace onlineStore.DTOs.Product
         public string? ShortDescription { get; set; }
 
         public decimal Price { get; set; }
+        public bool IsPriceOnRequest { get; set; }
         public decimal OriginalPrice { get; set; }
         public decimal FinalPrice { get; set; }
         public decimal AppliedDiscountPercentage { get; set; }

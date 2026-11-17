@@ -991,6 +991,9 @@ namespace onlineStore.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<bool>("PriceOnRequest")
+                        .HasColumnType("bit");
+
                     b.Property<string>("SKU")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -1321,6 +1324,28 @@ namespace onlineStore.Migrations
                     b.ToTable("Reviews");
                 });
 
+            modelBuilder.Entity("onlineStore.Models.Reviews.StoreRating", b =>
+                {
+                    b.Property<Guid>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsGuest")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("VoterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int");
+
+                    b.HasKey("StoreId", "IsGuest", "VoterId");
+
+                    b.ToTable("StoreRatings", t =>
+                        {
+                            t.HasCheckConstraint("CK_StoreRatings_Score", "[Score] BETWEEN 1 AND 5");
+                        });
+                });
+
             modelBuilder.Entity("onlineStore.Models.Section", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1477,7 +1502,7 @@ namespace onlineStore.Migrations
                         {
                             t.HasCheckConstraint("CK_Stores_Language", "[Language] IN ('A', 'E', 'I')");
 
-                            t.HasCheckConstraint("CK_Stores_ThemeTemplate", "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U', 'N', 'V', 'Y', 'E', 'R', 'T')");
+                            t.HasCheckConstraint("CK_Stores_ThemeTemplate", "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U', 'N', 'V', 'Y', 'E', 'R', 'T', 'O')");
                         });
                 });
 
@@ -1674,6 +1699,24 @@ namespace onlineStore.Migrations
                         {
                             t.HasCheckConstraint("CK_StoreDeliveryLocations_Cost", "[Cost] >= 0");
                         });
+                });
+
+            modelBuilder.Entity("onlineStore.Models.StoreFavorite", b =>
+                {
+                    b.Property<Guid>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("StoreId", "CustomerId", "ProductId");
+
+                    b.HasIndex("StoreId", "ProductId");
+
+                    b.ToTable("StoreFavorites");
                 });
 
             modelBuilder.Entity("onlineStore.Models.StoreRegistrationVisit", b =>
@@ -2284,6 +2327,15 @@ namespace onlineStore.Migrations
                     b.Navigation("StoreCustomer");
                 });
 
+            modelBuilder.Entity("onlineStore.Models.Reviews.StoreRating", b =>
+                {
+                    b.HasOne("onlineStore.Models.Store", null)
+                        .WithMany()
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("onlineStore.Models.Section", b =>
                 {
                     b.HasOne("onlineStore.Models.Store", "Store")
@@ -2348,6 +2400,23 @@ namespace onlineStore.Migrations
                         .IsRequired();
 
                     b.Navigation("Store");
+                });
+
+            modelBuilder.Entity("onlineStore.Models.StoreFavorite", b =>
+                {
+                    b.HasOne("onlineStore.Models.StoreCustomer", null)
+                        .WithMany()
+                        .HasForeignKey("StoreId", "CustomerId")
+                        .HasPrincipalKey("StoreId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("onlineStore.Models.Product", null)
+                        .WithMany()
+                        .HasForeignKey("StoreId", "ProductId")
+                        .HasPrincipalKey("StoreId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("onlineStore.Models.StoreTranslation", b =>

@@ -48,6 +48,8 @@ namespace onlineStore.Data
         public DbSet<Coupon> Coupons => Set<Coupon>();
 
         public DbSet<Review> Reviews => Set<Review>();
+        public DbSet<StoreFavorite> StoreFavorites => Set<StoreFavorite>();
+        public DbSet<StoreRating> StoreRatings => Set<StoreRating>();
 
         public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
         public DbSet<StoreSubscription> StoreSubscriptions => Set<StoreSubscription>();
@@ -60,6 +62,25 @@ namespace onlineStore.Data
         {
 
             base.OnModelCreating(builder);
+            builder.Entity<StoreFavorite>(entity =>
+            {
+                entity.HasKey(x => new { x.StoreId, x.CustomerId, x.ProductId });
+                entity.HasOne<StoreCustomer>().WithMany()
+                    .HasForeignKey(x => new { x.StoreId, x.CustomerId })
+                    .HasPrincipalKey(x => new { x.StoreId, x.Id })
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<Product>().WithMany()
+                    .HasForeignKey(x => new { x.StoreId, x.ProductId })
+                    .HasPrincipalKey(x => new { x.StoreId, x.Id })
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+            builder.Entity<StoreRating>(entity =>
+            {
+                entity.HasKey(x => new { x.StoreId, x.IsGuest, x.VoterId });
+                entity.HasOne<Store>().WithMany().HasForeignKey(x => x.StoreId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.ToTable(table => table.HasCheckConstraint("CK_StoreRatings_Score", "[Score] BETWEEN 1 AND 5"));
+            });
             builder.Entity<StoreCustomer>().HasIndex(x => new { x.StoreId, x.NormalizedPhone });
             builder.Entity<Order>().HasOne(x => x.AccountCustomer).WithMany()
                 .HasForeignKey(x => x.AccountCustomerId).OnDelete(DeleteBehavior.Restrict);
@@ -240,7 +261,7 @@ namespace onlineStore.Data
                 {
                     t.HasCheckConstraint(
                         "CK_Stores_ThemeTemplate",
-                        "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U', 'N', 'V', 'Y', 'E', 'R', 'T')");
+                        "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U', 'N', 'V', 'Y', 'E', 'R', 'T', 'O')");
                     t.HasCheckConstraint(
                         "CK_Stores_Language",
                         "[Language] IN ('A', 'E', 'I')");

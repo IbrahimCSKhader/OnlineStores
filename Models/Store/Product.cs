@@ -36,6 +36,7 @@ namespace onlineStore.Models
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
+        public bool PriceOnRequest { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal? CompareAtPrice { get; set; }

@@ -420,20 +420,18 @@ namespace onlineStore.Services.Store
 
         public async Task<int?> IncrementStoreVisitAsync(Guid storeId)
         {
-            var store = await _context.Stores
-                .FirstOrDefaultAsync(s => s.Id == storeId);
-
-            if (store == null)
+            var store = _context.Stores.Where(s => s.Id == storeId && s.IsActive);
+            var updated = await store.ExecuteUpdateAsync(setters =>
+                setters.SetProperty(s => s.VisitCount, s => s.VisitCount + 1));
+            if (updated == 0)
                 return null;
 
-            store.VisitCount += 1;
-            await _context.SaveChangesAsync();
-
+            var visitCount = await store.Select(s => (int?)s.VisitCount).FirstOrDefaultAsync();
             _logger.LogInformation(
                 "Store visit incremented: {StoreId}, Count: {VisitCount}",
-                storeId, store.VisitCount);
+                storeId, visitCount);
 
-            return store.VisitCount;
+            return visitCount;
         }
 
         public async Task<int?> GetStoreVisitCountAsync(Guid storeId)

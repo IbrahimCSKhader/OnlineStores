@@ -18,6 +18,7 @@ public class StoreThemeTemplatesTests
         StoreThemeTemplates.DeepGreen,
         StoreThemeTemplates.Red,
         StoreThemeTemplates.ElectroPulse,
+        StoreThemeTemplates.AppNavbar,
     };
 
     [Theory]
@@ -32,6 +33,12 @@ public class StoreThemeTemplatesTests
     {
         Assert.True(StoreThemeTemplates.IsValid(" t "));
         Assert.Equal(StoreThemeTemplates.ElectroPulse, StoreThemeTemplates.NormalizeOrThrow(" t "));
+    }
+
+    [Fact]
+    public void AppNavbar_CanBeSavedThroughStoreValidation()
+    {
+        Assert.Equal(StoreThemeTemplates.AppNavbar, StoreThemeTemplates.NormalizeOrThrow(" o "));
     }
 
     [Fact]
