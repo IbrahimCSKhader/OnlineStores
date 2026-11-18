@@ -19,6 +19,7 @@ public class StoreThemeTemplatesTests
         StoreThemeTemplates.Red,
         StoreThemeTemplates.ElectroPulse,
         StoreThemeTemplates.AppNavbar,
+        StoreThemeTemplates.CategoryGrid,
     };
 
     [Theory]
@@ -33,6 +34,12 @@ public class StoreThemeTemplatesTests
     {
         Assert.True(StoreThemeTemplates.IsValid(" t "));
         Assert.Equal(StoreThemeTemplates.ElectroPulse, StoreThemeTemplates.NormalizeOrThrow(" t "));
+    }
+
+    [Fact]
+    public void CategoryGrid_CanBeSavedThroughStoreValidation()
+    {
+        Assert.Equal(StoreThemeTemplates.CategoryGrid, StoreThemeTemplates.NormalizeOrThrow(" c "));
     }
 
     [Fact]
