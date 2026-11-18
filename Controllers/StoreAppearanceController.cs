@@ -62,7 +62,7 @@ public class StoreAppearanceController(AppDbContext context) : ControllerBase
     public async Task<IActionResult> ResetProperty(Guid storeId, string mode, string property, CancellationToken ct)
     {
         if (mode is not ("light" or "dark") ||
-            !StoreAppearancePolicy.Colors.Concat(StoreAppearancePolicy.Fonts).Concat(StoreAppearancePolicy.Sizes).Contains(property))
+            !StoreAppearancePolicy.Colors.Concat(StoreAppearancePolicy.Fonts).Concat(StoreAppearancePolicy.Sizes).Concat(StoreAppearancePolicy.Toggles).Contains(property))
             return BadRequest();
         if (!await context.Stores.AnyAsync(x => x.Id == storeId, ct)) return NotFound();
         var row = await context.Set<StoreAppearance>().SingleOrDefaultAsync(x => x.StoreId == storeId, ct);

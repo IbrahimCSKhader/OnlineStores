@@ -17,6 +17,15 @@ namespace onlineStore.Tests;
 public class StoreAppearanceTests
 {
     [Theory]
+    [InlineData("true")]
+    [InlineData("false")]
+    public void AcceptsStatisticsVisibilityInExistingAppearanceSettings(string value)
+    {
+        var result = StoreAppearancePolicy.Validate(new() { Light = new() { ["showStoreStatistics"] = value } });
+        Assert.Equal(value, result.Light["showStoreStatistics"]);
+    }
+
+    [Theory]
     [InlineData("primary", "red")]
     [InlineData("primary", "#fff; background:url(https://example.com)")]
     [InlineData("fontFamily", "url(example.com)")]
@@ -24,6 +33,7 @@ public class StoreAppearanceTests
     [InlineData("fontSize", "97px")]
     [InlineData("fontSize", "16.5px")]
     [InlineData("unknown", "#ffffff")]
+    [InlineData("showStoreStatistics", "hidden")]
     public void RejectsUnsafeAndUnknownValues(string key, string value)
     {
         Assert.Throws<ArgumentException>(() => StoreAppearancePolicy.Validate(new() { Light = new() { [key] = value } }));
