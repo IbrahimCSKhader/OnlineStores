@@ -19,7 +19,7 @@ public static class StoreAppearancePolicy
 
     public static StoreAppearanceDto Validate(StoreAppearanceDto dto)
     {
-        return new() { Light = ValidateMode(dto.Light), Dark = ValidateMode(dto.Dark) };
+        return new() { Light = ValidateMode(dto.Light), Dark = ValidateMode(dto.Dark), Sections = dto.Sections };
     }
 
     private static Dictionary<string, string> ValidateMode(Dictionary<string, string>? values)

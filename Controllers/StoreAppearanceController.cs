@@ -31,14 +31,17 @@ public class StoreAppearanceController(AppDbContext context) : ControllerBase
         catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
         if (!await context.Stores.AnyAsync(x => x.Id == storeId, ct)) return NotFound();
         var row = await context.Set<StoreAppearance>().SingleOrDefaultAsync(x => x.StoreId == storeId, ct);
-        if (validated.Light.Count + validated.Dark.Count == 0)
+        validated.Sections = StoreAppearancePolicy.Read(row?.OverridesJson).Sections;
+        if (validated.Light.Count + validated.Dark.Count == 0 && validated.Sections == null)
         {
             if (row != null) context.Remove(row);
         }
         else
         {
             if (row == null) { row = new() { StoreId = storeId }; context.Add(row); }
-            row.OverridesJson = StoreAppearancePolicy.Serialize(validated);
+            var json = StoreAppearancePolicy.Serialize(validated);
+            if (json.Length > 16000) return BadRequest(new { message = "Appearance settings exceed the supported size." });
+            row.OverridesJson = json;
         }
         await context.SaveChangesAsync(ct);
         return Ok(validated);
