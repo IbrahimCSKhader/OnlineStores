@@ -30,6 +30,12 @@ public class StoreSectionsController(AppDbContext db, ICurrentUserService user, 
     {
         if (!await Allowed(storeId, ct)) return Forbid();
         if (!await db.Stores.AnyAsync(s => s.Id == storeId, ct)) return NotFound();
+        if (dto.Locations == null || dto.Locations.Count > 20 || dto.Locations.Any(branch =>
+            branch == null || string.IsNullOrWhiteSpace(branch.Name) || branch.Name.Length > 180 ||
+            string.IsNullOrWhiteSpace(branch.Address) || branch.Address.Length > 500 ||
+            branch.Phone == null || !Regex.IsMatch(branch.Phone, @"^\+?[0-9 -]{0,30}$") ||
+            branch.WhatsApp == null || !Regex.IsMatch(branch.WhatsApp, @"^\+?[0-9]{0,15}$")))
+            return BadRequest("Invalid store locations.");
         bool Texts(Dictionary<string,string>? values) => values != null && values.Count <= 3 &&
             values.All(p => new[] { "A", "E", "I" }.Contains(p.Key) && p.Value != null && p.Value.Length <= 180);
         if (!Texts(dto.OffersHeading) || dto.Offers == null || dto.Offers.Count > 100) return BadRequest("Invalid section settings.");

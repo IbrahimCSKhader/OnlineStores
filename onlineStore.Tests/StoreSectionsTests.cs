@@ -28,13 +28,15 @@ public class StoreSectionsTests
   Assert.IsType<ForbidResult>(await controller.Put(other.Id,new(),default));
   Assert.IsType<ForbidResult>(await controller.Upload(other.Id,null!,default));
   var offer = new Offer {StoreId=store.Id,Name="Offer"}; db.Add(offer); await db.SaveChangesAsync();
-  var dto = new StoreSectionsDto {ShowCover=false, ShowFeaturedProducts=false, PremiumOfferId=offer.Id,
+  Assert.False(new StoreSectionsDto().ShowLocations);
+  var dto = new StoreSectionsDto {ShowLocations=true, Locations=new(){new(){Name="Branch", Address="Ramallah", Phone="0568067006"}}, ShowCover=false, ShowFeaturedProducts=false, PremiumOfferId=offer.Id,
    Offers=new(){[offer.Id]=new(){Title=new(){["E"]="Office"},Images=new(){"https://example.com/photo.png"}}}};
   Assert.IsType<OkObjectResult>(await controller.Put(store.Id,dto,default));
   var appearance = new StoreAppearanceController(db);
   Assert.IsType<OkObjectResult>(await appearance.Put(store.Id,new(){Light=new(){["primary"]="#112233"}},default));
   db.ChangeTracker.Clear();
   var saved = StoreAppearancePolicy.Read((await db.Set<StoreAppearance>().SingleAsync()).OverridesJson);
+  Assert.True(saved.Sections!.ShowLocations); Assert.Single(saved.Sections.Locations);
   Assert.False(saved.Sections!.ShowFeaturedProducts); Assert.False(saved.Sections.ShowCover);
   Assert.Equal("Office",saved.Sections.Offers[offer.Id].Title["E"]);
   Assert.Equal("#112233",saved.Light["primary"]);
