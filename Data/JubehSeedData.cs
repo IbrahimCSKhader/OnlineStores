@@ -100,8 +100,8 @@ public static class JubehSeedData
                         ShowLocations = true,
                         Locations = new()
                         {
-                            new() { Name = "الفرع الأول – رام الله", Address = "رام الله – منطقة الشرفة – مجمع الأماني – الطابق الثاني", Phone = "0568067006", WhatsApp = "972528601833" },
-                            new() { Name = "الفرع الثاني – الرام", Address = "الرام – مقابل مسجد معاذ بن جبل", Phone = "0522266619" }
+                            new() { Name = "الفرع الأول – رام الله", MapUrl = "https://www.google.com/maps?q=31.9013979,35.206875&z=17&hl=en", Address = "رام الله – منطقة الشرفة – مجمع الأماني – الطابق الثاني", Phone = "0568067006", WhatsApp = "972528601833" },
+                            new() { Name = "الفرع الثاني – الرام", MapUrl = "https://www.google.com/maps/search/Nidal%20Jubeh%20%D8%A7%D9%84%D8%AC%D8%B9%D8%A8%D8%A9%20%D9%84%D9%84%D8%A7%D8%AB%D8%A7%D8%AB%20%D8%A7%D9%84%D9%85%D9%83%D8%AA%D8%A8%D9%8A/@31.8534,35.2385,17z?hl=en", Address = "الرام – مقابل مسجد معاذ بن جبل", Phone = "0522266619" }
                         }
                     }
                 })

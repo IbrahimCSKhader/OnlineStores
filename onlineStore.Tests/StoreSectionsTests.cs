@@ -29,7 +29,7 @@ public class StoreSectionsTests
   Assert.IsType<ForbidResult>(await controller.Upload(other.Id,null!,default));
   var offer = new Offer {StoreId=store.Id,Name="Offer"}; db.Add(offer); await db.SaveChangesAsync();
   Assert.False(new StoreSectionsDto().ShowLocations);
-  var dto = new StoreSectionsDto {ShowLocations=true, Locations=new(){new(){Name="Branch", Address="Ramallah", Phone="0568067006"}}, ShowCover=false, ShowFeaturedProducts=false, PremiumOfferId=offer.Id,
+  var dto = new StoreSectionsDto {ShowLocations=true, Locations=new(){new(){Name="Branch", Address="Ramallah", MapUrl="https://www.google.com/maps?q=31.9013979,35.206875", Phone="0568067006"}}, ShowCover=false, ShowFeaturedProducts=false, PremiumOfferId=offer.Id,
    Offers=new(){[offer.Id]=new(){Title=new(){["E"]="Office"},Images=new(){"https://example.com/photo.png"}}}};
   Assert.IsType<OkObjectResult>(await controller.Put(store.Id,dto,default));
   var appearance = new StoreAppearanceController(db);
@@ -40,6 +40,10 @@ public class StoreSectionsTests
   Assert.False(saved.Sections!.ShowFeaturedProducts); Assert.False(saved.Sections.ShowCover);
   Assert.Equal("Office",saved.Sections.Offers[offer.Id].Title["E"]);
   Assert.Equal("#112233",saved.Light["primary"]);
+  Assert.Equal(dto.Locations[0].MapUrl, saved.Sections.Locations[0].MapUrl);
+  dto.Locations[0].MapUrl = "javascript:alert(1)";
+  Assert.IsType<BadRequestObjectResult>(await controller.Put(store.Id,dto,default));
+  dto.Locations[0].MapUrl = null;
   dto.Offers[offer.Id].Images = new(){"javascript:alert(1)"};
   Assert.IsType<BadRequestObjectResult>(await controller.Put(store.Id,dto,default));
   dto.Offers[offer.Id].Images.Clear(); dto.PremiumOfferId=Guid.NewGuid();

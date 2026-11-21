@@ -33,6 +33,9 @@ public class StoreSectionsController(AppDbContext db, ICurrentUserService user, 
         if (dto.Locations == null || dto.Locations.Count > 20 || dto.Locations.Any(branch =>
             branch == null || string.IsNullOrWhiteSpace(branch.Name) || branch.Name.Length > 180 ||
             string.IsNullOrWhiteSpace(branch.Address) || branch.Address.Length > 500 ||
+            (!string.IsNullOrEmpty(branch.MapUrl) && (branch.MapUrl.Length > 2000 ||
+                !Uri.TryCreate(branch.MapUrl, UriKind.Absolute, out var map) || map.Scheme != "https" ||
+                map.Host != "www.google.com" || !map.AbsolutePath.StartsWith("/maps") || !string.IsNullOrEmpty(map.UserInfo))) ||
             branch.Phone == null || !Regex.IsMatch(branch.Phone, @"^\+?[0-9 -]{0,30}$") ||
             branch.WhatsApp == null || !Regex.IsMatch(branch.WhatsApp, @"^\+?[0-9]{0,15}$")))
             return BadRequest("Invalid store locations.");
