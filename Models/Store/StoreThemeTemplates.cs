@@ -16,10 +16,11 @@ namespace onlineStore.Models
         public const string ElectroPulse = "T";
         public const string AppNavbar = "O";
         public const string CategoryGrid = "C";
+        public const string Library = "K";
 
 
         public static readonly string[] AllowedValues =
-            [Default, L, F, P, B, Blue, Brown, Purple, Gold, DeepGreen, Red, ElectroPulse, AppNavbar, CategoryGrid];
+            [Default, L, F, P, B, Blue, Brown, Purple, Gold, DeepGreen, Red, ElectroPulse, AppNavbar, CategoryGrid, Library];
 
         public static bool IsValid(string? value)
         {

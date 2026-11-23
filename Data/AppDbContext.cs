@@ -261,7 +261,7 @@ namespace onlineStore.Data
                 {
                     t.HasCheckConstraint(
                         "CK_Stores_ThemeTemplate",
-                        "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U', 'N', 'V', 'Y', 'E', 'R', 'T', 'O', 'C')");
+                        "[ThemeTemplate] IN ('D', 'L', 'F', 'P', 'B', 'U', 'N', 'V', 'Y', 'E', 'R', 'T', 'O', 'C', 'K')");
                     t.HasCheckConstraint(
                         "CK_Stores_Language",
                         "[Language] IN ('A', 'E', 'I')");

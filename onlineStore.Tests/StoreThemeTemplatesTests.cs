@@ -20,6 +20,7 @@ public class StoreThemeTemplatesTests
         StoreThemeTemplates.ElectroPulse,
         StoreThemeTemplates.AppNavbar,
         StoreThemeTemplates.CategoryGrid,
+        StoreThemeTemplates.Library,
     };
 
     [Theory]
