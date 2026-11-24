@@ -172,9 +172,6 @@ namespace onlineStore.Services.Order
                             throw new InvalidOperationException("أحد المنتجات لم يعد متاحاً");
                         if (item.Product.StoreId != dto.StoreId)
                             throw new Exception("يوجد عنصر لا ينتمي لهذا المتجر");
-                        if (item.Product.PriceOnRequest && item.Product.Price <= 0m)
-                            throw new InvalidOperationException("السعر عند الاستفسار");
-
                         var resolvedVariant = ResolveVariantForOrderCartItem(item);
                         var availableStock = resolvedVariant != null
                             ? resolvedVariant.StockQuantity
