@@ -21,6 +21,7 @@ public class StoreThemeTemplatesTests
         StoreThemeTemplates.AppNavbar,
         StoreThemeTemplates.CategoryGrid,
         StoreThemeTemplates.Library,
+        StoreThemeTemplates.Alaa,
     };
 
     [Theory]
